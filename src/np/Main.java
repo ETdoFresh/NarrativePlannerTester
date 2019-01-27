@@ -2,7 +2,7 @@ package np;
 
 public class Main {
 	
-	private static final String VERSION = "0.01";
+	private static final String VERSION = "0.01.1";
 	private static final String CREDITS = "Rachel Farrell and Edward Garcia";
 	private static final String TITLE = "The Narrative Planner Tester v" + VERSION + ", by " + CREDITS;
 	private static final String USAGE = "You don't know how to use this program... neither do we...";
