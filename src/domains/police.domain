@@ -1,0 +1,246 @@
+domain: "Police Use of Force";
+goal: surrendered(Suspect) = True;
+
+// Types
+
+type location;
+type place extends location;
+type character extends agent, location;
+type officer extends character;
+type civilian extends character;
+type item;
+type weapon extends item;
+type gun extends weapon;
+type knife extends weapon;
+
+// Properties
+
+boolean :   path(place, place);
+boolean :   audible(place, place);
+boolean :   audible(character, character);
+boolean :   alive(character) = True;
+place :     location(character);
+item :      holding(character);
+character : target(character);
+boolean :   surrendered(civilian);
+location :  location(item);
+
+// Map
+
+place : Car;
+place : Cover;
+place : Street;
+place : Sidewalk;
+place : Walkway;
+place : Lawn;
+place : Porch;
+place : Livingroom;
+
+path(Car, Cover);
+path(Cover, Street);
+path(Street, Sidewalk);
+path(Sidewalk, Walkway);
+path(Sidewalk, Lawn);
+path(Walkway, Porch);
+path(Walkway, Lawn);
+path(Porch, Livingroom);
+
+axiom path(place from, place to) {
+	precondition: path(from, to) & !path(to, from);
+	effect: path(to, from);
+}
+
+audible(Cover, Street);
+audible(Cover, Sidewalk);
+audible(Cover, Walkway);
+audible(Cover, Lawn);
+audible(Sidewalk, Walkway);
+audible(Sidewalk, Lawn);
+audible(Sidewalk, Porch);
+audible(Walkway, Porch);
+audible(Walkway, Lawn);
+audible(Lawn, Porch);
+audible(Porch, Livingroom);
+forall(place p) audible(p, p);
+
+axiom audible(place from, place to) {
+	precondition: audible(from, to) & !audible(to, from);
+	effect: audible(to, from);
+}
+
+axiom audible(character c1, place p1, character c2, place p2) {
+	precondition: (
+		c1 != c2 &
+		audible(p1, p2) &
+		location(c1) = p1 &
+		location(c2) = p2 &
+		!audible(c1, c2)
+	);
+	effect: audible(c1, c2);
+}
+
+axiom inaudible(character c1, place p1, character c2, place p2) {
+	precondition: (
+		c1 != c2 &
+		!audible(p1, p2) &
+		location(c1) = p1 &
+		location(c2) = p2 &
+		audible(c1, c2)
+	);
+	effect: !audible(c1, c2);
+}
+
+// People and Items
+
+officer : Officer;
+location(Officer) = Cover;
+intends(Officer, (
+	intends(Suspect, surrendered(Suspect) = True) |
+	alive(Suspect) = False
+));
+
+gun : Gun;
+location(Gun) = Officer;
+
+civilian : Suspect;
+location(Suspect) = Porch;
+holding(Suspect) = Knife;
+
+knife : Knife;
+location(Knife) = Suspect;
+
+// Movement
+
+action walk(character character*, place from, place to) {
+	precondition: (
+		path(from, to) &
+		alive(character) &
+		location(character) = from
+	);
+	effect: location(character) = to;
+}
+
+axiom get_angry(place o_place, place s_place) {
+	precondition: (
+		path(o_place, s_place) &
+		alive(Officer) &
+		location(Officer) = o_place &
+		alive(Suspect) &
+		location(Suspect) = s_place
+	);
+	effect: intends(Suspect, !alive(Officer));
+}
+
+// Item Actions
+
+action pickup(character character*, item item, place place) {
+	precondition: (
+		alive(character) &
+		holding(character) = Null &
+		location(character) = place &
+		location(item) = place
+	);
+	effect: (
+		location(item) = character &
+		holding(character) = item
+	);
+}
+
+action drop(character character*, item item, place place) {
+	precondition: (
+		alive(character) &
+		holding(character) = item &
+		location(character) = place
+	);
+	effect: (
+		location(item) = place &
+		holding(character) = Null
+	);
+}
+
+// Weapon Actions
+
+action draw(character character*, weapon weapon) {
+	precondition: (
+		alive(character) &
+		holding(character) = Null &
+		location(weapon) = character
+	);
+	effect: holding(character) = weapon;
+}
+
+action holster(character character*, weapon weapon) {
+	precondition: (
+		alive(character) &
+		holding(character) = weapon &
+		target(character) = Null
+	);
+	effect: holding(character) = Null;
+}
+
+action point(character character*, weapon weapon, character target) {
+	precondition: (
+		character != target &
+		alive(character) &
+		holding(character) = weapon &
+		target(character) = Null
+	);
+	effect: (
+		target(character) = target &
+		intends(target, !alive(character))
+	);
+}
+
+action lower(character character*, weapon weapon, character target) {
+	precondition: (
+		alive(character) &
+		holding(character) = weapon &
+		target(character) = target
+	);
+	effect: target(character) = Null;
+}
+
+action stab(character attacker*, knife weapon, character target, place place) {
+	precondition: (
+		alive(attacker) &
+		location(attacker) = place &
+		holding(attacker) = weapon &
+		target(attacker) = target &
+		alive(target) &
+		location(target) = place &
+		place != Cover
+	);
+	effect: !alive(target);
+}
+
+action fire(character attacker*, gun weapon, character target) {
+	precondition: (
+		alive(attacker) &
+		holding(attacker) = weapon &
+		target(attacker) = target &
+		alive(target)
+	);
+	effect: !alive(target);
+}
+
+// Communication
+
+action order_surrender(officer officer*, civilian character) {
+	precondition: (
+		audible(officer, character) &
+		alive(officer) &
+		alive(character)
+	);
+	effect: intends(character, surrendered(character));
+}
+
+// Surrender and Arrest Actions
+
+action surrender(civilian character*) {
+	precondition: (
+		alive(character) &
+		forall(weapon w)
+			location(w) != character
+	);
+	effect: surrendered(character);
+}

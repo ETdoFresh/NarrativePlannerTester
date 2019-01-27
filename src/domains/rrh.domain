@@ -1,0 +1,68 @@
+domain: "Red Riding Hood";
+
+type location;
+type place extends location;
+type character extends agent, location;
+type item;
+
+place : Home;
+place : Forest;
+place : Cottage;
+
+character : Red;
+character : Wolf;
+character : Grandmother;
+
+item : Cake;
+
+boolean : path(location, location);
+location : location(character);
+location : location(item);
+boolean : hungry(character);
+
+action walk(character character*, place from, place to) {
+	precondition: (
+		path(from, to) &
+		location(character) = from
+	);
+	effect: location(character) = to;
+}
+
+action eat(character eater, character victim, place place) {
+	precondition: (
+		location(eater) = place &
+		location(victim) = place
+	);
+	effect: (
+		!hungry(eater) &
+		location(victim) = eater
+	);
+}
+
+axiom path(place from, place to) {
+	precondition: (
+		!path(from, to) &
+		path(to, from)
+	);
+	effect: path(from, to);
+}
+
+axiom get_hungry(character eater, character victim, place place) {
+	precondition: (
+		hungry(eater) &
+		location(eater) = place &
+		location(victim) = place
+	);
+	effect: intends(eater, location(victim) = eater);
+}
+
+// Initial State
+path(Home, Forest);
+path(Forest, Cottage);
+location(Red) = Home;
+location(Cake) = Red;
+intends(Red, location(Cake) = Grandmother);
+location(Grandmother) = Cottage;
+location(Wolf) = Forest;
+hungry(Wolf);
+intends(Wolf, hungry(Wolf) = False);
