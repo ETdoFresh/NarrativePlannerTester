@@ -1,4 +1,4 @@
-package np;
+package qa;
 
 public class Main {
 	
