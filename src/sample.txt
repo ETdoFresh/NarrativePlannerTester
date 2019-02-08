@@ -63,6 +63,7 @@ audible(Lawn, Porch);
 audible(Porch, Livingroom);
 forall(place p) audible(p, p);
 
+
 axiom audible(place from, place to) {
 	precondition: audible(from, to) & !audible(to, from);
 	effect: audible(to, from);
