@@ -71,7 +71,7 @@ public class Main {
 			if (domain.initial.equals(domain.goal))
 				System.out.println("[Warn] Initial State == Goal State");
 			else
-				System.out.println("[Pass] Initial State == Goal State");
+				System.out.println("[Pass] Initial State != Goal State");
 
 			// Search Space
 			SearchSpace space = Utilities.get(status -> new SearchSpace(domain, status));
