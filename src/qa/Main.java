@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 
 import sabre.*;
+import sabre.graph.PlanGraph;
 import sabre.io.DefaultParser;
 import sabre.io.Parser;
 import sabre.logic.BooleanExpression;
@@ -21,7 +22,7 @@ public class Main {
 
 	private static final String VERSION = "0.01.1";
 	private static final String CREDITS = "Rachel Farrell and Edward Garcia";
-	private static final String TITLE = "The Narrative Planner Tester v" + VERSION + ", by " + CREDITS
+	private static final String TITLE = "Planning Domain Automated Tester v" + VERSION + ", by " + CREDITS
 			+ "\n using the Sabre Narrative Planner v0.32 by Stephen G. Ware";
 	private static final String USAGE = "... Sit back, relax, and enjoy the demo ...\n";
 	private static final String FILE = "sample.txt";
@@ -73,18 +74,26 @@ public class Main {
 			else
 				System.out.println("[Pass] Initial State != Goal State");
 
-			// Search Space
+			// Space
 			SearchSpace space = Utilities.get(status -> new SearchSpace(domain, status));
-			//System.out.println(space);
 			System.out.println("Number of ground actions: " + space.actions.size());
-			
+
+			// Plan Graph
+			space.graph.initialize(new ArrayState(space)); // Initialize graph 
+			while(!space.graph.extend()) {} // Extend graph until it levels off (all goals have appeared)
+			System.out.println(space.graph); // Tbc!
+
 			// Check if there exists an action from initial state
 			//Propositionalizer propositionalizer = new Propositionalizer(space, new Status());
 			//MutableListState initial = new MutableListState(space);
+			
+			//Search search = planner.getSearchFactory().makeSearch(space.goal);
 
 			// Planner
 			Planner planner = new Planner();
 			planner.setSearchSpace(space);
+
+			
 //
 //			// Search
 //			planner.setSearchFactory(new BreadthFirst());
