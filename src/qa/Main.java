@@ -26,6 +26,10 @@ public class Main {
 			+ "\n using the Sabre Narrative Planner v0.32 by Stephen G. Ware";
 	private static final String USAGE = "... Sit back, relax, and enjoy the demo ...\n";
 	private static final String FILE = "sample.txt";
+	
+	private static final String PASS = "[" + TextColor.GREEN + "Pass" + TextColor.RESET + "] ";
+	private static final String FAIL = "[" + TextColor.RED + "Fail" + TextColor.RESET + "] ";
+	private static final String WARN = "[" + TextColor.YELLOW + "Warn" + TextColor.RESET + "] ";
 
 	public static void main(String[] args) {
 		
@@ -57,22 +61,22 @@ public class Main {
 			try {
 				domain = parser.parse(sampleTxt, Domain.class);
 			} catch (Exception ex) {
-				System.out.println("[Fail] File is syntactically correct");
+				System.out.println(FAIL + "File is syntactically correct");
 				continue;
 			}
-			System.out.println("[Pass] File is syntactically correct");
+			System.out.println(PASS + "File is syntactically correct");
 			
 			// Check if goal state is empty
 			if (domain.goal.equals(Expression.TRUE))
-				System.out.println("[Fail] Goal State specified");
+				System.out.println(FAIL + "Goal State specified");
 			else
-				System.out.println("[Pass] Goal State specified");
+				System.out.println(PASS + "Goal State specified");
 			
 			// Check if initial state equals goal state
 			if (domain.initial.equals(domain.goal))
-				System.out.println("[Warn] Initial State == Goal State");
+				System.out.println(WARN + "Initial State == Goal State");
 			else
-				System.out.println("[Pass] Initial State != Goal State");
+				System.out.println(PASS + "Initial State == Goal State");
 
 			// Space
 			SearchSpace space = Utilities.get(status -> new SearchSpace(domain, status));
