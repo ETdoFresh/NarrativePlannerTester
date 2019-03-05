@@ -34,6 +34,7 @@ public class Main {
 	private static final String SYNTAX = "File is syntactically correct";
 	private static final String GOAL = "Goal specified";
 	private static final String INITIAL = "Goal not true in initial state";
+	private static final String SOLUTION = "Solution exists";
 
 	public static void main(String[] args) {
 		
@@ -100,29 +101,27 @@ public class Main {
 			System.out.println("Size of plan graph: " + space.graph.size());
 			
 			// Check if there exists an action from initial state
-			//Propositionalizer propositionalizer = new Propositionalizer(space, new Status());
-			//MutableListState initial = new MutableListState(space);
-			
-			//Search search = planner.getSearchFactory().makeSearch(space.goal);
-
-			// Planner
 			Planner planner = new Planner();
 			planner.setSearchSpace(space);
-
+			Search search = planner.getSearchFactory().makeSearch(domain.goal);
+			RootNode root = new RootNode(initial);
+			search.push(root);
+			Result result = Utilities.get(status -> search.getNextSolution(status));
+			if(result.plan != null)
+				System.out.println(PASS + SOLUTION);
+			else
+				System.out.println(FAIL + SOLUTION);
 			
-//
-//			// Search
-//			planner.setSearchFactory(new BreadthFirst());
-//			Search search = planner.getSearchFactory().makeSearch(planner.getSearchSpace().goal);
-//			RootNode root = new RootNode(new ArrayState(planner.getSearchSpace()));
-//			search.push(root);
-//			Result result = Utilities.get(status -> search.getNextSolution(status));
-//
-//			// Solution
-//			System.out.println("Result: " + result);
-//			if (result.plan != null)
-//				for (Action action : result.plan)
-//					System.out.println(action);
+			// Find all solutions
+/*			while(result.plan != null) {
+				System.out.println(result);
+				for (Action action : result.plan)
+					System.out.println(action);
+				result = Utilities.get(status -> search.getNextSolution(status));
+			}
+*/			
+			//Propositionalizer propositionalizer = new Propositionalizer(space, new Status());
+			//MutableListState initial = new MutableListState(space);
 		}
 	}
 }
