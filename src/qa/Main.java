@@ -100,7 +100,14 @@ public class Main {
 				space.graph.extend(); // Extend graph until all goals have appeared
 			System.out.println("Size of plan graph: " + space.graph.size());
 			
-			// Check if there exists an action from initial state
+			// Number of actions available from the initial state
+			int firstSteps = 0;
+			for(Action action : space.actions)
+				if(action.precondition.test(initial))
+					firstSteps++;
+			System.out.println("Number of actions available in initial state: " + firstSteps);
+			
+			// Check if a solution exists
 			Planner planner = new Planner();
 			planner.setSearchSpace(space);
 			Search search = planner.getSearchFactory().makeSearch(domain.goal);
@@ -120,8 +127,6 @@ public class Main {
 				result = Utilities.get(status -> search.getNextSolution(status));
 			}
 */			
-			//Propositionalizer propositionalizer = new Propositionalizer(space, new Status());
-			//MutableListState initial = new MutableListState(space);
 		}
 	}
 }
