@@ -30,6 +30,10 @@ public class Main {
 	private static final String PASS = "[" + TextColor.GREEN + "Pass" + TextColor.RESET + "] ";
 	private static final String FAIL = "[" + TextColor.RED + "Fail" + TextColor.RESET + "] ";
 	private static final String WARN = "[" + TextColor.YELLOW + "Warn" + TextColor.RESET + "] ";
+	
+	private static final String SYNTAX = "File is syntactically correct";
+	private static final String GOAL = "Goal specified";
+	private static final String INITIAL = "Goal not true in initial state";
 
 	public static void main(String[] args) {
 		
@@ -40,17 +44,17 @@ public class Main {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		File sampleTxt = new File(FILE);
+		File file = new File(FILE);
 		long lastModified = 0;
 
 		while (true) {
-			if (lastModified == sampleTxt.lastModified())
+			if (lastModified == file.lastModified())
 				continue;
 
 			// Update last modified
-			lastModified = sampleTxt.lastModified();
+			lastModified = file.lastModified();
 
-			// Clear/Reset Screen  
+			// Clear/Reset Screen
 		    System.out.flush();
 			System.out.println(TITLE);
 			System.out.println(USAGE);
@@ -59,34 +63,42 @@ public class Main {
 			Parser parser = new DefaultParser();
 			Domain domain;
 			try {
-				domain = parser.parse(sampleTxt, Domain.class);
+				domain = parser.parse(file, Domain.class);
 			} catch (Exception ex) {
-				System.out.println(FAIL + "File is syntactically correct");
+				System.out.println(FAIL + SYNTAX);
 				continue;
 			}
-			System.out.println(PASS + "File is syntactically correct");
-			
-			// Check if goal state is empty
-			if (domain.goal.equals(Expression.TRUE))
-				System.out.println(FAIL + "Goal State specified");
-			else
-				System.out.println(PASS + "Goal State specified");
-			
-			// Check if initial state equals goal state
-			if (domain.initial.equals(domain.goal))
-				System.out.println(WARN + "Initial State == Goal State");
-			else
-				System.out.println(PASS + "Initial State == Goal State");
+			System.out.println(PASS + SYNTAX);
 
 			// Space
 			SearchSpace space = Utilities.get(status -> new SearchSpace(domain, status));
 			System.out.println("Number of ground actions: " + space.actions.size());
 
+			// Check if goal is empty
+			if (domain.goal.equals(Expression.TRUE))
+				System.out.println(FAIL + GOAL);
+			else
+				System.out.println(PASS + GOAL);
+			
+			// Check if initial state equals goal state <-- doesn't make sense bc goal is not a state
+//			if (domain.initial.equals(domain.goal))
+//				System.out.println(WARN + "Initial State == Goal State");
+//			else
+//				System.out.println(PASS + "Initial State == Goal State");
+						
+			// Check if goal is true in initial state
+			ArrayState initial = new ArrayState(space);
+			if(domain.goal.test(initial))
+				System.out.println(FAIL + INITIAL);
+			else
+				System.out.println(PASS + INITIAL);
+			
 			// Plan Graph
-			space.graph.initialize(new ArrayState(space)); // Initialize graph 
-			while(!space.graph.extend()) {} // Extend graph until it levels off (all goals have appeared)
-			System.out.println(space.graph); // Tbc!
-
+			space.graph.initialize(initial);
+			while(!space.graph.hasLeveledOff())
+				space.graph.extend(); // Extend graph until all goals have appeared
+			System.out.println("Size of plan graph: " + space.graph.size());
+			
 			// Check if there exists an action from initial state
 			//Propositionalizer propositionalizer = new Propositionalizer(space, new Status());
 			//MutableListState initial = new MutableListState(space);
