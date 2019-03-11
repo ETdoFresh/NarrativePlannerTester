@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 import sabre.*;
 import sabre.io.DefaultParser;
@@ -79,7 +81,7 @@ public class Main {
 					// Evaluate plan vs other plans (all plans except last plan)
 					for (int i = 0; i < plans.size() - 1; i++)
 					{
-						float jaccardDistance = GetJaccardDistance(plans.get(i), result.plan);
+						float jaccardDistance = getActionJaccard(plans.get(i), result.plan);
 						System.out.println(INFO + "Plan " + i + " vs Plan " + planIndex + ": " + jaccardDistance);
 					}
 					
@@ -173,22 +175,28 @@ public class Main {
 		}
 	}
 	
-	private static float GetJaccardDistance(Plan a, Plan b)
+	private static <E> float getJaccard(Set<E> a, Set<E> b) {	
+		HashSet<E> intersection = new HashSet<>();
+		HashSet<E> union = new HashSet<>();
+		union.addAll(a);
+		union.addAll(b);
+		for(E item : a)
+			if(b.contains(item))
+				intersection.add(item);
+		return 1 - (float)intersection.size() / union.size();
+	}
+	
+	private static float getActionJaccard(Plan a, Plan b)
 	{
-		ArrayList<Action> actionsThatExistsInBoth = new ArrayList<Action>();
-		ArrayList<Action> actionsThatExistsInEither = new ArrayList<Action>();
+		HashSet<Action> set_a = new HashSet<>();
+		HashSet<Action> set_b = new HashSet<>();
 		
 		for (Action action : a)
-			actionsThatExistsInEither.add(action);
+			set_a.add(action);
 		
 		for (Action action : b)
-			if (!a.contains(action))
-				actionsThatExistsInEither.add(action);
+			set_b.add(action);
 		
-		for (Action action : a)
-			if (b.contains(action))
-				actionsThatExistsInBoth.add(action);
-		
-		return 1 - (float)actionsThatExistsInBoth.size() / actionsThatExistsInEither.size();
+		return getJaccard(set_a, set_b);
 	}
 }
