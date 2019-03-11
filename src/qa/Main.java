@@ -4,21 +4,17 @@ import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 
 import sabre.*;
-import sabre.graph.PlanGraph;
 import sabre.io.DefaultParser;
 import sabre.io.Parser;
-import sabre.logic.BooleanExpression;
 import sabre.logic.Expression;
-import sabre.search.BreadthFirst;
 import sabre.search.Result;
 import sabre.search.Search;
 import sabre.space.RootNode;
 import sabre.space.SearchSpace;
 import sabre.state.ArrayState;
-import sabre.state.ListState;
-import sabre.state.MutableListState;
 
 public class Main {
 
@@ -38,12 +34,17 @@ public class Main {
 	private static final String GOAL = "Goal specified";
 	private static final String INITIAL = "Goal not true in initial state";
 	private static final String SOLUTION = "Solution exists";
+	
+	static long lastModified = 0;
+	static boolean firstRun = true;
+	static Result result = null;
+	static Search search = null;
+	static ArrayList<Plan> plans = new ArrayList<Plan>();
 
 	public static void main(String[] args) {
 
+		// Open text file on desktop
 		File file = new File(FILE);
-
-		// Open domain file
 		Desktop desktop = Desktop.getDesktop();
 		try {
 			file.createNewFile(); // does nothing if file exists
@@ -51,35 +52,65 @@ public class Main {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		long lastModified = 0;
-
+		
 		// Clear/Reset Screen
 		System.out.flush();
 		System.out.println(TITLE);
 		System.out.println(USAGE);
 
-		boolean firstRun = true;
 		while (true) {
 			if (lastModified == file.lastModified()) {
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+				if (search != null && result != null) {
+					if (result.plan == null) {
+						System.out.println(INFO + "Search has found all plans");
+						search = null;
+						result = null;
+						continue;
+					}
+					
+					int planIndex = plans.size();
+					System.out.println(INFO + "---------------- Plan " + planIndex + " ----------------");
+					System.out.println(INFO + result);
+					for (Action action : result.plan)
+						System.out.println(INFO + action);
+					
+					plans.add(result.plan);
+					
+					// Evaluate plan vs other plans (all plans except last plan)
+					for (int i = 0; i < plans.size() - 1; i++)
+					{
+						float jaccardDistance = GetJaccardDistance(plans.get(i), result.plan);
+						System.out.println(INFO + "Plan " + i + " vs Plan " + planIndex + ": " + jaccardDistance);
+					}
+					
+					// Find next solution
+					System.out.println(INFO + "Searching for next solution...");
+					result = search.getNextSolution();
+				} else {
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 				}
 				continue;
 			}
 
 			// Update last modified
 			lastModified = file.lastModified();
+			result = null;
+			search = null;
+			plans.clear();
 
 			if (firstRun) {
 				firstRun = false;
-				System.out.println(INFO + "File Opened: " + FILE + " Last Modified: " + new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(lastModified));
+				System.out.println(INFO + "File Opened: " + FILE + " Last Modified: "
+						+ new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(lastModified));
 			} else {
+				System.out.println("----------------------------------------------------------------");
 				System.out.println();
-				System.out.println();
-				System.out.println(INFO + "File Modified: " + FILE + " Last Modified: " + new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(lastModified));
+				System.out.println(INFO + "File Modified: " + FILE + " Last Modified: "
+						+ new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(lastModified));
 			}
 
 			// Parse Domain
@@ -99,16 +130,9 @@ public class Main {
 
 			// Check if goal is empty
 			if (domain.goal.equals(Expression.TRUE))
-				System.out.println(FAIL + GOAL);
+				System.out.println(WARN + GOAL);
 			else
 				System.out.println(PASS + GOAL);
-
-			// Check if initial state equals goal state <-- doesn't make sense bc goal is
-			// not a state
-//			if (domain.initial.equals(domain.goal))
-//				System.out.println(WARN + "Initial State == Goal State");
-//			else
-//				System.out.println(PASS + "Initial State == Goal State");
 
 			// Check if goal is true in initial state
 			ArrayState initial = new ArrayState(space);
@@ -133,21 +157,38 @@ public class Main {
 			// Check if a solution exists
 			Planner planner = new Planner();
 			planner.setSearchSpace(space);
-			Search search = planner.getSearchFactory().makeSearch(domain.goal);
+			search = planner.getSearchFactory().makeSearch(domain.goal);
 			RootNode root = new RootNode(initial);
 			search.push(root);
-			Result result = Utilities.get(status -> search.getNextSolution(status));
+			System.out.println(INFO + "Searching for next solution...");
+			result = search.getNextSolution();
 			if (result.plan != null)
 				System.out.println(PASS + SOLUTION);
 			else
+			{
 				System.out.println(FAIL + SOLUTION);
-
-			// Find all solutions
-			/*
-			 * while(result.plan != null) { System.out.println(result); for (Action action :
-			 * result.plan) System.out.println(action); result = Utilities.get(status ->
-			 * search.getNextSolution(status)); }
-			 */
+				result = null;
+				search = null;
+			}
 		}
+	}
+	
+	private static float GetJaccardDistance(Plan a, Plan b)
+	{
+		ArrayList<Action> actionsThatExistsInBoth = new ArrayList<Action>();
+		ArrayList<Action> actionsThatExistsInEither = new ArrayList<Action>();
+		
+		for (Action action : a)
+			actionsThatExistsInEither.add(action);
+		
+		for (Action action : b)
+			if (!a.contains(action))
+				actionsThatExistsInEither.add(action);
+		
+		for (Action action : a)
+			if (b.contains(action))
+				actionsThatExistsInBoth.add(action);
+		
+		return 1 - (float)actionsThatExistsInBoth.size() / actionsThatExistsInEither.size();
 	}
 }
