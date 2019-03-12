@@ -38,8 +38,8 @@ public class Main {
 	private static final String SYNTAX = "File should be syntactically correct";
 	private static final String GOAL = "Goal should be specified";
 	private static final String INITIAL = "Goal should not be true in initial state";
-	private static final String SOLUTION = "There should be at least one solution";
 	private static final String ACTIONS = "All action schemas should be usable";
+	private static final String SOLUTION = "Goal should be achievable";
 
 	static long lastModified = 0;
 	static boolean firstRun = true;
@@ -88,8 +88,8 @@ public class Main {
 						System.out.println(BLANK + "Solution " + i + " vs Solution " + planIndex + ": " + jaccardDistance);
 					}
 
-					if (plans.size() > 5) {
-						System.out.println(BLANK + "Cutting off after 5 solutions");
+					if (plans.size() > 2) {
+						System.out.println(BLANK + "Cutting off after 3 solutions");
 						result = null;
 					} else {
 						System.out.println(BLANK + "Searching for next solution...");
@@ -163,9 +163,21 @@ public class Main {
 			space.graph.initialize(initial);
 			while (!space.graph.hasLeveledOff())
 				space.graph.extend(); // Extend graph until all goals have appeared
-			System.out.println(INFO + "Size of plan graph: " + space.graph.size());
+			//System.out.println(INFO + "Layers in plan graph: " + space.graph.size()); // <---- just commenting out for demo
 
-			// Check for any unused action schemas
+			// Number of actions available from the initial state
+			int firstSteps = 0;
+			System.out.println(INFO + "Actions possible from initial state: ");
+			for (Action action : space.actions)
+				if (action.precondition.test(initial)) {
+					System.out.println("\t - " + action);
+					firstSteps++;
+				}
+			System.out.println("\t (" + firstSteps + " total)");
+			
+			// TODO: Actions *motivated* from initial state, i.e. possible and the characters would consent
+			
+			// Check for any unusable action schemas
 			HashSet<Action> unusedActions = new HashSet<Action>();
 			for (Action action : space.domain.actions) {
 				boolean actionFound = false;
@@ -182,21 +194,9 @@ public class Main {
 			else {
 				System.out.println(WARN + ACTIONS);
 				for (Action action : unusedActions)
-					System.out.println(BLANK + "Unused: " + action.toString());
+					System.out.println(BLANK + "Unusable: " + action.toString());
 				//continue;
 			}
-
-			// Number of actions available from the initial state
-			int firstSteps = 0;
-			System.out.println(INFO + "Actions possible from initial state: ");
-			for (Action action : space.actions)
-				if (action.precondition.test(initial)) {
-					System.out.println("  " + action);
-					firstSteps++;
-				}
-			System.out.println("  (" + firstSteps + " total)");
-			
-			// TODO: Actions *motivated* from initial state, i.e. possible and the characters would consent
 
 			// Check if a solution exists
 			Planner planner = new Planner();

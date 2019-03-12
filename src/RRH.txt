@@ -1,5 +1,5 @@
 domain: "Little Red Riding Hood";
-goal: !alive(Red);
+//goal: location(Red) = Home;
 
 // Types
 
@@ -32,7 +32,7 @@ alive(Grandma);
 location(Red) = Home;
 location(Wolf) = Forest;
 location(Grandma) = Cottage;
-location(Cookies) = Red;
+//location(Cookies) = Red;
 path(Home, Forest);
 path(Forest, Home);
 path(Forest, Cottage);
@@ -42,6 +42,8 @@ path(Cottage, Forest);
 
 intends(Red, location(Cookies) = Grandma);
 intends(Grandma, location(Grandma) = Cottage);
+intends(Wolf, !alive(Red));
+intends(Wolf, !alive(Grandma));
 
 // Actions
 
