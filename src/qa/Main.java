@@ -39,7 +39,7 @@ public class Main {
 	private static final String GOAL = "Goal specified";
 	private static final String INITIAL = "Goal not true in initial state";
 	private static final String SOLUTION = "Solution exists";
-	
+
 	static long lastModified = 0;
 	static boolean firstRun = true;
 	static Result result = null;
@@ -57,7 +57,7 @@ public class Main {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+
 		// Clear/Reset Screen
 		System.out.flush();
 		System.out.println(TITLE);
@@ -72,29 +72,27 @@ public class Main {
 						result = null;
 						continue;
 					}
-					
+
 					int planIndex = plans.size();
 					System.out.println(INFO + "---------------- Plan " + planIndex + " ----------------");
 					System.out.println(BLANK + result);
 					for (Action action : result.plan)
 						System.out.println(BLANK + action);
-					
+
 					plans.add(result.plan);
-					
+
 					// Evaluate plan vs other plans (all plans except last plan)
-					for (int i = 0; i < plans.size() - 1; i++)
-					{
+					for (int i = 0; i < plans.size() - 1; i++) {
 						float jaccardDistance = getActionJaccard(plans.get(i), result.plan);
 						System.out.println(BLANK + "Plan " + i + " vs Plan " + planIndex + ": " + jaccardDistance);
 					}
-					
+
 					if (plans.size() > 5) {
 						System.out.println(BLANK + "Cutting off after 5 plans");
 						result = null;
-					}
-					else {
+					} else {
 						System.out.println(BLANK + "Searching for next solution...");
-						result = search.getNextSolution();						
+						result = search.getNextSolution();
 					}
 				} else {
 					try {
@@ -143,13 +141,17 @@ public class Main {
 				System.out.println(FAIL + GOAL);
 			else
 				System.out.println(PASS + GOAL);
-			
+
 			// Check if goal is true in initial state
 			ArrayState initial = new ArrayState(space);
-			if (domain.goal.test(initial))
-				System.out.println(FAIL + INITIAL);
-			else
-				System.out.println(PASS + INITIAL);
+			try {
+				if (domain.goal.test(initial))
+					System.out.println(FAIL + INITIAL);
+				else
+					System.out.println(PASS + INITIAL);
+			} catch (Exception ex) {
+				System.out.println(FAIL + ex);
+			}
 
 			// Plan Graph
 			space.graph.initialize(initial);
@@ -159,16 +161,14 @@ public class Main {
 
 			// Check for any unused action schemas
 			HashSet<Action> unusedActions = new HashSet<Action>();
-			for (Action action : space.domain.actions)
-			{
+			for (Action action : space.domain.actions) {
 				boolean actionFound = false;
 				for (PlanGraphEventNode graphEvent : space.graph.events)
-					if (action.name == graphEvent.event.name)
-					{
+					if (action.name == graphEvent.event.name) {
 						actionFound = true;
 						continue;
 					}
-				
+
 				if (!actionFound)
 					unusedActions.add(action);
 			}
@@ -179,7 +179,7 @@ public class Main {
 				for (Action action : unusedActions)
 					System.out.println(BLANK + "Unused: " + action.toString());
 			}
-			
+
 			// Number of actions available from the initial state
 			int firstSteps = 0;
 			for (Action action : space.actions)
@@ -194,40 +194,42 @@ public class Main {
 			RootNode root = new RootNode(initial);
 			search.push(root);
 			System.out.println(BLANK + "Searching for next solution...");
-			result = search.getNextSolution();
-			if (result.plan != null)
+			try {
+				result = search.getNextSolution();
+			} catch (Exception ex) {
+				System.out.println(FAIL + ex);
+			}
+			if (result != null && result.plan != null)
 				System.out.println(PASS + SOLUTION);
-			else
-			{
+			else {
 				System.out.println(FAIL + SOLUTION);
 				result = null;
 				search = null;
 			}
 		}
 	}
-	
-	private static <E> float getJaccard(Set<E> a, Set<E> b) {	
+
+	private static <E> float getJaccard(Set<E> a, Set<E> b) {
 		HashSet<E> intersection = new HashSet<>();
 		HashSet<E> union = new HashSet<>();
 		union.addAll(a);
 		union.addAll(b);
-		for(E item : a)
-			if(b.contains(item))
+		for (E item : a)
+			if (b.contains(item))
 				intersection.add(item);
-		return 1 - (float)intersection.size() / union.size();
+		return 1 - (float) intersection.size() / union.size();
 	}
-	
-	private static float getActionJaccard(Plan a, Plan b)
-	{
+
+	private static float getActionJaccard(Plan a, Plan b) {
 		HashSet<Action> set_a = new HashSet<>();
 		HashSet<Action> set_b = new HashSet<>();
-		
+
 		for (Action action : a)
 			set_a.add(action);
-		
+
 		for (Action action : b)
 			set_b.add(action);
-		
+
 		return getJaccard(set_a, set_b);
 	}
 }

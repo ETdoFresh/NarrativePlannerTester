@@ -1,13 +1,9 @@
-domain: "Red Riding Hood";
+domain: "Little Red Riding Hood";
 
 // Types
 type location;
 type character extends agent;
-
-// Relationships
-boolean: path(location, location);
-location: location(character);
-
+ 
 // Objects
 character: Red;
 character: Wolf;
@@ -17,24 +13,30 @@ location: Forest;
 location: Cave;
 location: Cottage;
 
-// Initial State -- Program crashes if location(Wolf) is in goal and not in initial state
-// Maybe we should add something in the code to check that
-intends(Wolf, location(Wolf) = Cottage);
-location(Wolf) = Cave;
-
-// Author's Goal
-goal: location(Wolf) = Cottage;
+// Relationships
+location: location(character);
+boolean: path(location, location);
 
 path(Home, Forest);
 path(Home, Cave);
 path(Forest, Cottage);
 path(Cave, Cottage);
-
+ 
 // Reverse
 path(Forest, Home);
 path(Cave, Home);
 path(Cottage, Forest);
 path(Cottage, Cave);
+ 
+
+// Initial State -- Program crashes if location(Wolf) is in goal and not in initial state
+// Maybe we should add something in the code to check that
+intends(Wolf, location(Wolf) = Cottage);
+location(Wolf) = Cave;
+ 
+// Author's Goal
+goal: location(Wolf) = Cottage;
+ 
 
 // Actions
 action walk(character character*, location from, location to) {
@@ -44,9 +46,9 @@ action walk(character character*, location from, location to) {
 	);
 	effect: location(character) = to;
 }
-
-
-
+// 
+// 
+// 
 //---------//  domain: "Police Use of Force";
 //---------//  goal: surrendered(Suspect) = True;
 //---------//  
