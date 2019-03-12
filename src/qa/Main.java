@@ -75,7 +75,7 @@ public class Main {
 					}
 
 					int planIndex = plans.size();
-					System.out.println(INFO + "---------------- Plan " + planIndex + " ----------------");
+					System.out.println(INFO + "---------------- Solution " + planIndex + " ----------------");
 					System.out.println(BLANK + result);
 					for (Action action : result.plan)
 						System.out.println(BLANK + action);
@@ -85,11 +85,11 @@ public class Main {
 					// Evaluate plan vs other plans (all plans except last plan)
 					for (int i = 0; i < plans.size() - 1; i++) {
 						float jaccardDistance = getActionJaccard(plans.get(i), result.plan);
-						System.out.println(BLANK + "Plan " + i + " vs Plan " + planIndex + ": " + jaccardDistance);
+						System.out.println(BLANK + "Solution " + i + " vs Solution " + planIndex + ": " + jaccardDistance);
 					}
 
 					if (plans.size() > 5) {
-						System.out.println(BLANK + "Cutting off after 5 plans");
+						System.out.println(BLANK + "Cutting off after 5 solutions");
 						result = null;
 					} else {
 						System.out.println(BLANK + "Searching for next solution...");
