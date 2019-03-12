@@ -26,7 +26,7 @@ public class Main {
 	private static final String TITLE = "Planning Domain Automated Tester v" + VERSION + ", by " + CREDITS
 			+ "\n using the Sabre Narrative Planner v0.32 by Stephen G. Ware";
 	private static final String USAGE = "... Sit back, relax, and enjoy the demo ...\n";
-	private static final String FILE = "sample.txt";
+	private static final String FILE = "RRH.txt";
 
 	private static final String PASS = "[" + TextColor.GREEN + "Pass" + TextColor.RESET + "] ";
 	private static final String FAIL = "[" + TextColor.RED + "Fail" + TextColor.RESET + "] ";
@@ -35,10 +35,11 @@ public class Main {
 	private static final String INFO = "[" + TextColor.BLUE + "Info" + TextColor.RESET + "] ";
 	private static final String BLANK = "       ";
 
-	private static final String SYNTAX = "File is syntactically correct";
-	private static final String GOAL = "Goal specified";
-	private static final String INITIAL = "Goal not true in initial state";
-	private static final String SOLUTION = "Solution exists";
+	private static final String SYNTAX = "File should be syntactically correct";
+	private static final String GOAL = "Goal should be specified";
+	private static final String INITIAL = "Goal should not be true in initial state";
+	private static final String SOLUTION = "There should be at least one solution";
+	private static final String ACTIONS = "All action schemas should be usable";
 
 	static long lastModified = 0;
 	static boolean firstRun = true;
@@ -128,6 +129,7 @@ public class Main {
 				domain = parser.parse(file, Domain.class);
 			} catch (Exception ex) {
 				System.out.println(FAIL + SYNTAX);
+				System.out.println(ex);
 				continue;
 			}
 			System.out.println(PASS + SYNTAX);
@@ -137,20 +139,23 @@ public class Main {
 			System.out.println(INFO + "Number of ground actions: " + space.actions.size());
 
 			// Check if goal is empty
-			if (domain.goal.equals(Expression.TRUE))
+			if (domain.goal.equals(Expression.TRUE)) {
 				System.out.println(FAIL + GOAL);
-			else
+				continue;
+			} else
 				System.out.println(PASS + GOAL);
 
 			// Check if goal is true in initial state
 			ArrayState initial = new ArrayState(space);
 			try {
-				if (domain.goal.test(initial))
+				if (domain.goal.test(initial)) {
 					System.out.println(FAIL + INITIAL);
-				else
+					continue;
+				} else
 					System.out.println(PASS + INITIAL);
 			} catch (Exception ex) {
-				System.out.println(FAIL + ex);
+				System.out.println(FAIL + "Exception while testing the goal in the initial state: " + ex);
+				continue;
 			}
 
 			// Plan Graph
@@ -162,20 +167,20 @@ public class Main {
 			// Check for any unused action schemas
 			HashSet<Action> unusedActions = new HashSet<Action>();
 			for (Action action : space.domain.actions) {
+				System.out.println("Domain Action: "+action);
 				boolean actionFound = false;
 				for (PlanGraphEventNode graphEvent : space.graph.events)
 					if (action.name == graphEvent.event.name) {
 						actionFound = true;
 						continue;
 					}
-
 				if (!actionFound)
 					unusedActions.add(action);
 			}
 			if (unusedActions.size() == 0)
-				System.out.println(PASS + "All action schemas used");
+				System.out.println(PASS + ACTIONS);
 			else {
-				System.out.println(FAIL + "Not all action schemas used");
+				System.out.println(FAIL + ACTIONS);
 				for (Action action : unusedActions)
 					System.out.println(BLANK + "Unused: " + action.toString());
 			}
@@ -197,7 +202,7 @@ public class Main {
 			try {
 				result = Utilities.get(status -> search.getNextSolution(status));
 			} catch (Exception ex) {
-				System.out.println(FAIL + ex);
+				System.out.println(FAIL + "Exception while searching for solution: " + ex);
 			}
 			if (result != null && result.plan != null)
 				System.out.println(PASS + SOLUTION);

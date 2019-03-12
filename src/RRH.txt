@@ -1,0 +1,42 @@
+domain: "Little Red Riding Hood";
+goal: location(Red) = Cottage;
+
+// Types
+
+type place;
+type character extends agent;
+
+// Properties
+
+place : location(character);
+boolean : path(place, place);
+boolean : alive(character);
+
+// Characters and Objects
+
+character : Red;
+character : Wolf;
+place : Cottage;
+place : Forest;
+
+// Initial State
+
+alive(Red);
+alive(Wolf);
+location(Wolf) = Forest;
+location(Red) = Forest;
+path(Forest, Cottage);
+path(Cottage, Forest);
+intends(Red, location(Red) = Cottage);
+intends(Wolf, location(Wolf) = Cottage);
+
+// Actions
+
+action walk(character character*, place from, place to) {
+	precondition: (
+		path(from, to) &
+		alive(character) &
+		location(character) = from
+	);
+	effect: location(character) = to;
+}
