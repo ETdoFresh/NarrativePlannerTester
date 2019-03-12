@@ -9,6 +9,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import sabre.*;
+import sabre.graph.PlanGraph;
+import sabre.graph.PlanGraphEventNode;
 import sabre.io.DefaultParser;
 import sabre.io.Parser;
 import sabre.logic.Expression;
@@ -31,6 +33,7 @@ public class Main {
 	private static final String FAIL = "[" + TextColor.RED + "Fail" + TextColor.RESET + "] ";
 	private static final String WARN = "[" + TextColor.YELLOW + "Warn" + TextColor.RESET + "] ";
 	private static final String INFO = "[" + TextColor.BLUE + "Info" + TextColor.RESET + "] ";
+	private static final String BLANK = "       ";
 
 	private static final String SYNTAX = "File is syntactically correct";
 	private static final String GOAL = "Goal specified";
@@ -72,9 +75,9 @@ public class Main {
 					
 					int planIndex = plans.size();
 					System.out.println(INFO + "---------------- Plan " + planIndex + " ----------------");
-					System.out.println(INFO + result);
+					System.out.println(BLANK + result);
 					for (Action action : result.plan)
-						System.out.println(INFO + action);
+						System.out.println(BLANK + action);
 					
 					plans.add(result.plan);
 					
@@ -82,11 +85,11 @@ public class Main {
 					for (int i = 0; i < plans.size() - 1; i++)
 					{
 						float jaccardDistance = getActionJaccard(plans.get(i), result.plan);
-						System.out.println(INFO + "Plan " + i + " vs Plan " + planIndex + ": " + jaccardDistance);
+						System.out.println(BLANK + "Plan " + i + " vs Plan " + planIndex + ": " + jaccardDistance);
 					}
 					
 					// Find next solution
-					System.out.println(INFO + "Searching for next solution...");
+					System.out.println(BLANK + "Searching for next solution...");
 					result = search.getNextSolution();
 				} else {
 					try {
@@ -149,6 +152,29 @@ public class Main {
 				space.graph.extend(); // Extend graph until all goals have appeared
 			System.out.println(INFO + "Size of plan graph: " + space.graph.size());
 
+			// Check for any unused action schemas
+			HashSet<Action> unusedActions = new HashSet<Action>();
+			for (Action action : space.domain.actions)
+			{
+				boolean actionFound = false;
+				for (PlanGraphEventNode graphEvent : space.graph.events)
+					if (action.name == graphEvent.event.name)
+					{
+						actionFound = true;
+						continue;
+					}
+				
+				if (!actionFound)
+					unusedActions.add(action);
+			}
+			if (unusedActions.size() == 0)
+				System.out.println(PASS + "All action schemas used");
+			else {
+				System.out.println(FAIL + "Not all action schemas used");
+				for (Action action : unusedActions)
+					System.out.println(BLANK + "Unused: " + action.toString());
+			}
+			
 			// Number of actions available from the initial state
 			int firstSteps = 0;
 			for (Action action : space.actions)
@@ -162,7 +188,7 @@ public class Main {
 			search = planner.getSearchFactory().makeSearch(domain.goal);
 			RootNode root = new RootNode(initial);
 			search.push(root);
-			System.out.println(INFO + "Searching for next solution...");
+			System.out.println(BLANK + "Searching for next solution...");
 			result = search.getNextSolution();
 			if (result.plan != null)
 				System.out.println(PASS + SOLUTION);

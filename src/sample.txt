@@ -239,9 +239,13 @@ action order_surrender(officer officer*, civilian character) {
 
 action surrender(civilian character*) {
 	precondition: (
-		alive(character) &
-		forall(weapon w)
-			location(w) != character
+		alive(character) 
+		& (location(Knife) = Porch
+			| location(Knife) = Walkway
+			| location(Knife) = Street
+			| location(Knife) = Livingroom)
+		//& forall(weapon w)
+		//	location(w) != character // PlanGraph having some issues with !=
 	);
 	effect: surrendered(character);
 }
