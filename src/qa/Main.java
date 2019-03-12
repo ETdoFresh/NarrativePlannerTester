@@ -137,6 +137,7 @@ public class Main {
 			// Space
 			SearchSpace space = Utilities.get(status -> new SearchSpace(domain, status));
 			System.out.println(INFO + "Number of ground actions: " + space.actions.size());
+			System.out.println(INFO + "Number of state variables: " + space.slots.size());
 
 			// Check if goal is empty
 			if (domain.goal.equals(Expression.TRUE)) {
@@ -167,7 +168,6 @@ public class Main {
 			// Check for any unused action schemas
 			HashSet<Action> unusedActions = new HashSet<Action>();
 			for (Action action : space.domain.actions) {
-				System.out.println("Domain Action: "+action);
 				boolean actionFound = false;
 				for (PlanGraphEventNode graphEvent : space.graph.events)
 					if (action.name == graphEvent.event.name) {
@@ -180,17 +180,23 @@ public class Main {
 			if (unusedActions.size() == 0)
 				System.out.println(PASS + ACTIONS);
 			else {
-				System.out.println(FAIL + ACTIONS);
+				System.out.println(WARN + ACTIONS);
 				for (Action action : unusedActions)
 					System.out.println(BLANK + "Unused: " + action.toString());
+				//continue;
 			}
 
 			// Number of actions available from the initial state
 			int firstSteps = 0;
+			System.out.println(INFO + "Actions possible from initial state: ");
 			for (Action action : space.actions)
-				if (action.precondition.test(initial))
+				if (action.precondition.test(initial)) {
+					System.out.println("  " + action);
 					firstSteps++;
-			System.out.println(INFO + "Number of actions available in initial state: " + firstSteps);
+				}
+			System.out.println("  (" + firstSteps + " total)");
+			
+			// TODO: Actions *motivated* from initial state, i.e. possible and the characters would consent
 
 			// Check if a solution exists
 			Planner planner = new Planner();
@@ -203,6 +209,7 @@ public class Main {
 				result = Utilities.get(status -> search.getNextSolution(status));
 			} catch (Exception ex) {
 				System.out.println(FAIL + "Exception while searching for solution: " + ex);
+				continue;
 			}
 			if (result != null && result.plan != null)
 				System.out.println(PASS + SOLUTION);
@@ -210,6 +217,7 @@ public class Main {
 				System.out.println(FAIL + SOLUTION);
 				result = null;
 				search = null;
+				continue;
 			}
 		}
 	}
