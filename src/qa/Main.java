@@ -9,7 +9,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import sabre.*;
-import sabre.graph.PlanGraph;
 import sabre.graph.PlanGraphEventNode;
 import sabre.io.DefaultParser;
 import sabre.io.Parser;
@@ -31,6 +30,7 @@ public class Main {
 
 	private static final String PASS = "[" + TextColor.GREEN + "Pass" + TextColor.RESET + "] ";
 	private static final String FAIL = "[" + TextColor.RED + "Fail" + TextColor.RESET + "] ";
+	@SuppressWarnings("unused")
 	private static final String WARN = "[" + TextColor.YELLOW + "Warn" + TextColor.RESET + "] ";
 	private static final String INFO = "[" + TextColor.BLUE + "Info" + TextColor.RESET + "] ";
 	private static final String BLANK = "       ";
@@ -88,9 +88,14 @@ public class Main {
 						System.out.println(BLANK + "Plan " + i + " vs Plan " + planIndex + ": " + jaccardDistance);
 					}
 					
-					// Find next solution
-					System.out.println(BLANK + "Searching for next solution...");
-					result = search.getNextSolution();
+					if (plans.size() > 5) {
+						System.out.println(BLANK + "Cutting off after 5 plans");
+						result = null;
+					}
+					else {
+						System.out.println(BLANK + "Searching for next solution...");
+						result = search.getNextSolution();						
+					}
 				} else {
 					try {
 						Thread.sleep(1000);
@@ -135,10 +140,10 @@ public class Main {
 
 			// Check if goal is empty
 			if (domain.goal.equals(Expression.TRUE))
-				System.out.println(WARN + GOAL);
+				System.out.println(FAIL + GOAL);
 			else
 				System.out.println(PASS + GOAL);
-
+			
 			// Check if goal is true in initial state
 			ArrayState initial = new ArrayState(space);
 			if (domain.goal.test(initial))
