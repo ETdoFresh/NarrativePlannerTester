@@ -92,7 +92,7 @@ public class Main {
 						result = null;
 					} else {
 						System.out.println(BLANK + "Searching for next solution...");
-						result = search.getNextSolution();
+						result = Utilities.get(status -> search.getNextSolution(status));
 					}
 				} else {
 					try {
@@ -195,7 +195,7 @@ public class Main {
 			search.push(root);
 			System.out.println(BLANK + "Searching for next solution...");
 			try {
-				result = search.getNextSolution();
+				result = Utilities.get(status -> search.getNextSolution(status));
 			} catch (Exception ex) {
 				System.out.println(FAIL + ex);
 			}
