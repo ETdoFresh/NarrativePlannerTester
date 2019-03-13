@@ -70,6 +70,8 @@ public abstract class Search {
 			status.update(1, root.getNodesVisited());
 			status.update(3, root.getNodesGenerated());
 			status.update(5, root.getNodesPruned());
+			
+			if (Thread.interrupted()) return null;
 		}
 		root.stop();
 		return new Result(plan, root.getTimeSpent(), root.getNodesVisited(), root.getNodesGenerated(), root.getNodesPruned());
