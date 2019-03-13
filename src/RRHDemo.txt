@@ -7,7 +7,7 @@ type character extends agent;
 type item;
 type place;
 
-// Characters and Objects
+// Objects
 character : Red;
 character : Wolf;
 character : Grandma;
@@ -40,7 +40,6 @@ intends(Grandma, location(Grandma) = Cottage);
 intends(Wolf, !alive(Red));
 intends(Wolf, !alive(Grandma));
 
-// [2]-------------------------------------------------
 // Actions
 action walk(character character*, place from, place to) {
 	precondition: (
@@ -75,8 +74,8 @@ action eat(character character*, character other, place place){
 	effect: !alive(other);
 }
 
-// [3]-------------------------------------------------
+// [2]-------------------------------------------------
 goal: location(Red) = Home;
 
-// [4]-------------------------------------------------
+// [3]-------------------------------------------------
 location(Cookies) = Red;
