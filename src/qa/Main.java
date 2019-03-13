@@ -7,6 +7,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import sabre.*;
 import sabre.graph.PlanGraphEventNode;
@@ -46,11 +51,12 @@ public class Main {
 	static Result result = null;
 	static Search search = null;
 	static ArrayList<Plan> plans = new ArrayList<Plan>();
+	static File file;
 
 	public static void main(String[] args) {
 
 		// Open text file on desktop
-		File file = new File(FILE);
+		file = new File(FILE);
 		Desktop desktop = Desktop.getDesktop();
 		try {
 			file.createNewFile(); // does nothing if file exists
@@ -93,7 +99,7 @@ public class Main {
 						result = null;
 					} else {
 						System.out.println(BLANK + "Searching for next solution...");
-						result = Utilities.get(status -> search.getNextSolution(status));
+						result = runInteruptably(() -> search.getNextSolution());
 					}
 				} else {
 					try {
@@ -206,7 +212,7 @@ public class Main {
 			search.push(root);
 			System.out.println(BLANK + "Searching for next solution...");
 			try {
-				result = Utilities.get(status -> search.getNextSolution(status));
+				result = runInteruptably(() -> search.getNextSolution());
 			} catch (Exception ex) {
 				System.out.println(FAIL + "Exception while searching for solution: " + ex);
 				continue;
@@ -244,5 +250,28 @@ public class Main {
 			set_b.add(action);
 
 		return getJaccard(set_a, set_b);
+	}
+
+	public static <T> T runInteruptably(Callable<T> task) {
+		T result = null;
+		boolean loop = true;
+		ExecutorService executor = Executors.newFixedThreadPool(1);
+		Future<T> future = executor.submit(task);
+		while (loop) {
+			try {
+				result = future.get(1, TimeUnit.SECONDS);
+				if (future.isDone()) {
+					loop = false;
+					result = future.get();
+				}
+			} catch (Exception ex) {
+				if (lastModified != file.lastModified()) {
+					result = null;
+					break;
+				}
+			}
+		}
+		executor.shutdownNow();
+		return result;
 	}
 }
