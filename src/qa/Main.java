@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -17,7 +18,10 @@ import sabre.*;
 import sabre.graph.PlanGraphEventNode;
 import sabre.io.DefaultParser;
 import sabre.io.Parser;
+import sabre.logic.ConjunctiveClause;
+import sabre.logic.DNFExpression;
 import sabre.logic.Expression;
+import sabre.logic.Literal;
 import sabre.search.Result;
 import sabre.search.Search;
 import sabre.space.RootNode;
@@ -91,7 +95,8 @@ public class Main {
 					// Evaluate plan vs other plans (all plans except last plan)
 					for (int i = 0; i < plans.size() - 1; i++) {
 						float jaccardDistance = getActionJaccard(plans.get(i), result.plan);
-						System.out.println(BLANK + "Solution " + i + " vs Solution " + planIndex + ": " + jaccardDistance);
+						System.out.println(
+								BLANK + "Solution " + i + " vs Solution " + planIndex + ": " + jaccardDistance);
 					}
 
 					if (plans.size() > 2) {
@@ -165,11 +170,16 @@ public class Main {
 				continue;
 			}
 
+			for (var goal : GetDNFLiterals(space.goal))
+				for (var literal : goal)
+					System.out.println(WARN + literal);
+
 			// Plan Graph
 			space.graph.initialize(initial);
 			while (!space.graph.hasLeveledOff())
 				space.graph.extend(); // Extend graph until all goals have appeared
-			//System.out.println(INFO + "Layers in plan graph: " + space.graph.size()); // <---- just commenting out for demo
+			// System.out.println(INFO + "Layers in plan graph: " + space.graph.size()); //
+			// <---- just commenting out for demo
 
 			// Number of actions available from the initial state
 			int firstSteps = 0;
@@ -180,9 +190,10 @@ public class Main {
 					firstSteps++;
 				}
 			System.out.println("\t (" + firstSteps + " total)");
-			
-			// TODO: Actions *motivated* from initial state, i.e. possible and the characters would consent
-			
+
+			// TODO: Actions *motivated* from initial state, i.e. possible and the
+			// characters would consent
+
 			// Check for any unusable action schemas
 			HashSet<Action> unusedActions = new HashSet<Action>();
 			for (Action action : space.domain.actions) {
@@ -201,7 +212,7 @@ public class Main {
 				System.out.println(WARN + ACTIONS);
 				for (Action action : unusedActions)
 					System.out.println(BLANK + "Unusable: " + action.toString());
-				//continue;
+				// continue;
 			}
 
 			// Check if a solution exists
@@ -273,5 +284,28 @@ public class Main {
 		}
 		executor.shutdownNow();
 		return result;
+	}
+
+	// Returns a list of list of literals for each disjunct (ie disjunct goals).
+	private static Iterable<Iterable<Literal>> GetDNFLiterals(Expression expression) {
+		ArrayList<Iterable<Literal>> disjuncts = new ArrayList<>();
+		for (var disjunct : ((DNFExpression) expression).arguments)
+			disjuncts.add(GetLiterals(disjunct));
+		return disjuncts;
+	}
+
+	// Returns a list of literals from a conjunctiveClause or individual literal
+	private static Iterable<Literal> GetLiterals(Expression expression) {
+		if (expression instanceof Literal)
+			return new ArrayList<>(Arrays.asList((Literal) expression));
+		else if (expression instanceof ConjunctiveClause) {
+			ArrayList<Literal> literals = new ArrayList<>();
+			for (var argument : ((ConjunctiveClause) expression).arguments)
+				literals.add((Literal) argument);
+			return literals;
+		} else
+			System.out.println(FAIL + "GetLiterals(): Only processes Literals and Conjunctions");
+
+		return new ArrayList<>();
 	}
 }
