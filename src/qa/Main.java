@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -15,7 +16,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import sabre.*;
+import sabre.graph.PlanGraph;
 import sabre.graph.PlanGraphEventNode;
+import sabre.graph.PlanGraphLiteralNode;
 import sabre.io.DefaultParser;
 import sabre.io.Parser;
 import sabre.logic.ConjunctiveClause;
@@ -170,9 +173,11 @@ public class Main {
 				continue;
 			}
 
+			var plans = new ArrayList<Iterable<Action>>();
 			for (var goal : GetDNFLiterals(space.goal))
-				for (var literal : goal)
-					System.out.println(WARN + literal);
+			{
+				plans.addAll(GetAllPossiblePlanGraphPlans(space.graph, goal));
+			}
 
 			// Plan Graph
 			space.graph.initialize(initial);
@@ -307,5 +312,20 @@ public class Main {
 			System.out.println(FAIL + "GetLiterals(): Only processes Literals and Conjunctions");
 
 		return new ArrayList<>();
+	}
+
+	// Returns a list of all possible PlanGraph Plans
+	private static Collection<? extends Iterable<Action>> GetAllPossiblePlanGraphPlans(PlanGraph graph, Iterable<Literal> goal)
+	{
+		var planGraphGoal = new ArrayList<PlanGraphLiteralNode>();
+		for (var literal : goal)
+			planGraphGoal.add(graph.getLiteral(literal));
+		
+		return GetAllPossiblePlanGraphPlans(new ArrayList<Iterable<Action>>(), new ArrayList<Action>(), planGraphGoal);
+	}
+	
+	private static Collection<Iterable<Action>> GetAllPossiblePlanGraphPlans(Iterable<Iterable<Action>> plans, Iterable<Action> plan, Iterable<PlanGraphLiteralNode> goal)
+	{
+		return null;
 	}
 }
