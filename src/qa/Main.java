@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 import sabre.*;
 import sabre.graph.PlanGraph;
+import sabre.graph.PlanGraphActionNode;
 import sabre.graph.PlanGraphEventNode;
 import sabre.graph.PlanGraphLiteralNode;
 import sabre.io.DefaultParser;
@@ -173,18 +174,24 @@ public class Main {
 				continue;
 			}
 
-			var plans = new ArrayList<Iterable<Action>>();
-			for (var goal : GetDNFLiterals(space.goal))
-			{
-				plans.addAll(GetAllPossiblePlanGraphPlans(space.graph, goal));
-			}
-
 			// Plan Graph
 			space.graph.initialize(initial);
 			while (!space.graph.hasLeveledOff())
 				space.graph.extend(); // Extend graph until all goals have appeared
 			// System.out.println(INFO + "Layers in plan graph: " + space.graph.size()); //
 			// <---- just commenting out for demo
+
+			// Get all the Relaxed Plans from the PlanGraph
+			var plans = new ArrayList<RelaxedPlan>();
+			for (var goal : GetDNFLiterals(space.goal))
+				plans.addAll(GetAllPossiblePlanGraphPlans(space.graph, goal));
+			
+			// TODO Comment this out later, just displaying all relaxed Solutions
+			for(int i = 0; i < plans.size(); i++)
+			{
+				System.out.println(INFO + "Relaxed Solution #" + i);
+				System.out.println(plans.get(i));
+			}
 
 			// Number of actions available from the initial state
 			int firstSteps = 0;
@@ -315,17 +322,58 @@ public class Main {
 	}
 
 	// Returns a list of all possible PlanGraph Plans
-	private static Collection<? extends Iterable<Action>> GetAllPossiblePlanGraphPlans(PlanGraph graph, Iterable<Literal> goal)
-	{
+	private static Collection<RelaxedPlan> GetAllPossiblePlanGraphPlans(PlanGraph graph, Iterable<Literal> goal) {
 		var planGraphGoal = new ArrayList<PlanGraphLiteralNode>();
 		for (var literal : goal)
 			planGraphGoal.add(graph.getLiteral(literal));
-		
-		return GetAllPossiblePlanGraphPlans(new ArrayList<Iterable<Action>>(), new ArrayList<Action>(), planGraphGoal);
+
+		return GetAllPossiblePlanGraphPlans(new ArrayList<RelaxedPlan>(), new RelaxedPlan(), planGraphGoal);
 	}
-	
-	private static Collection<Iterable<Action>> GetAllPossiblePlanGraphPlans(Iterable<Iterable<Action>> plans, Iterable<Action> plan, Iterable<PlanGraphLiteralNode> goal)
-	{
-		return null;
+
+	private static Collection<RelaxedPlan> GetAllPossiblePlanGraphPlans(ArrayList<RelaxedPlan> plans, RelaxedPlan plan,
+			ArrayList<PlanGraphLiteralNode> goalLiterals) {
+		// Remove Initial State Literals from GoalLiterals
+		for (int i = goalLiterals.size() - 1; i >= 0; i--) {
+			var goalLiteral = goalLiterals.get(i);
+			if (goalLiteral.getLevel() == 0)
+				goalLiterals.remove(goalLiteral);
+		}
+
+		// If GoalLiterals Size is 0, we are done! Add that plan!
+		if (goalLiterals.size() == 0) {
+			return new ArrayList<RelaxedPlan>(Arrays.asList(plan));
+		}
+
+		// Foreach Goal Literal, follow its parents.
+		for (var goalLiteral : goalLiterals) {
+			for (var actionNode : goalLiteral.parents) {
+				PlanGraphActionNode action = (PlanGraphActionNode) actionNode;
+//				if (plan.size() > 0)
+//					if (plan.last().getLevel() > action.getLevel())
+				int min = action.graph.size();
+				for(var node : plan)
+					if (node.getLevel() < min)
+						min = node.getLevel();
+				
+				if (action.getLevel() > min || plan.contains(action))
+					continue;
+
+				var newGoalLiterals = new ArrayList<PlanGraphLiteralNode>(goalLiterals);
+				newGoalLiterals.remove(goalLiteral);
+
+				var newLiterals = action.parents.get(0).clause.arguments;
+				for (var newLiteral : newLiterals)
+					newGoalLiterals.add(action.graph.getLiteral(newLiteral));
+
+				var planWithNewAction = plan.clone();
+				planWithNewAction.push(action);
+
+				var newPlan = GetAllPossiblePlanGraphPlans(plans, planWithNewAction, newGoalLiterals);
+				if (newPlan != plans)
+					plans.addAll(newPlan);
+			}
+		}
+
+		return plans;
 	}
 }
