@@ -20,6 +20,7 @@ import sabre.graph.PlanGraph;
 import sabre.graph.PlanGraphActionNode;
 import sabre.graph.PlanGraphEventNode;
 import sabre.graph.PlanGraphLiteralNode;
+import sabre.graph.PlanGraphNode;
 import sabre.io.DefaultParser;
 import sabre.io.Parser;
 import sabre.logic.ConjunctiveClause;
@@ -31,6 +32,7 @@ import sabre.search.Search;
 import sabre.space.RootNode;
 import sabre.space.SearchSpace;
 import sabre.state.ArrayState;
+import sabre.util.ImmutableArray;
 
 public class Main {
 
@@ -301,7 +303,7 @@ public class Main {
 	// Returns a list of list of literals for each disjunct (ie disjunct goals).
 	private static Iterable<Iterable<Literal>> GetDNFLiterals(Expression expression) {
 		ArrayList<Iterable<Literal>> disjuncts = new ArrayList<>();
-		for (var disjunct : ((DNFExpression) expression).arguments)
+		for (ConjunctiveClause disjunct : expression.toDNF().arguments)
 			disjuncts.add(GetLiterals(disjunct));
 		return disjuncts;
 	}
@@ -312,7 +314,7 @@ public class Main {
 			return new ArrayList<>(Arrays.asList((Literal) expression));
 		else if (expression instanceof ConjunctiveClause) {
 			ArrayList<Literal> literals = new ArrayList<>();
-			for (var argument : ((ConjunctiveClause) expression).arguments)
+			for (Literal argument : ((ConjunctiveClause) expression).arguments)
 				literals.add((Literal) argument);
 			return literals;
 		} else
@@ -323,8 +325,8 @@ public class Main {
 
 	// Returns a list of all possible PlanGraph Plans
 	private static Collection<RelaxedPlan> GetAllPossiblePlanGraphPlans(PlanGraph graph, Iterable<Literal> goal) {
-		var planGraphGoal = new ArrayList<PlanGraphLiteralNode>();
-		for (var literal : goal)
+		ArrayList<PlanGraphLiteralNode> planGraphGoal = new ArrayList<>();
+		for (Literal literal : goal)
 			planGraphGoal.add(graph.getLiteral(literal));
 
 		return GetAllPossiblePlanGraphPlans(new ArrayList<RelaxedPlan>(), new RelaxedPlan(), planGraphGoal);
@@ -334,7 +336,7 @@ public class Main {
 			ArrayList<PlanGraphLiteralNode> goalLiterals) {
 		// Remove Initial State Literals from GoalLiterals
 		for (int i = goalLiterals.size() - 1; i >= 0; i--) {
-			var goalLiteral = goalLiterals.get(i);
+			PlanGraphLiteralNode goalLiteral = goalLiterals.get(i);
 			if (goalLiteral.getLevel() == 0)
 				goalLiterals.remove(goalLiteral);
 		}
@@ -345,30 +347,30 @@ public class Main {
 		}
 
 		// Foreach Goal Literal, follow its parents.
-		for (var goalLiteral : goalLiterals) {
-			for (var actionNode : goalLiteral.parents) {
+		for (PlanGraphLiteralNode goalLiteral : goalLiterals) {
+			for (PlanGraphNode actionNode : goalLiteral.parents) {
 				PlanGraphActionNode action = (PlanGraphActionNode) actionNode;
 //				if (plan.size() > 0)
 //					if (plan.last().getLevel() > action.getLevel())
 				int min = action.graph.size();
-				for(var node : plan)
+				for(PlanGraphActionNode node : plan)
 					if (node.getLevel() < min)
 						min = node.getLevel();
 				
 				if (action.getLevel() > min || plan.contains(action))
 					continue;
 
-				var newGoalLiterals = new ArrayList<PlanGraphLiteralNode>(goalLiterals);
+				ArrayList<PlanGraphLiteralNode> newGoalLiterals = new ArrayList<>(goalLiterals);
 				newGoalLiterals.remove(goalLiteral);
 
-				var newLiterals = action.parents.get(0).clause.arguments;
-				for (var newLiteral : newLiterals)
+				ImmutableArray newLiterals = action.parents.get(0).clause.arguments;
+				for (Literal newLiteral : (ImmutableArray<Literal>)newLiterals)
 					newGoalLiterals.add(action.graph.getLiteral(newLiteral));
 
-				var planWithNewAction = plan.clone();
+				RelaxedPlan planWithNewAction = plan.clone();
 				planWithNewAction.push(action);
 
-				var newPlan = GetAllPossiblePlanGraphPlans(plans, planWithNewAction, newGoalLiterals);
+				Collection<RelaxedPlan> newPlan = GetAllPossiblePlanGraphPlans(plans, planWithNewAction, newGoalLiterals);
 				if (newPlan != plans)
 					plans.addAll(newPlan);
 			}
