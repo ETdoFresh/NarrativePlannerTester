@@ -5,26 +5,46 @@ import sabre.util.ImmutableArray;
 
 public class RelaxedPlanVector {
 	public ImmutableArray<Action> allActions;
-	public float[] values;
+	public float[] actionValues;
 		
 	public RelaxedPlanVector(ImmutableArray<Action> allActions, RelaxedPlan plan) {
 		this.allActions = allActions;
-		values = new float[allActions.size()];
+		actionValues = new float[allActions.size()];
 		
 		for(int i = 0; i < allActions.size(); i++)
 			if (plan.contains(allActions.get(i)))
-				values[i] = 1;
+				actionValues[i] = 1;
+			else
+				actionValues[i] = 0;
 	}
 	
 	private RelaxedPlanVector(ImmutableArray<Action> allActions) {
 		this.allActions = allActions;
-		values = new float[allActions.size()];
+		actionValues = new float[allActions.size()];
+	}
+	
+	public int intersection(RelaxedPlanVector other) {
+		int count = 0;
+		for(int i=0; i<actionValues.length; i++) {
+			if(actionValues[i] == 1 && other.actionValues[i] == 1)
+				count++;
+		}
+		return count;
+	}
+	
+	public int union(RelaxedPlanVector other) {
+		int count = 0;
+		for(int i=0; i<actionValues.length; i++) {
+			if(actionValues[i]==1 || other.actionValues[i] ==1)
+				count++;
+		}
+		return count;
 	}
 	
 	public float magnitude()
 	{
 		float squaredSum = 0;
-		for(float value : values)
+		for(float value : actionValues)
 			squaredSum += Math.pow(value, 2);
 		return (float) Math.sqrt(squaredSum);
 	}
@@ -33,9 +53,9 @@ public class RelaxedPlanVector {
 	public String toString()
 	{
 		String str = "[";
-		for(int i = 0; i < values.length; i++)
-			if (i == 0) str += (int)values[i];
-			else str += "," + (int)values[i];
+		for(int i = 0; i < actionValues.length; i++)
+			if (i == 0) str += (int)actionValues[i];
+			else str += "," + (int)actionValues[i];
 		str += "]";
 		return str;
 	}
@@ -45,8 +65,8 @@ public class RelaxedPlanVector {
 //		if (values.length != other.values.length)
 //			throw new Exception("Relaxed PLan Vectors are not of equal length");
 		
-		for (int i = 0; i < values.length; i++)
-			newVector.values[i] = values[i] + other.values[i];
+		for (int i = 0; i < actionValues.length; i++)
+			newVector.actionValues[i] = actionValues[i] + other.actionValues[i];
 		
 		return newVector;
 	}
@@ -56,8 +76,8 @@ public class RelaxedPlanVector {
 //		if (values.length != other.values.length)
 //			throw new Exception("Relaxed PLan Vectors are not of equal length");
 		
-		for (int i = 0; i < values.length; i++)
-			newVector.values[i] = values[i] - other.values[i];
+		for (int i = 0; i < actionValues.length; i++)
+			newVector.actionValues[i] = actionValues[i] - other.actionValues[i];
 		
 		return newVector;
 	}
