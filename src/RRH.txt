@@ -75,7 +75,7 @@ action eat(character character*, character other, place place){
 }
 
 // [2]-------------------------------------------------
-goal: location(Cookies) = Grandma;
+goal: location(Cookies) = Grandma & !alive(Grandma);
 
 // [3]-------------------------------------------------
 location(Cookies) = Red;

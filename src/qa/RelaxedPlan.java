@@ -39,9 +39,9 @@ public class RelaxedPlan implements Iterable<PlanGraphActionNode> {
 	
 	@Override
 	public String toString() {
-		String str = "RelaxedPlan:\n";
+		String str = "";
 		for(PlanGraphActionNode action : actions)
-			str += action + "\n";
+			str += Main.BLANK + action + "\n";
 		return str;
 	}
 }
