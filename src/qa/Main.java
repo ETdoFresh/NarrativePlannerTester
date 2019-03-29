@@ -193,6 +193,24 @@ public class Main {
 				System.out.println(INFO + "Relaxed Solution #" + i);
 				System.out.println(plans.get(i));
 			}
+			
+			// TODO Delete this later, Plan2Vector Test
+			RelaxedPlanVector rpv0 = new RelaxedPlanVector(space.actions, plans.get(0));
+			RelaxedPlanVector rpv1 = new RelaxedPlanVector(space.actions, plans.get(2));
+			System.out.println(INFO + "RPV0: " + rpv0.magnitude() + " " + rpv0);
+			System.out.println(INFO + "RPV1: " + rpv1.magnitude() + " " + rpv1);
+			System.out.println(INFO + "RPV1-RPV0: " + rpv1.minus(rpv0).magnitude() + " " + rpv1.minus(rpv0));
+			System.out.println();
+			
+			// TODO Delete this later, Magnitude Tester
+			for(int i = 0; i < plans.size(); i++)
+				for (int j = i; j < plans.size(); j++)
+				{
+					RelaxedPlanVector vi = new RelaxedPlanVector(space.actions, plans.get(i));
+					RelaxedPlanVector vj = new RelaxedPlanVector(space.actions, plans.get(j));
+					System.out.println("Relaxed Solution Action Distance " + i + " vs " + j + "," + vi.minus(vj).magnitude());	
+				}						
+			
 
 			// Number of actions available from the initial state
 			int firstSteps = 0;

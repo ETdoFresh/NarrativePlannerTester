@@ -32,6 +32,14 @@ public class RelaxedPlan implements Iterable<PlanGraphActionNode> {
 	public boolean contains(PlanGraphActionNode o) {
 		return actions.contains(o);
 	}
+	
+	public boolean contains(Action action) {
+		for(PlanGraphActionNode actionNode : actions)
+			if (action.equals(actionNode.event))
+				return true;
+		
+		return false;
+	}
 
 	public Iterator<PlanGraphActionNode> iterator() {
 		return actions.iterator();
