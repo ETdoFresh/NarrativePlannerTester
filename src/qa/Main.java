@@ -182,8 +182,8 @@ public class Main {
 			// <---- just commenting out for demo
 
 			// Get all the Relaxed Plans from the PlanGraph
-			var plans = new ArrayList<RelaxedPlan>();
-			for (var goal : GetDNFLiterals(space.goal))
+			ArrayList<RelaxedPlan> plans = new ArrayList<>();
+			for (Iterable<Literal> goal : GetDNFLiterals(space.goal))
 				plans.addAll(GetAllPossiblePlanGraphPlans(space.graph, goal));
 			
 			// TODO Comment this out later, just displaying all relaxed Solutions
