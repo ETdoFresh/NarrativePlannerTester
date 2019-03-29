@@ -11,7 +11,7 @@ public class RelaxedPlan implements Iterable<PlanGraphActionNode> {
 	private ArrayList<PlanGraphActionNode> actions = new ArrayList<PlanGraphActionNode>(); 
 	
 	public RelaxedPlan clone() {
-		var clone = new RelaxedPlan();
+		RelaxedPlan clone = new RelaxedPlan();
 		clone.actions.addAll(actions);
 		return clone;
 	}
@@ -39,8 +39,8 @@ public class RelaxedPlan implements Iterable<PlanGraphActionNode> {
 	
 	@Override
 	public String toString() {
-		var str = "RelaxedPlan:\n";
-		for(var action : actions)
+		String str = "RelaxedPlan:\n";
+		for(PlanGraphActionNode action : actions)
 			str += action + "\n";
 		return str;
 	}
