@@ -329,48 +329,60 @@ public class Main {
 		for (Literal literal : goal)
 			planGraphGoal.add(graph.getLiteral(literal));
 
-		return GetAllPossiblePlanGraphPlans(new ArrayList<RelaxedPlan>(), new RelaxedPlan(), planGraphGoal);
+		return GetAllPossiblePlanGraphPlans(new ArrayList<RelaxedPlan>(), new RelaxedPlan(), planGraphGoal, planGraphGoal);
 	}
 
 	private static Collection<RelaxedPlan> GetAllPossiblePlanGraphPlans(ArrayList<RelaxedPlan> plans, RelaxedPlan plan,
-			ArrayList<PlanGraphLiteralNode> goalLiterals) {
+			ArrayList<PlanGraphLiteralNode> localGoalLiterals, ArrayList<PlanGraphLiteralNode> absoluteGoalLiterals) {
+		
+		// Determine which goals have been found already
+		ArrayList<PlanGraphLiteralNode> foundGoalLiterals = new ArrayList<>(absoluteGoalLiterals);
+		for(int i = foundGoalLiterals.size()-1; i >= 0; i--)
+			if (localGoalLiterals.contains(foundGoalLiterals.get(i)))
+				foundGoalLiterals.remove(i);
+		
 		// Remove Initial State Literals from GoalLiterals
-		for (int i = goalLiterals.size() - 1; i >= 0; i--) {
-			PlanGraphLiteralNode goalLiteral = goalLiterals.get(i);
+		for (int i = localGoalLiterals.size() - 1; i >= 0; i--) {
+			PlanGraphLiteralNode goalLiteral = localGoalLiterals.get(i);
 			if (goalLiteral.getLevel() == 0)
-				goalLiterals.remove(goalLiteral);
+				localGoalLiterals.remove(goalLiteral);
 		}
 
 		// If GoalLiterals Size is 0, we are done! Add that plan!
-		if (goalLiterals.size() == 0) {
+		if (localGoalLiterals.size() == 0) {
 			return new ArrayList<RelaxedPlan>(Arrays.asList(plan));
 		}
 
 		// Foreach Goal Literal, follow its parents.
-		for (PlanGraphLiteralNode goalLiteral : goalLiterals) {
+		for (PlanGraphLiteralNode goalLiteral : localGoalLiterals) {
 			for (PlanGraphNode actionNode : goalLiteral.parents) {
 				PlanGraphActionNode action = (PlanGraphActionNode) actionNode;
-//				if (plan.size() > 0)
-//					if (plan.last().getLevel() > action.getLevel())
 				int min = action.graph.size();
 				for(PlanGraphActionNode node : plan)
 					if (node.getLevel() < min)
 						min = node.getLevel();
 				
+				// Due to relaxed nature, do not use same ground action twice
+				// Do not grab actions beyond current level (min)
 				if (action.getLevel() > min || plan.contains(action))
 					continue;
 
-				ArrayList<PlanGraphLiteralNode> newGoalLiterals = new ArrayList<>(goalLiterals);
+				ArrayList<PlanGraphLiteralNode> newGoalLiterals = new ArrayList<>(localGoalLiterals);
 				newGoalLiterals.remove(goalLiteral);
 
-				ImmutableArray newLiterals = action.parents.get(0).clause.arguments;
-				for (Literal newLiteral : (ImmutableArray<Literal>)newLiterals)
+				ImmutableArray<? extends Literal> newLiterals = action.parents.get(0).clause.arguments;
+				for (Literal newLiteral : newLiterals)
 					newGoalLiterals.add(action.graph.getLiteral(newLiteral));
+				
+				// Skip if this finds the goal again/earlier
+				for (PlanGraphLiteralNode foundGoalLiteral : foundGoalLiterals)
+					if (newGoalLiterals.contains(foundGoalLiteral))
+						continue;
 
 				RelaxedPlan planWithNewAction = plan.clone();
 				planWithNewAction.push(action);
 
-				Collection<RelaxedPlan> newPlan = GetAllPossiblePlanGraphPlans(plans, planWithNewAction, newGoalLiterals);
+				Collection<RelaxedPlan> newPlan = GetAllPossiblePlanGraphPlans(plans, planWithNewAction, newGoalLiterals, absoluteGoalLiterals);
 				if (newPlan != plans)
 					plans.addAll(newPlan);
 			}
