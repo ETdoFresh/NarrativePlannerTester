@@ -72,7 +72,7 @@ public class RelaxedPlanVector {
 	
 	/** Get the Jaccard distance between this and another vector */
 	public float actionDistance(RelaxedPlanVector other) {
-		return (float)this.intersection(other) / (float)this.union(other);
+		return 1 - (float)this.intersection(other) / (float)this.union(other);
 	}
 	
 	/** Get the intersection of this and another vector */

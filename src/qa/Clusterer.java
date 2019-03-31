@@ -10,7 +10,6 @@ public class Clusterer {
 	
 	public RelaxedPlanCluster[] clusters; // array of clusters. Size = k
 	public RelaxedPlanVector[] planVecs; // array of vectors representing relaxed plans. Size = n
-	public int[] clusterAssignments;
 	
 	private final int k;
 	private final int n;
@@ -22,23 +21,10 @@ public class Clusterer {
 		this.clusters = new RelaxedPlanCluster[k];
 		for(int i=0; i<k; i++)
 			clusters[i] = new RelaxedPlanCluster(i, clusterCentroids[i]);
-		this.clusterAssignments = new int[planVecs.length];
 	}
 
-	/*boolean testEquals(int[] one, int[] two) {
-		if(one==null || two==null)
-			return false;
-		if(one.length != two.length) 
-			return false;
-		for(int i=0; i<one.length; i++) {
-			if(one[i]!=two[i])
-				return false;
-		}
-		return true;
-	}*/
-
 	/** Find the planVecs that are assigned to this cluster */
-	private ArrayList<RelaxedPlanVector> getAssignments(RelaxedPlanCluster cluster){
+	protected ArrayList<RelaxedPlanVector> getAssignments(RelaxedPlanCluster cluster){
 		ArrayList<RelaxedPlanVector> assigned = new ArrayList<>();
 		for(int i=0; i<planVecs.length; i++) {
 			if(planVecs[i].clusterAssignment == cluster.getID())
@@ -54,9 +40,13 @@ public class Clusterer {
 
 	public void kmeans() {	
 		int assignmentsChanged;
-		int prevAssignmentsChanged = 0;
-		int countSameNumberAssignmentsChanged = 0;
 		do{
+			for(RelaxedPlanCluster cluster : clusters) {
+				System.out.println("Cluster " + cluster.getID() + "\n-- centroid: " + cluster.getCentroid());
+				System.out.println("... Events: " + cluster.getCentroid().getActions().toString());
+				System.out.println("... Assignments: " + getAssignments(cluster).size());
+			}
+
 			assignmentsChanged = 0;
 			// Update cluster centroids to reflect their current assignments
 			for(RelaxedPlanCluster cluster : clusters)
@@ -77,21 +67,8 @@ public class Clusterer {
 					assignmentsChanged++;
 				}
 			}
-			System.out.println("changed " + assignmentsChanged + " assignments");
-			if(assignmentsChanged == prevAssignmentsChanged)
-				countSameNumberAssignmentsChanged++;
-			else {
-				prevAssignmentsChanged = assignmentsChanged;
-				countSameNumberAssignmentsChanged = 0;
-			}
-			
-			/*for(RelaxedPlanCluster cluster : clusters) {
-				System.out.println("Cluster " + cluster.getID() + "\n-- centroid: " + cluster.getCentroid());
-				System.out.println("... Events: " + cluster.getCentroid().getActions().toString());
-				System.out.println("... Assignments: " + getAssignments(cluster).size());
-			}*/
-
-		} while (assignmentsChanged > 0 && countSameNumberAssignmentsChanged < 100);
+			System.out.println("changed " + assignmentsChanged + " assignments");			
+		} while (assignmentsChanged > 0);
 	}	
 }
 

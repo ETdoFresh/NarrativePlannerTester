@@ -204,7 +204,7 @@ public class Main {
 			System.out.println(INFO + "Union = " + rpv0.union(rpv1));
 			System.out.println(INFO + "Action Distance = " + rpv0.intersection(rpv1) / (float) rpv0.union(rpv1));
 			
-			// Clustering test
+			// ---- Clustering test ----
 			RelaxedPlanVector[] planVecs = new RelaxedPlanVector[plans.size()];
 			for(int i=0; i<planVecs.length; i++) {
 				planVecs[i] = new RelaxedPlanVector(space, plans.get(i));
@@ -212,16 +212,16 @@ public class Main {
 			int k=5;
 			RelaxedPlanVector[] centroids = new RelaxedPlanVector[k];
 
-			/*
+			System.out.println("Initializing centroids...");
+
+			/*// First attempt at random initialization
 			float weight = (float)planVecs[0].sum()/planVecs[0].size;			
 			System.out.println("Initializing centroids using weight: " + weight);
 			for(int i=0; i<k; i++)
 				centroids[i] = new RelaxedPlanVector(space, weight);
 			*/
 			
-			System.out.println("Initializing centroids using experimental method...");
-			
-			// Set each cluster centroid to the mean of a different subset of the planVecs
+			// Trying to improve initial centroids: Set each centroid to the mean of a different subset of the planVecs
 			int segmentLength = planVecs.length / k;
 			int startIndex = 0;
 			for(int i=0; i<k; i++) {
@@ -232,17 +232,25 @@ public class Main {
 				startIndex += segmentLength;
 			}
 
-			System.out.println("Starting centroids: ");
+			System.out.println("Initial centroids: ");
 			for(RelaxedPlanVector centroid : centroids) {
 				System.out.println(centroid.toString() + "\n... Actions: " + centroid.getActions().toString());
 			}
 
+			// Let the clustering begin
 			Clusterer clusterer = new Clusterer(planVecs, centroids);
 			Random random = new Random();
-			for(int i=0; i<planVecs.length; i++)
-				clusterer.clusterAssignments[i] = random.nextInt(k);
-			clusterer.kmeans();
+			for(int i=0; i<planVecs.length; i++) {
+				int assignment = random.nextInt(k);
+				planVecs[i].clusterAssignment = assignment;
+			}
 
+			for(int i=0; i<k; i++)
+				System.out.println("Cluster "+i+" ID: "+clusterer.clusters[i].getID() + " Assignments: " + clusterer.getAssignments(clusterer.clusters[i]).size());
+
+			clusterer.kmeans();
+			// ----------------------------
+			
 			//System.out.println(INFO + "RPV1-RPV0: " + rpv1.minus(rpv0).magnitude() + " " + rpv1.minus(rpv0));
 			//System.out.println();
 			
