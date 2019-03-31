@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -24,7 +25,6 @@ import sabre.graph.PlanGraphNode;
 import sabre.io.DefaultParser;
 import sabre.io.Parser;
 import sabre.logic.ConjunctiveClause;
-import sabre.logic.DNFExpression;
 import sabre.logic.Expression;
 import sabre.logic.Literal;
 import sabre.search.Result;
@@ -195,14 +195,54 @@ public class Main {
 			}
 			
 			// TODO Delete this later, Plan2Vector Test
-			RelaxedPlanVector rpv0 = new RelaxedPlanVector(space.actions, plans.get(0));
-			RelaxedPlanVector rpv1 = new RelaxedPlanVector(space.actions, plans.get(2));
+			RelaxedPlanVector rpv0 = new RelaxedPlanVector(space, plans.get(0));
+			RelaxedPlanVector rpv1 = new RelaxedPlanVector(space, plans.get(2));
 			System.out.println("Comparing these two relaxed plans: \n" + plans.get(0) + "\n" + plans.get(2));
 			System.out.println(INFO + "RPV0: " + rpv0);
 			System.out.println(INFO + "RPV1: " + rpv1);
 			System.out.println(INFO + "Intersection = " + rpv0.intersection(rpv1));
 			System.out.println(INFO + "Union = " + rpv0.union(rpv1));
-			System.out.println(INFO + "Action Distance = " + rpv0.intersection(rpv1) / (double)rpv0.union(rpv1));
+			System.out.println(INFO + "Action Distance = " + rpv0.intersection(rpv1) / (float) rpv0.union(rpv1));
+			
+			// Clustering test
+			RelaxedPlanVector[] planVecs = new RelaxedPlanVector[plans.size()];
+			for(int i=0; i<planVecs.length; i++) {
+				planVecs[i] = new RelaxedPlanVector(space, plans.get(i));
+			}
+			int k=5;
+			RelaxedPlanVector[] centroids = new RelaxedPlanVector[k];
+
+			/*
+			float weight = (float)planVecs[0].sum()/planVecs[0].size;			
+			System.out.println("Initializing centroids using weight: " + weight);
+			for(int i=0; i<k; i++)
+				centroids[i] = new RelaxedPlanVector(space, weight);
+			*/
+			
+			System.out.println("Initializing centroids using experimental method...");
+			
+			// Set each cluster centroid to the mean of a different subset of the planVecs
+			int segmentLength = planVecs.length / k;
+			int startIndex = 0;
+			for(int i=0; i<k; i++) {
+				ArrayList<RelaxedPlanVector> segment = new ArrayList<>();
+				for(int j=startIndex; j-startIndex<segmentLength; j++)
+					segment.add(planVecs[j]);
+				centroids[i] = RelaxedPlanVector.mean(segment);
+				startIndex += segmentLength;
+			}
+
+			System.out.println("Starting centroids: ");
+			for(RelaxedPlanVector centroid : centroids) {
+				System.out.println(centroid.toString() + "\n... Actions: " + centroid.getActions().toString());
+			}
+
+			Clusterer clusterer = new Clusterer(planVecs, centroids);
+			Random random = new Random();
+			for(int i=0; i<planVecs.length; i++)
+				clusterer.clusterAssignments[i] = random.nextInt(k);
+			clusterer.kmeans();
+
 			//System.out.println(INFO + "RPV1-RPV0: " + rpv1.minus(rpv0).magnitude() + " " + rpv1.minus(rpv0));
 			//System.out.println();
 			
@@ -210,8 +250,8 @@ public class Main {
 			for(int i = 0; i < plans.size(); i++) {
 				for (int j = i; j < plans.size(); j++)
 				{
-					RelaxedPlanVector vi = new RelaxedPlanVector(space.actions, plans.get(i));
-					RelaxedPlanVector vj = new RelaxedPlanVector(space.actions, plans.get(j));
+					RelaxedPlanVector vi = new RelaxedPlanVector(space, plans.get(i));
+					RelaxedPlanVector vj = new RelaxedPlanVector(space, plans.get(j));
 					//System.out.println("Relaxed Solution Action Distance " + i + " vs " + j + "," + vi.minus(vj).magnitude());	
 				}						
 			}
