@@ -1,0 +1,76 @@
+domain: "Indiana Jones and the Raiders of the Lost Ark";
+
+// Types
+type character extends agent;
+type item;
+
+// Objects
+character : IndianaJones;
+character : NaziSoldiers;
+character : USArmy;
+item : ArkOfTheCovenant;
+
+// Properties
+boolean : alive(character);
+boolean : buried(item);
+boolean : knows(character, item);
+character : has(item);
+boolean : opened(item);
+boolean : armed(character);
+
+// Initial State
+buried(ArkOfTheCovenant);
+alive(IndianaJones);
+knows(IndianaJones, ArkOfTheCovenant);
+intends(IndianaJones, has(ArkOfTheCovenant) = USArmy);
+alive(USArmy);
+intends(USArmy, has(ArkOfTheCovenant) = USArmy);
+alive(NaziSoldiers);
+armed(NaziSoldiers);
+intends(NaziSoldiers, opened(ArkOfTheCovenant));
+
+// Actions
+action dig(character character*, item item) {
+	precondition: (
+		alive(character)
+		& buried(item)
+		& knows(character, item)
+	);
+	effect: (
+		has(item) = character
+		& !buried(item)
+	);
+}
+
+action open(character character*, item item) {
+	precondition: (
+		alive(character)
+		& has(item) = character
+	);
+	effect: (
+		!alive(character)
+		& opened(item)
+	);
+}
+
+action give(character giver*, item item, character receiver*) {
+	precondition: (
+		alive(giver)
+		& alive(receiver)
+		& has(item) = giver
+	);
+	effect: (
+		has(item) = receiver
+	);
+}
+
+action take(character thief*, item item, character victim) {
+	precondition: (
+		alive(thief)
+		& has(item) = victim
+		& (armed(thief) | !alive(victim))
+	);
+	effect: (
+		has(item) = thief
+	);
+}
