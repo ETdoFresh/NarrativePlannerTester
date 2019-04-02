@@ -175,7 +175,7 @@ public class Main {
 				System.out.println(FAIL + "Exception while testing the goal in the initial state: " + ex);
 				continue;
 			}
-
+			
 			// Plan Graph
 			space.graph.initialize(initial);
 			while (!space.graph.hasLeveledOff())
@@ -190,6 +190,8 @@ public class Main {
 			ArrayList<RelaxedPlan> plans = new ArrayList<>();
 			for (Iterable<Literal> goal : GetDNFLiterals(space.goal))
 				plans.addAll(GetAllPossiblePlanGraphPlans(space.graph, goal));
+			
+			Explanation explanation = new Explanation(plans.get(0), space.domain.initial, space.domain.goal);
 
 			// TODO Comment this out later, just displaying all relaxed Solutions
 			for (int i = 0; i < plans.size(); i++) {

@@ -25,6 +25,10 @@ public class RelaxedPlan implements Iterable<PlanGraphActionNode> {
 		actions.add(0, action);
 	}
 	
+	public PlanGraphActionNode get(int index) {
+		return actions.get(index);
+	}
+	
 	public int size() {
 		return actions.size();
 	}
