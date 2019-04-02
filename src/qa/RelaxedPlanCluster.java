@@ -5,9 +5,8 @@ public class RelaxedPlanCluster {
 	private int id;
 	private RelaxedPlanVector centroid;
 	
-	public RelaxedPlanCluster(int id, RelaxedPlanVector centroid){
+	public RelaxedPlanCluster(int id){
 		this.id = id;
-		this.centroid = centroid;
 	}
 	
 	public int getID() {

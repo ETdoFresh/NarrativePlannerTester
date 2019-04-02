@@ -41,7 +41,7 @@ public class Main {
 	private static final String TITLE = "Planning Domain Automated Tester v" + VERSION + ", by " + CREDITS
 			+ "\n using the Sabre Narrative Planner v0.32 by Stephen G. Ware";
 	private static final String USAGE = "... Sit back, relax, and enjoy the demo ...\n";
-	private static final String FILE = "IndianaJones.txt";
+	private static final String FILE = "RRH.txt";
 
 	private static final String PASS = "[" + TextColor.GREEN + "Pass" + TextColor.RESET + "] ";
 	private static final String FAIL = "[" + TextColor.RED + "Fail" + TextColor.RESET + "] ";
@@ -184,7 +184,7 @@ public class Main {
 			// <---- just commenting out for demo
 			
 			// Get goal graphs
-			GoalGraphs goalGraphs = new GoalGraphs(space);
+//			GoalGraphs goalGraphs = new GoalGraphs(space);
 
 			// Get all the Relaxed Plans from the PlanGraph
 			ArrayList<RelaxedPlan> plans = new ArrayList<>();
@@ -212,10 +212,10 @@ public class Main {
 			for(int i=0; i<planVecs.length; i++) {
 				planVecs[i] = new RelaxedPlanVector(space, plans.get(i));
 			}
-			int k=5;
-			RelaxedPlanVector[] centroids = new RelaxedPlanVector[k];
+			int k=3;
+//			RelaxedPlanVector[] centroids = new RelaxedPlanVector[k];
 
-			System.out.println("Initializing centroids...");
+//			System.out.println("Initializing centroids...");
 
 			/*// First attempt at random initialization
 			float weight = (float)planVecs[0].sum()/planVecs[0].size;			
@@ -225,7 +225,7 @@ public class Main {
 			*/
 			
 			// Trying to improve initial centroids: Set each centroid to the mean of a different subset of the planVecs
-			int segmentLength = planVecs.length / k;
+/*			int segmentLength = planVecs.length / k;
 			int startIndex = 0;
 			for(int i=0; i<k; i++) {
 				ArrayList<RelaxedPlanVector> segment = new ArrayList<>();
@@ -234,14 +234,14 @@ public class Main {
 				centroids[i] = RelaxedPlanVector.mean(segment);
 				startIndex += segmentLength;
 			}
-
-			System.out.println("Initial centroids: ");
+*/
+/*			System.out.println("Initial centroids: ");
 			for(RelaxedPlanVector centroid : centroids) {
 				System.out.println(centroid.toString() + "\n... Actions: " + centroid.getActions().toString());
 			}
-
+*/
 			// Let the clustering begin
-			Clusterer clusterer = new Clusterer(planVecs, centroids);
+			Clusterer clusterer = new Clusterer(planVecs, k);
 			Random random = new Random();
 			for(int i=0; i<planVecs.length; i++) {
 				int assignment = random.nextInt(k);
@@ -249,7 +249,7 @@ public class Main {
 			}
 
 			for(int i=0; i<k; i++)
-				System.out.println("Cluster "+i+" ID: "+clusterer.clusters[i].getID() + " Assignments: " + clusterer.getAssignments(clusterer.clusters[i]).size());
+				System.out.println("Cluster "+i+ " -- Initial assignments: " + clusterer.getAssignments(clusterer.clusters[i].getID()).size());
 
 			clusterer.kmeans();
 			// ----------------------------

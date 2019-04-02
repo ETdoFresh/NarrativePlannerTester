@@ -24,9 +24,8 @@ public class RelaxedPlanVector {
 				if(planVecs.get(j).actionValues[i])
 					sum++;
 			}
-			float mean = sum / planVecs.size();
 			// set its value to that mean
-			if(mean > 0.5)
+			if((sum / planVecs.size()) >= 0.5)
 				meanVector.actionValues[i] = true;
 			else
 				meanVector.actionValues[i] = false;			

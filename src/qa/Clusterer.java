@@ -14,20 +14,20 @@ public class Clusterer {
 	private final int k;
 	private final int n;
 	
-	public Clusterer(RelaxedPlanVector[] planVecs, RelaxedPlanVector[] clusterCentroids) {
+	public Clusterer(RelaxedPlanVector[] planVecs, int k) {
 		this.planVecs = planVecs;
 		this.n = planVecs.length;
-		this.k = clusterCentroids.length;
+		this.k = k;
 		this.clusters = new RelaxedPlanCluster[k];
 		for(int i=0; i<k; i++)
-			clusters[i] = new RelaxedPlanCluster(i, clusterCentroids[i]);
+			clusters[i] = new RelaxedPlanCluster(i);
 	}
 
 	/** Find the planVecs that are assigned to this cluster */
-	protected ArrayList<RelaxedPlanVector> getAssignments(RelaxedPlanCluster cluster){
+	protected ArrayList<RelaxedPlanVector> getAssignments(int clusterID){
 		ArrayList<RelaxedPlanVector> assigned = new ArrayList<>();
 		for(int i=0; i<planVecs.length; i++) {
-			if(planVecs[i].clusterAssignment == cluster.getID())
+			if(planVecs[i].clusterAssignment == clusterID)
 				assigned.add(planVecs[i]);
 		}
 		return assigned;
@@ -35,16 +35,19 @@ public class Clusterer {
 
 	/** Set the cluster centroid to the mean of its current assignments */
 	private void updateCentroid(RelaxedPlanCluster cluster) {
-		cluster.setCentroid(RelaxedPlanVector.mean(getAssignments(cluster)));
+		cluster.setCentroid(RelaxedPlanVector.mean(getAssignments(cluster.getID())));
+		System.out.println("Mean of: " + getAssignments(cluster.getID()) + " = " + cluster.getCentroid());
 	}
 
 	public void kmeans() {	
 		int assignmentsChanged;
 		do{
 			for(RelaxedPlanCluster cluster : clusters) {
-				System.out.println("Cluster " + cluster.getID() + "\n-- centroid: " + cluster.getCentroid());
-				System.out.println("... Events: " + cluster.getCentroid().getActions().toString());
-				System.out.println("... Assignments: " + getAssignments(cluster).size());
+				if(cluster.getCentroid()!=null) {
+					System.out.println("Cluster " + cluster.getID() + "\n-- centroid: " + cluster.getCentroid());
+					System.out.println("... Events: " + cluster.getCentroid().getActions().toString());
+					System.out.println("... # Assignments: " + getAssignments(cluster.getID()).size());
+				}
 			}
 
 			assignmentsChanged = 0;
