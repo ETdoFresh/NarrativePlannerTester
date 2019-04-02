@@ -1,4 +1,5 @@
 domain: "Indiana Jones and the Raiders of the Lost Ark";
+goal: (has(ArkOfTheCovenant) = USArmy & !alive(NaziSoldiers));
 
 // Types
 type character extends agent;

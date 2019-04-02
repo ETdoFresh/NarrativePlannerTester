@@ -41,7 +41,7 @@ public class Main {
 	private static final String TITLE = "Planning Domain Automated Tester v" + VERSION + ", by " + CREDITS
 			+ "\n using the Sabre Narrative Planner v0.32 by Stephen G. Ware";
 	private static final String USAGE = "... Sit back, relax, and enjoy the demo ...\n";
-	private static final String FILE = "RRH.txt";
+	private static final String FILE = "IndianaJones.txt";
 
 	private static final String PASS = "[" + TextColor.GREEN + "Pass" + TextColor.RESET + "] ";
 	private static final String FAIL = "[" + TextColor.RED + "Fail" + TextColor.RESET + "] ";
@@ -182,6 +182,9 @@ public class Main {
 				space.graph.extend(); // Extend graph until all goals have appeared
 			// System.out.println(INFO + "Layers in plan graph: " + space.graph.size()); //
 			// <---- just commenting out for demo
+			
+			// Get goal graphs
+			GoalGraphs goalGraphs = new GoalGraphs(space);
 
 			// Get all the Relaxed Plans from the PlanGraph
 			ArrayList<RelaxedPlan> plans = new ArrayList<>();
