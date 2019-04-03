@@ -22,23 +22,37 @@ public class Explanation {
 		this.goals = goals;
 		this.initial = new InitialState(initial);
 		this.currentStepIndex = plan.size() - 1;
+	}
 
+	public boolean build() {
+		if (currentStepIndex < 0)
+			return false;
+
+		// Create Initial Causal Chains
 		for (ConjunctiveClause goal : goals.toDNF().arguments) {
 			causalChainSet = new CausalChainSet(goal); // TODO remove this later and fix code to handle DNF
 			causalChainMap.put(goal, causalChainSet);
 		}
+
+		// Working backwards on RelaxedPlan, Find first step that has an effect that
+		// contains one (or more) causal chain heads
+		while (currentStepIndex >= 0) {
+			Action currentStep = plan.get(currentStepIndex).event;
+			if (!causalChainLiteralExistsIn(currentStep.effect)) {
+				currentStepIndex--;
+			} else {
+				causalChainSet.addOrRemoveChainUsing(currentStep);
+				currentStepIndex--;
+			}
+		}
+		return initialStateContainsAllCausalChainHeads();
 	}
 
-	public boolean extend() {
-		if (currentStepIndex < 0)
-			return false;
+	private boolean initialStateContainsAllCausalChainHeads() {
+		for (Literal head : causalChainSet.heads())
+			if (!initial.contains(head))
+				return false;
 
-		Action currentStep = plan.get(currentStepIndex).event;
-		if (!causalChainLiteralExistsIn(currentStep.effect))
-			return false;
-
-		causalChainSet.addOrRemoveChainUsing(currentStep);
-		currentStepIndex--;
 		return true;
 	}
 
@@ -52,7 +66,7 @@ public class Explanation {
 
 	public static boolean IsValid(RelaxedPlan plan, ImmutableArray<Expression> initial, Expression goals) {
 		Explanation explanation = new Explanation(plan, initial, goals);
-		return true;
+		return explanation.build();
 	}
 
 	public class CausalChainSet {
@@ -66,10 +80,16 @@ public class Explanation {
 		public void addOrRemoveChainUsing(Action currentStep) {
 			for (ConjunctiveClause e : currentStep.effect.toDNF().arguments)
 				for (Literal effectLiteral : e.arguments)
-					for (CausalChain causalChain : causalChains)
-						if (causalChain.head().equals(effectLiteral))
-							if (causalChain.canPush(effectLiteral))
-								return; // TODO continue this thought!
+					for (int i = causalChains.size() - 1; i >= 0; i--) {
+						CausalChain causalChain = causalChains.get(i);
+						if (causalChain.head().equals(effectLiteral)) {
+							for (ConjunctiveClause p : currentStep.precondition.toDNF().arguments)
+								for (Literal preconditionLiteral : p.arguments)
+									if (causalChain.canPush(preconditionLiteral))
+										causalChains.add(causalChain.push(preconditionLiteral));
+							causalChains.remove(i);
+						}
+					}
 		}
 
 		public boolean headContains(Literal literal) {
@@ -78,6 +98,13 @@ public class Explanation {
 					return true;
 
 			return false;
+		}
+
+		public Iterable<Literal> heads() {
+			ArrayList<Literal> heads = new ArrayList<>();
+			for (CausalChain causalChain : causalChains)
+				heads.add(causalChain.head());
+			return heads;
 		}
 
 		@Override
@@ -96,12 +123,18 @@ public class Explanation {
 			history.add(goalLiteral);
 		}
 
+		private CausalChain(ArrayList<Literal> history) {
+			this.history.addAll(history);
+		}
+
 		public boolean canPush(Literal literal) {
 			return !history.contains(literal);
 		}
 
-		public void push(Literal literal) {
-			history.add(0, literal);
+		public CausalChain push(Literal literal) {
+			CausalChain newCausalChain = new CausalChain(history);
+			newCausalChain.history.add(0, literal);
+			return newCausalChain;
 		}
 
 		public Literal head() {

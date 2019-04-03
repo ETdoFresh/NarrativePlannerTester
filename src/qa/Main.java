@@ -191,7 +191,10 @@ public class Main {
 			for (Iterable<Literal> goal : GetDNFLiterals(space.goal))
 				plans.addAll(GetAllPossiblePlanGraphPlans(space.graph, goal));
 			
-			Explanation explanation = new Explanation(plans.get(0), space.domain.initial, space.domain.goal);
+			System.out.println(INFO + "Explains Domain Goal: " + Explanation.IsValid(plans.get(0), domain.initial, domain.goal));
+			System.out.println(INFO + "Explains Reds Goal: " + Explanation.IsValid(plans.get(0), domain.initial, AgentGoal.get(domain, "Red")));
+			System.out.println(INFO + "Explains Wolfs Goal: " + Explanation.IsValid(plans.get(0), domain.initial, AgentGoal.get(domain, "Wolf")));
+			System.out.println(INFO + "Explains Grandmas Goal: " + Explanation.IsValid(plans.get(0), domain.initial, AgentGoal.get(domain, "Grandma")));
 
 			// TODO Comment this out later, just displaying all relaxed Solutions
 			for (int i = 0; i < plans.size(); i++) {
