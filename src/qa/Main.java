@@ -68,6 +68,8 @@ public class Main {
 
 				PlanGraph planGraph = createExtendedPlanGraph(space, initial);
 				ArrayList<RelaxedPlan> relaxedPlans = getRelaxedPlans(space);
+				for(RelaxedPlan plan : relaxedPlans)
+					System.out.println(plan);
 				
 				// ---- Clustering test ----
 				RelaxedPlanVector[] planVecs = new RelaxedPlanVector[relaxedPlans.size()];

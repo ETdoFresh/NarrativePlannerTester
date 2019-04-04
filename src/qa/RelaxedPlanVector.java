@@ -115,6 +115,8 @@ public class RelaxedPlanVector {
 				medoid = planVecs.get(i);
 			}
 		}
+		if(medoid==null)
+			return new RelaxedPlanVector(space, 0);
 		return medoid;
 	}
 	
