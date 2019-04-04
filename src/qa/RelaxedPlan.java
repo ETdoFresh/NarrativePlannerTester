@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import sabre.Action;
-import sabre.Plan;
 import sabre.graph.PlanGraphActionNode;
 
 public class RelaxedPlan implements Iterable<PlanGraphActionNode> {
@@ -112,7 +111,7 @@ public class RelaxedPlan implements Iterable<PlanGraphActionNode> {
 	public String toString() {
 		String str = "";
 		for(PlanGraphActionNode action : actions)
-			str += Main.BLANK + action + "\n";
+			str += Text.BLANK + action + "\n";
 		return str;
 	}
 }
