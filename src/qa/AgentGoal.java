@@ -25,6 +25,13 @@ public class AgentGoal {
 		return new ConjunctiveClause(goals);
 	}
 	
+	public static Iterable<Expression> getAll(Domain domain) {
+		ArrayList<Expression> agentGoals = new ArrayList<>();
+		for (Agent agent : domain.agents)
+			agentGoals.add(get(domain, agent));
+		return agentGoals;
+	}
+	
 	public static Expression get(Domain domain, String agent) {
 		return get(domain, domain.getAgent(agent));
 	}

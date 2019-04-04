@@ -4,12 +4,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import sabre.Action;
+import sabre.Agent;
 import sabre.logic.ConjunctiveClause;
 import sabre.logic.Expression;
 import sabre.logic.Literal;
 import sabre.util.ImmutableArray;
 
 public class Explanation {
+	public Agent agent;
 	public RelaxedPlan plan;
 	public InitialState initial;
 	public Expression goals;
@@ -22,6 +24,30 @@ public class Explanation {
 		this.goals = goals;
 		this.initial = new InitialState(initial);
 		this.currentStepIndex = plan.size() - 1;
+	}
+
+	public Explanation(Agent agent, Expression agentGoal) {
+		this.agent = agent;
+		this.goals = agentGoal;
+
+		for (ConjunctiveClause goal : goals.toDNF().arguments) {
+			causalChainSet = new CausalChainSet(goal); // TODO remove this later and fix code to handle DNF
+			causalChainMap.put(goal, causalChainSet);
+		}
+	}
+	
+	private Explanation(Agent agent, Expression goals, CausalChainSet causalChainSet) {
+		this.agent = agent;
+		this.goals = goals;
+		this.causalChainSet = causalChainSet.clone();
+	}
+	
+	public Explanation clone() {
+		return new Explanation(agent, goals, causalChainSet);
+	}
+	
+	public void applyAction(Action action) {
+		causalChainSet.addOrRemoveChainUsing(action);
 	}
 
 	public boolean build() {
@@ -68,6 +94,11 @@ public class Explanation {
 		Explanation explanation = new Explanation(plan, initial, goals);
 		return explanation.build();
 	}
+	
+	@Override
+	public String toString() {
+		return "(" + agent + " Explanation: " + causalChainSet + ")";
+	}
 
 	public class CausalChainSet {
 		ArrayList<CausalChain> causalChains = new ArrayList<>();
@@ -75,6 +106,15 @@ public class Explanation {
 		public CausalChainSet(ConjunctiveClause goal) {
 			for (Literal goalLiteral : goal.arguments)
 				causalChains.add(new CausalChain(goalLiteral));
+		}
+		
+		private CausalChainSet(Iterable<CausalChain> causalChains) {
+			for (CausalChain causalChain : causalChains)
+				this.causalChains.add(causalChain.clone());
+		}
+		
+		public CausalChainSet clone() {
+			return new CausalChainSet(causalChains);
 		}
 
 		public void addOrRemoveChainUsing(Action currentStep) {
@@ -110,8 +150,10 @@ public class Explanation {
 		@Override
 		public String toString() {
 			String output = "";
-			for (CausalChain chain : causalChains)
-				output += chain + "\n";
+			for (CausalChain chain : causalChains) {
+				output += chain.equals(causalChains.get(0)) ? "" : ", ";
+				output += chain.head();
+			}
 			return output;
 		}
 	}
@@ -126,13 +168,17 @@ public class Explanation {
 		private CausalChain(ArrayList<Literal> history) {
 			this.history.addAll(history);
 		}
+		
+		public CausalChain clone() {
+			return new CausalChain(history);
+		}
 
 		public boolean canPush(Literal literal) {
 			return !history.contains(literal);
 		}
 
 		public CausalChain push(Literal literal) {
-			CausalChain newCausalChain = new CausalChain(history);
+			CausalChain newCausalChain = clone();
 			newCausalChain.history.add(0, literal);
 			return newCausalChain;
 		}
@@ -162,5 +208,16 @@ public class Explanation {
 
 			return false;
 		}
+	}
+
+	public boolean containsEffect(Action action) {
+		for (ConjunctiveClause disjunct : action.effect.toDNF().arguments)
+			for (Literal literal : disjunct.arguments)
+				for (Literal head : causalChainSet.heads())
+					//TODO do a better equals check !(alive(Red) = True) different than alive(Red) = null
+					if (literal.equals(head))
+						return true;
+		
+		return false;
 	}
 }

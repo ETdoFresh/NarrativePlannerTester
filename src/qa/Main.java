@@ -69,15 +69,6 @@ public class Main {
 				PlanGraph planGraph = createExtendedPlanGraph(space, initial);
 				ArrayList<RelaxedPlan> plans = getRelaxedPlans(space);
 
-				System.out.println(Text.INFO + "Explains Domain Goal: "
-						+ Explanation.IsValid(plans.get(0), domain.initial, domain.goal));
-				System.out.println(Text.INFO + "Explains Reds Goal: "
-						+ Explanation.IsValid(plans.get(0), domain.initial, AgentGoal.get(domain, "Red")));
-				System.out.println(Text.INFO + "Explains Wolfs Goal: "
-						+ Explanation.IsValid(plans.get(0), domain.initial, AgentGoal.get(domain, "Wolf")));
-				System.out.println(Text.INFO + "Explains Grandmas Goal: "
-						+ Explanation.IsValid(plans.get(0), domain.initial, AgentGoal.get(domain, "Grandma")));
-
 				// TODO Comment this out later, just displaying all relaxed Solutions
 				for (int i = 0; i < plans.size(); i++) {
 					// System.out.println(INFO + "Relaxed Solution #" + i);
@@ -219,7 +210,7 @@ public class Main {
 	private static ArrayList<RelaxedPlan> getRelaxedPlans(SearchSpace space) {
 		ArrayList<RelaxedPlan> plans = new ArrayList<>();
 		for (ConjunctiveClause goal : space.goal.toDNF().arguments)
-			plans.addAll(RelaxedPlanExtractor.GetAllPossiblePlanGraphPlans(space.graph, goal.arguments));
+			plans.addAll(RelaxedPlanExtractor.GetAllPossiblePlanGraphPlans(space, goal.arguments));
 		return plans;
 	}
 

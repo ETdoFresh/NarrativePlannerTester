@@ -4,31 +4,52 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
+import qa.Explanation.CausalChain;
+import sabre.Agent;
+import sabre.Domain;
 import sabre.graph.PlanGraph;
 import sabre.graph.PlanGraphActionNode;
 import sabre.graph.PlanGraphLiteralNode;
 import sabre.graph.PlanGraphNode;
+import sabre.logic.Expression;
 import sabre.logic.Literal;
+import sabre.logic.Term;
+import sabre.space.SearchSpace;
 import sabre.util.ImmutableArray;
 
 public class RelaxedPlanExtractor {
 
 	// Returns a list of all possible PlanGraph Plans
-	static Collection<RelaxedPlan> GetAllPossiblePlanGraphPlans(PlanGraph graph, Iterable<? extends Literal> goal) {
+	static Collection<RelaxedPlan> GetAllPossiblePlanGraphPlans(SearchSpace space, Iterable<? extends Literal> goal) {
+		ArrayList<PlanGraphLiteralNode> goalLiterals = getGoalLiterals(space.graph, goal);
+		ArrayList<Explanation> explanations = getExplanations(space.domain);
+
+		return RelaxedPlanExtractor.GetAllPossiblePlanGraphPlans(new ArrayList<RelaxedPlan>(), new RelaxedPlan(),
+				goalLiterals, goalLiterals, explanations);
+	}
+
+	private static ArrayList<Explanation> getExplanations(Domain domain) {
+		ArrayList<Explanation> explanations = new ArrayList<>();
+		for (Agent agent : domain.agents)
+			explanations.add(new Explanation(agent, AgentGoal.get(domain, agent)));
+
+		return explanations;
+	}
+
+	private static ArrayList<PlanGraphLiteralNode> getGoalLiterals(PlanGraph graph, Iterable<? extends Literal> goal) {
 		ArrayList<PlanGraphLiteralNode> planGraphGoal = new ArrayList<>();
 		for (Literal literal : goal)
 			planGraphGoal.add(graph.getLiteral(literal));
-
-		return RelaxedPlanExtractor.GetAllPossiblePlanGraphPlans(new ArrayList<RelaxedPlan>(), new RelaxedPlan(),
-				planGraphGoal, planGraphGoal);
+		return planGraphGoal;
 	}
 
 	static Collection<RelaxedPlan> GetAllPossiblePlanGraphPlans(ArrayList<RelaxedPlan> plans, RelaxedPlan plan,
-			ArrayList<PlanGraphLiteralNode> localGoalLiterals, ArrayList<PlanGraphLiteralNode> initialGoalLiterals) {
+			ArrayList<PlanGraphLiteralNode> localGoalLiterals, ArrayList<PlanGraphLiteralNode> initialGoalLiterals,
+			ArrayList<Explanation> explanations) {
 
 		// localGoalLiterals - goals to be found on this iteration
 		// initialGoalLiterals - initial goal literals specified at the start
-		
+
 		// Determine which initial goal literals have been found already
 		ArrayList<PlanGraphLiteralNode> foundGoalLiterals = new ArrayList<>();
 		foundGoalLiterals.addAll(initialGoalLiterals);
@@ -48,7 +69,7 @@ public class RelaxedPlanExtractor {
 			return new ArrayList<RelaxedPlan>(Arrays.asList(plan));
 		}
 
-		// Foreach Goal Literal, follow its parents.
+		// For each Goal Literal, follow its parents.
 		for (PlanGraphLiteralNode goalLiteral : localGoalLiterals) {
 			for (PlanGraphNode actionNode : goalLiteral.parents) {
 				PlanGraphActionNode action = (PlanGraphActionNode) actionNode;
@@ -79,20 +100,42 @@ public class RelaxedPlanExtractor {
 
 				if (foundAlreadyReachedGoalLiteral)
 					continue;
-				
-				// TODO find out if this action explains action
-				// TODO if it doesn't continue
+
+				if (!canBeExplainedByAtLeastOneConsentingCharacter(action, explanations))
+					continue;
 
 				RelaxedPlan planWithNewAction = plan.clone();
 				planWithNewAction.push(action);
 
+				ArrayList<Explanation> newExplanations = new ArrayList<>();
+				for (Explanation explanation : explanations) {
+					if (explanation.containsEffect(action.event)) {
+						Explanation newExplanation = explanation.clone();
+						newExplanation.applyAction(action.event);
+						newExplanations.add(newExplanation);
+					} else
+						newExplanations.add(explanation);
+
+				}
+
 				Collection<RelaxedPlan> newPlan = GetAllPossiblePlanGraphPlans(plans, planWithNewAction,
-						newGoalLiterals, initialGoalLiterals);
+						newGoalLiterals, initialGoalLiterals, newExplanations);
 				if (newPlan != plans)
 					plans.addAll(newPlan);
 			}
 		}
 
 		return plans;
+	}
+
+	private static boolean canBeExplainedByAtLeastOneConsentingCharacter(PlanGraphActionNode actionNode,
+			ArrayList<Explanation> explanations) {
+		for (Term agent : actionNode.event.agents)
+			for (Explanation explanation : explanations)
+				if (explanation.agent.equals(agent))
+					if (explanation.containsEffect(actionNode.event))
+						return true;
+
+		return false;
 	}
 }
