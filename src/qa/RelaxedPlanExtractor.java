@@ -24,11 +24,14 @@ public class RelaxedPlanExtractor {
 	}
 
 	static Collection<RelaxedPlan> GetAllPossiblePlanGraphPlans(ArrayList<RelaxedPlan> plans, RelaxedPlan plan,
-			ArrayList<PlanGraphLiteralNode> localGoalLiterals, ArrayList<PlanGraphLiteralNode> absoluteGoalLiterals) {
+			ArrayList<PlanGraphLiteralNode> localGoalLiterals, ArrayList<PlanGraphLiteralNode> initialGoalLiterals) {
 
-		// Determine which goals have been found already
+		// localGoalLiterals - goals to be found on this iteration
+		// initialGoalLiterals - initial goal literals specified at the start
+		
+		// Determine which initial goal literals have been found already
 		ArrayList<PlanGraphLiteralNode> foundGoalLiterals = new ArrayList<>();
-		foundGoalLiterals.addAll(absoluteGoalLiterals);
+		foundGoalLiterals.addAll(initialGoalLiterals);
 		for (int i = foundGoalLiterals.size() - 1; i >= 0; i--)
 			if (localGoalLiterals.contains(foundGoalLiterals.get(i)))
 				foundGoalLiterals.remove(i);
@@ -76,12 +79,15 @@ public class RelaxedPlanExtractor {
 
 				if (foundAlreadyReachedGoalLiteral)
 					continue;
+				
+				// TODO find out if this action explains action
+				// TODO if it doesn't continue
 
 				RelaxedPlan planWithNewAction = plan.clone();
 				planWithNewAction.push(action);
 
 				Collection<RelaxedPlan> newPlan = GetAllPossiblePlanGraphPlans(plans, planWithNewAction,
-						newGoalLiterals, absoluteGoalLiterals);
+						newGoalLiterals, initialGoalLiterals);
 				if (newPlan != plans)
 					plans.addAll(newPlan);
 			}
