@@ -5,34 +5,27 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import qa.Exceptions.*;
 import sabre.*;
 import sabre.graph.PlanGraph;
-import sabre.graph.PlanGraphActionNode;
 import sabre.graph.PlanGraphEventNode;
-import sabre.graph.PlanGraphLiteralNode;
-import sabre.graph.PlanGraphNode;
 import sabre.io.DefaultParser;
 import sabre.io.Parser;
 import sabre.logic.ConjunctiveClause;
 import sabre.logic.Expression;
-import sabre.logic.Literal;
 import sabre.search.Result;
 import sabre.search.Search;
 import sabre.space.RootNode;
 import sabre.space.SearchSpace;
 import sabre.state.ArrayState;
-import sabre.util.ImmutableArray;
 
 public class Main {
 
@@ -43,19 +36,6 @@ public class Main {
 	private static final String USAGE = "... Sit back, relax, and enjoy the demo ...\n";
 	private static final String FILE = "RRH.txt";
 
-	private static final String PASS = "[" + TextColor.GREEN + "Pass" + TextColor.RESET + "] ";
-	private static final String FAIL = "[" + TextColor.RED + "Fail" + TextColor.RESET + "] ";
-	@SuppressWarnings("unused")
-	private static final String WARN = "[" + TextColor.YELLOW + "Warn" + TextColor.RESET + "] ";
-	private static final String INFO = "[" + TextColor.BLUE + "Info" + TextColor.RESET + "] ";
-	public static final String BLANK = "       ";
-
-	private static final String SYNTAX = "File should be syntactically correct";
-	private static final String GOAL = "Goal should be specified";
-	private static final String INITIAL = "Goal should not be true in initial state";
-	private static final String ACTIONS = "All action schemas should be usable";
-	private static final String SOLUTION = "Goal should be achievable";
-
 	static long lastModified = 0;
 	static boolean firstRun = true;
 	static Result result = null;
@@ -64,8 +44,233 @@ public class Main {
 	static File file;
 
 	public static void main(String[] args) {
+		printTitle();
+		openDomainTxtFile();
 
-		// Open text file on desktop
+		while (true) {
+			try {
+				if (lastModified == file.lastModified()) {
+					resumeSearch();
+					continue;
+				}
+
+				resetLastModified();
+				printLastModified();
+
+				Domain domain = getDomain();
+				SearchSpace space = getSearchSpace(domain);
+
+				printSpaceStatistics(space);
+				checkDomainGoalEmpty(domain);
+
+				ArrayState initial = new ArrayState(space);
+				checkGoalTrueInitialState(domain, initial);
+
+				PlanGraph planGraph = createExtendedPlanGraph(space, initial);
+				ArrayList<RelaxedPlan> plans = getRelaxedPlans(space);
+
+				System.out.println(Text.INFO + "Explains Domain Goal: "
+						+ Explanation.IsValid(plans.get(0), domain.initial, domain.goal));
+				System.out.println(Text.INFO + "Explains Reds Goal: "
+						+ Explanation.IsValid(plans.get(0), domain.initial, AgentGoal.get(domain, "Red")));
+				System.out.println(Text.INFO + "Explains Wolfs Goal: "
+						+ Explanation.IsValid(plans.get(0), domain.initial, AgentGoal.get(domain, "Wolf")));
+				System.out.println(Text.INFO + "Explains Grandmas Goal: "
+						+ Explanation.IsValid(plans.get(0), domain.initial, AgentGoal.get(domain, "Grandma")));
+
+				// TODO Comment this out later, just displaying all relaxed Solutions
+				for (int i = 0; i < plans.size(); i++) {
+					// System.out.println(INFO + "Relaxed Solution #" + i);
+					// System.out.println(plans.get(i));
+				}
+
+				// TODO Delete this later, Plan2Vector Test
+				RelaxedPlanVector rpv0 = new RelaxedPlanVector(space, plans.get(0));
+				RelaxedPlanVector rpv1 = new RelaxedPlanVector(space, plans.get(2));
+				System.out.println("Comparing these two relaxed plans: \n" + plans.get(0) + "\n" + plans.get(2));
+				System.out.println(Text.INFO + "RPV0: " + rpv0);
+				System.out.println(Text.INFO + "RPV1: " + rpv1);
+				System.out.println(Text.INFO + "Intersection = " + rpv0.intersection(rpv1));
+				System.out.println(Text.INFO + "Union = " + rpv0.union(rpv1));
+				System.out
+						.println(Text.INFO + "Action Distance = " + rpv0.intersection(rpv1) / (float) rpv0.union(rpv1));
+
+				// ---- Clustering test ----
+				RelaxedPlanVector[] planVecs = new RelaxedPlanVector[plans.size()];
+				for (int i = 0; i < planVecs.length; i++) {
+					planVecs[i] = new RelaxedPlanVector(space, plans.get(i));
+				}
+				int k = 3;
+//			RelaxedPlanVector[] centroids = new RelaxedPlanVector[k];
+
+//			System.out.println("Initializing centroids...");
+
+				/*
+				 * // First attempt at random initialization float weight =
+				 * (float)planVecs[0].sum()/planVecs[0].size;
+				 * System.out.println("Initializing centroids using weight: " + weight); for(int
+				 * i=0; i<k; i++) centroids[i] = new RelaxedPlanVector(space, weight);
+				 */
+
+				// Trying to improve initial centroids: Set each centroid to the mean of a
+				// different subset of the planVecs
+				/*
+				 * int segmentLength = planVecs.length / k; int startIndex = 0; for(int i=0;
+				 * i<k; i++) { ArrayList<RelaxedPlanVector> segment = new ArrayList<>(); for(int
+				 * j=startIndex; j-startIndex<segmentLength; j++) segment.add(planVecs[j]);
+				 * centroids[i] = RelaxedPlanVector.mean(segment); startIndex += segmentLength;
+				 * }
+				 */
+				/*
+				 * System.out.println("Initial centroids: "); for(RelaxedPlanVector centroid :
+				 * centroids) { System.out.println(centroid.toString() + "\n... Actions: " +
+				 * centroid.getActions().toString()); }
+				 */
+				// Let the clustering begin
+				Clusterer clusterer = new Clusterer(planVecs, k);
+				Random random = new Random();
+				for (int i = 0; i < planVecs.length; i++) {
+					int assignment = random.nextInt(k);
+					planVecs[i].clusterAssignment = assignment;
+				}
+
+				for (int i = 0; i < k; i++)
+					System.out.println("Cluster " + i + " -- Initial assignments: "
+							+ clusterer.getAssignments(clusterer.clusters[i].getID()).size());
+
+				clusterer.kmeans();
+				// ----------------------------
+
+				// System.out.println(INFO + "RPV1-RPV0: " + rpv1.minus(rpv0).magnitude() + " "
+				// + rpv1.minus(rpv0));
+				// System.out.println();
+
+				// TODO Delete this later, Magnitude Tester
+				for (int i = 0; i < plans.size(); i++) {
+					for (int j = i; j < plans.size(); j++) {
+						RelaxedPlanVector vi = new RelaxedPlanVector(space, plans.get(i));
+						RelaxedPlanVector vj = new RelaxedPlanVector(space, plans.get(j));
+						// System.out.println("Relaxed Solution Action Distance " + i + " vs " + j + ","
+						// + vi.minus(vj).magnitude());
+					}
+				}
+
+				// Number of actions available from the initial state
+				int firstSteps = 0;
+				System.out.println(Text.INFO + "Actions possible from initial state: ");
+				for (Action action : space.actions)
+					if (action.precondition.test(initial)) {
+						System.out.println("\t - " + action);
+						firstSteps++;
+					}
+				System.out.println("\t (" + firstSteps + " total)");
+
+				// TODO: Actions *motivated* from initial state, i.e. possible and the
+				// characters would consent
+
+				// Check for any unusable action schemas
+				HashSet<Action> unusedActions = new HashSet<Action>();
+				for (Action action : space.domain.actions) {
+					boolean actionFound = false;
+					for (PlanGraphEventNode graphEvent : space.graph.events)
+						if (action.name == graphEvent.event.name) {
+							actionFound = true;
+							continue;
+						}
+					if (!actionFound)
+						unusedActions.add(action);
+				}
+				if (unusedActions.size() == 0)
+					System.out.println(Text.PASS + Text.ACTIONS);
+				else {
+					System.out.println(Text.WARN + Text.ACTIONS);
+					for (Action action : unusedActions)
+						System.out.println(Text.BLANK + "Unusable: " + action.toString());
+					// continue;
+				}
+
+				// Check if a solution exists
+				Planner planner = new Planner();
+				planner.setSearchSpace(space);
+				search = planner.getSearchFactory().makeSearch(domain.goal);
+				RootNode root = new RootNode(initial);
+				search.push(root);
+				System.out.println(Text.BLANK + "Searching for next solution...");
+				try {
+					result = runInteruptably(() -> search.getNextSolution());
+				} catch (Exception ex) {
+					System.out.println(Text.FAIL + "Exception while searching for solution: " + ex);
+					continue;
+				}
+				if (result != null && result.plan != null)
+					System.out.println(Text.PASS + Text.SOLUTION);
+				else {
+					System.out.println(Text.FAIL + Text.SOLUTION);
+					result = null;
+					search = null;
+					continue;
+				}
+			} catch (Exception ex) {
+				System.out.println(ex);
+			}
+		}
+	}
+
+	private static ArrayList<RelaxedPlan> getRelaxedPlans(SearchSpace space) {
+		ArrayList<RelaxedPlan> plans = new ArrayList<>();
+		for (ConjunctiveClause goal : space.goal.toDNF().arguments)
+			plans.addAll(RelaxedPlanExtractor.GetAllPossiblePlanGraphPlans(space.graph, goal.arguments));
+		return plans;
+	}
+
+	private static void resumeSearch() {
+		// Search in progress.....
+		if (search != null && result != null) {
+			// There are no more plans, finish!
+			if (result.plan == null) {
+				System.out.println(Text.INFO + "Search has found all plans");
+				search = null;
+				result = null;
+				return;
+			}
+
+			int planIndex = plans.size();
+			plans.add(result.plan);
+
+			// Evaluate plan vs other plans (all plans except last plan)
+			for (int i = 0; i < plans.size() - 1; i++) {
+				float jaccardDistance = Jaccard.getAction(plans.get(i), result.plan);
+				System.out.println(Text.BLANK + "Solution " + i + " vs Solution " + planIndex + ": " + jaccardDistance);
+			}
+
+			// Look for next solution, stop after finding X plans
+			if (plans.size() > 2) {
+				System.out.println(Text.BLANK + "Cutting off after 2 solutions");
+				result = null;
+			} else {
+				System.out.println(Text.BLANK + "Searching for next solution...");
+				result = runInteruptably(() -> search.getNextSolution());
+			}
+
+			// No Search in progress.... wait for a second and then check if file has been
+			// modified
+		} else {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private static void printTitle() {
+		// Clear/Reset Screen
+		System.out.flush();
+		System.out.println(TITLE);
+		System.out.println(USAGE);
+	}
+
+	private static void openDomainTxtFile() {
 		file = new File(FILE);
 		Desktop desktop = Desktop.getDesktop();
 		try {
@@ -74,284 +279,73 @@ public class Main {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
 
-		// Clear/Reset Screen
-		System.out.flush();
-		System.out.println(TITLE);
-		System.out.println(USAGE);
+	private static void resetLastModified() {
+		// Update last modified
+		lastModified = file.lastModified();
+		result = null;
+		search = null;
+		plans.clear();
+	}
 
-		while (true) {
-			if (lastModified == file.lastModified()) {
-				if (search != null && result != null) {
-					if (result.plan == null) {
-						System.out.println(INFO + "Search has found all plans");
-						search = null;
-						result = null;
-						continue;
-					}
-
-					int planIndex = plans.size();
-					//System.out.println(INFO + "---------------- Solution " + planIndex + " ----------------");
-					//System.out.println(BLANK + result);
-					//for (Action action : result.plan)
-						//System.out.println(BLANK + action);
-
-					plans.add(result.plan);
-
-					// Evaluate plan vs other plans (all plans except last plan)
-					for (int i = 0; i < plans.size() - 1; i++) {
-						float jaccardDistance = getActionJaccard(plans.get(i), result.plan);
-						System.out.println(
-								BLANK + "Solution " + i + " vs Solution " + planIndex + ": " + jaccardDistance);
-					}
-
-					if (plans.size() > 2) {
-						System.out.println(BLANK + "Cutting off after 3 solutions");
-						result = null;
-					} else {
-						System.out.println(BLANK + "Searching for next solution...");
-						result = runInteruptably(() -> search.getNextSolution());
-					}
-				} else {
-					try {
-						Thread.sleep(1000);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-				continue;
-			}
-
-			// Update last modified
-			lastModified = file.lastModified();
-			result = null;
-			search = null;
-			plans.clear();
-
-			if (firstRun) {
-				firstRun = false;
-				System.out.println(INFO + "File Opened: " + FILE + " Last Modified: "
-						+ new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(lastModified));
-			} else {
-				System.out.println("----------------------------------------------------------------");
-				System.out.println();
-				System.out.println(INFO + "File Modified: " + FILE + " Last Modified: "
-						+ new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(lastModified));
-			}
-
-			// Parse Domain
-			Parser parser = new DefaultParser();
-			Domain domain;
-			try {
-				domain = parser.parse(file, Domain.class);
-			} catch (Exception ex) {
-				System.out.println(FAIL + SYNTAX);
-				System.out.println(ex);
-				continue;
-			}
-			System.out.println(PASS + SYNTAX);
-
-			// Space
-			SearchSpace space = Utilities.get(status -> new SearchSpace(domain, status));
-			System.out.println(INFO + "Number of ground actions: " + space.actions.size());
-			System.out.println(INFO + "Number of state variables: " + space.slots.size());
-
-			// Check if goal is empty
-			if (domain.goal.equals(Expression.TRUE)) {
-				System.out.println(FAIL + GOAL);
-				continue;
-			} else
-				System.out.println(PASS + GOAL);
-
-			// Check if goal is true in initial state
-			ArrayState initial = new ArrayState(space);
-			try {
-				if (domain.goal.test(initial)) {
-					System.out.println(FAIL + INITIAL);
-					continue;
-				} else
-					System.out.println(PASS + INITIAL);
-			} catch (Exception ex) {
-				System.out.println(FAIL + "Exception while testing the goal in the initial state: " + ex);
-				continue;
-			}
-			
-			// Plan Graph
-			space.graph.initialize(initial);
-			while (!space.graph.hasLeveledOff())
-				space.graph.extend(); // Extend graph until all goals have appeared
-			// System.out.println(INFO + "Layers in plan graph: " + space.graph.size()); //
-			// <---- just commenting out for demo
-			
-			// Get goal graphs
-//			GoalGraphs goalGraphs = new GoalGraphs(space);
-
-			// Get all the Relaxed Plans from the PlanGraph
-			ArrayList<RelaxedPlan> plans = new ArrayList<>();
-			for (Iterable<Literal> goal : GetDNFLiterals(space.goal))
-				plans.addAll(GetAllPossiblePlanGraphPlans(space.graph, goal));
-			
-			System.out.println(INFO + "Explains Domain Goal: " + Explanation.IsValid(plans.get(0), domain.initial, domain.goal));
-			System.out.println(INFO + "Explains Reds Goal: " + Explanation.IsValid(plans.get(0), domain.initial, AgentGoal.get(domain, "Red")));
-			System.out.println(INFO + "Explains Wolfs Goal: " + Explanation.IsValid(plans.get(0), domain.initial, AgentGoal.get(domain, "Wolf")));
-			System.out.println(INFO + "Explains Grandmas Goal: " + Explanation.IsValid(plans.get(0), domain.initial, AgentGoal.get(domain, "Grandma")));
-
-			// TODO Comment this out later, just displaying all relaxed Solutions
-			for (int i = 0; i < plans.size(); i++) {
-				//System.out.println(INFO + "Relaxed Solution #" + i);
-				//System.out.println(plans.get(i));
-			}
-			
-			// TODO Delete this later, Plan2Vector Test
-			RelaxedPlanVector rpv0 = new RelaxedPlanVector(space, plans.get(0));
-			RelaxedPlanVector rpv1 = new RelaxedPlanVector(space, plans.get(2));
-			System.out.println("Comparing these two relaxed plans: \n" + plans.get(0) + "\n" + plans.get(2));
-			System.out.println(INFO + "RPV0: " + rpv0);
-			System.out.println(INFO + "RPV1: " + rpv1);
-			System.out.println(INFO + "Intersection = " + rpv0.intersection(rpv1));
-			System.out.println(INFO + "Union = " + rpv0.union(rpv1));
-			System.out.println(INFO + "Action Distance = " + rpv0.intersection(rpv1) / (float) rpv0.union(rpv1));
-			
-			// ---- Clustering test ----
-			RelaxedPlanVector[] planVecs = new RelaxedPlanVector[plans.size()];
-			for(int i=0; i<planVecs.length; i++) {
-				planVecs[i] = new RelaxedPlanVector(space, plans.get(i));
-			}
-			int k=3;
-//			RelaxedPlanVector[] centroids = new RelaxedPlanVector[k];
-
-//			System.out.println("Initializing centroids...");
-
-			/*// First attempt at random initialization
-			float weight = (float)planVecs[0].sum()/planVecs[0].size;			
-			System.out.println("Initializing centroids using weight: " + weight);
-			for(int i=0; i<k; i++)
-				centroids[i] = new RelaxedPlanVector(space, weight);
-			*/
-			
-			// Trying to improve initial centroids: Set each centroid to the mean of a different subset of the planVecs
-/*			int segmentLength = planVecs.length / k;
-			int startIndex = 0;
-			for(int i=0; i<k; i++) {
-				ArrayList<RelaxedPlanVector> segment = new ArrayList<>();
-				for(int j=startIndex; j-startIndex<segmentLength; j++)
-					segment.add(planVecs[j]);
-				centroids[i] = RelaxedPlanVector.mean(segment);
-				startIndex += segmentLength;
-			}
-*/
-/*			System.out.println("Initial centroids: ");
-			for(RelaxedPlanVector centroid : centroids) {
-				System.out.println(centroid.toString() + "\n... Actions: " + centroid.getActions().toString());
-			}
-*/
-			// Let the clustering begin
-			Clusterer clusterer = new Clusterer(planVecs, k);
-			Random random = new Random();
-			for(int i=0; i<planVecs.length; i++) {
-				int assignment = random.nextInt(k);
-				planVecs[i].clusterAssignment = assignment;
-			}
-
-			for(int i=0; i<k; i++)
-				System.out.println("Cluster "+i+ " -- Initial assignments: " + clusterer.getAssignments(clusterer.clusters[i].getID()).size());
-
-			clusterer.kmeans();
-			// ----------------------------
-			
-			//System.out.println(INFO + "RPV1-RPV0: " + rpv1.minus(rpv0).magnitude() + " " + rpv1.minus(rpv0));
-			//System.out.println();
-			
-			// TODO Delete this later, Magnitude Tester
-			for(int i = 0; i < plans.size(); i++) {
-				for (int j = i; j < plans.size(); j++)
-				{
-					RelaxedPlanVector vi = new RelaxedPlanVector(space, plans.get(i));
-					RelaxedPlanVector vj = new RelaxedPlanVector(space, plans.get(j));
-					//System.out.println("Relaxed Solution Action Distance " + i + " vs " + j + "," + vi.minus(vj).magnitude());	
-				}						
-			}
-			
-			// Number of actions available from the initial state
-			int firstSteps = 0;
-			System.out.println(INFO + "Actions possible from initial state: ");
-			for (Action action : space.actions)
-				if (action.precondition.test(initial)) {
-					System.out.println("\t - " + action);
-					firstSteps++;
-				}
-			System.out.println("\t (" + firstSteps + " total)");
-
-			// TODO: Actions *motivated* from initial state, i.e. possible and the
-			// characters would consent
-
-			// Check for any unusable action schemas
-			HashSet<Action> unusedActions = new HashSet<Action>();
-			for (Action action : space.domain.actions) {
-				boolean actionFound = false;
-				for (PlanGraphEventNode graphEvent : space.graph.events)
-					if (action.name == graphEvent.event.name) {
-						actionFound = true;
-						continue;
-					}
-				if (!actionFound)
-					unusedActions.add(action);
-			}
-			if (unusedActions.size() == 0)
-				System.out.println(PASS + ACTIONS);
-			else {
-				System.out.println(WARN + ACTIONS);
-				for (Action action : unusedActions)
-					System.out.println(BLANK + "Unusable: " + action.toString());
-				// continue;
-			}
-
-			// Check if a solution exists
-			Planner planner = new Planner();
-			planner.setSearchSpace(space);
-			search = planner.getSearchFactory().makeSearch(domain.goal);
-			RootNode root = new RootNode(initial);
-			search.push(root);
-			System.out.println(BLANK + "Searching for next solution...");
-			try {
-				result = runInteruptably(() -> search.getNextSolution());
-			} catch (Exception ex) {
-				System.out.println(FAIL + "Exception while searching for solution: " + ex);
-				continue;
-			}
-			if (result != null && result.plan != null)
-				System.out.println(PASS + SOLUTION);
-			else {
-				System.out.println(FAIL + SOLUTION);
-				result = null;
-				search = null;
-				continue;
-			}
+	private static void printLastModified() {
+		if (firstRun) {
+			firstRun = false;
+			System.out.println(Text.INFO + "File Opened: " + FILE + " Last Modified: "
+					+ new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(lastModified));
+		} else {
+			System.out.println("----------------------------------------------------------------");
+			System.out.println();
+			System.out.println(Text.INFO + "File Modified: " + FILE + " Last Modified: "
+					+ new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(lastModified));
 		}
 	}
 
-	private static <E> float getJaccard(Set<E> a, Set<E> b) {
-		HashSet<E> intersection = new HashSet<>();
-		HashSet<E> union = new HashSet<>();
-		union.addAll(a);
-		union.addAll(b);
-		for (E item : a)
-			if (b.contains(item))
-				intersection.add(item);
-		return 1 - (float) intersection.size() / union.size();
+	private static Domain getDomain() throws DomainException {
+		Domain domain;
+		try {
+			Parser parser = new DefaultParser();
+			domain = parser.parse(file, Domain.class);
+		} catch (Exception ex) {
+			throw new DomainException(ex.toString());
+		}
+		System.out.println(Text.PASS + Text.SYNTAX);
+		return domain;
 	}
 
-	private static float getActionJaccard(Plan a, Plan b) {
-		HashSet<Action> set_a = new HashSet<>();
-		HashSet<Action> set_b = new HashSet<>();
+	private static SearchSpace getSearchSpace(Domain domain) {
+		return Utilities.get(status -> new SearchSpace(domain, status));
+	}
 
-		for (Action action : a)
-			set_a.add(action);
+	private static void printSpaceStatistics(SearchSpace space) {
+		System.out.println(Text.INFO + "Number of ground actions: " + space.actions.size());
+		System.out.println(Text.INFO + "Number of state variables: " + space.slots.size());
+	}
 
-		for (Action action : b)
-			set_b.add(action);
+	private static void checkDomainGoalEmpty(Domain domain) throws DomainEmptyException {
+		if (domain.goal.equals(Expression.TRUE))
+			throw new DomainEmptyException();
+		else
+			System.out.println(Text.PASS + Text.GOAL);
+	}
 
-		return getJaccard(set_a, set_b);
+	private static void checkGoalTrueInitialState(Domain domain, ArrayState initial) throws GeneralException {
+		try {
+			if (domain.goal.test(initial))
+				throw new GoalTrueInInitialState();
+			else
+				System.out.println(Text.PASS + Text.INITIAL);
+		} catch (Exception ex) {
+			throw new GeneralException(Text.FAIL + "Exception while testing the goal in the initial state: " + ex);
+		}
+	}
+
+	private static PlanGraph createExtendedPlanGraph(SearchSpace space, ArrayState initial) {
+		space.graph.initialize(initial);
+		while (!space.graph.hasLeveledOff())
+			space.graph.extend(); // Extend graph until all goals have appeared
+		return space.graph;
 	}
 
 	public static <T> T runInteruptably(Callable<T> task) {
@@ -377,103 +371,4 @@ public class Main {
 		return result;
 	}
 
-	// Returns a list of list of literals for each disjunct (ie disjunct goals).
-	private static Iterable<Iterable<Literal>> GetDNFLiterals(Expression expression) {
-		ArrayList<Iterable<Literal>> disjuncts = new ArrayList<>();
-		for (ConjunctiveClause disjunct : expression.toDNF().arguments)
-			disjuncts.add(GetLiterals(disjunct));
-		return disjuncts;
-	}
-
-	// Returns a list of literals from a conjunctiveClause or individual literal
-	private static Iterable<Literal> GetLiterals(Expression expression) {
-		if (expression instanceof Literal)
-			return new ArrayList<>(Arrays.asList((Literal) expression));
-		else if (expression instanceof ConjunctiveClause) {
-			ArrayList<Literal> literals = new ArrayList<>();
-			for (Literal argument : ((ConjunctiveClause) expression).arguments)
-				literals.add((Literal) argument);
-			return literals;
-		} else
-			System.out.println(FAIL + "GetLiterals(): Only processes Literals and Conjunctions");
-
-		return new ArrayList<>();
-	}
-
-	// Returns a list of all possible PlanGraph Plans
-	private static Collection<RelaxedPlan> GetAllPossiblePlanGraphPlans(PlanGraph graph, Iterable<Literal> goal) {
-		ArrayList<PlanGraphLiteralNode> planGraphGoal = new ArrayList<>();
-		for (Literal literal : goal)
-			planGraphGoal.add(graph.getLiteral(literal));
-
-		return GetAllPossiblePlanGraphPlans(new ArrayList<RelaxedPlan>(), new RelaxedPlan(), planGraphGoal,
-				planGraphGoal);
-	}
-
-	private static Collection<RelaxedPlan> GetAllPossiblePlanGraphPlans(ArrayList<RelaxedPlan> plans, RelaxedPlan plan,
-			ArrayList<PlanGraphLiteralNode> localGoalLiterals, ArrayList<PlanGraphLiteralNode> absoluteGoalLiterals) {
-
-		// Determine which goals have been found already
-		ArrayList<PlanGraphLiteralNode> foundGoalLiterals = new ArrayList<>();
-		foundGoalLiterals.addAll(absoluteGoalLiterals);
-		for (int i = foundGoalLiterals.size() - 1; i >= 0; i--)
-			if (localGoalLiterals.contains(foundGoalLiterals.get(i)))
-				foundGoalLiterals.remove(i);
-
-		// Remove Initial State Literals from GoalLiterals
-		for (int i = localGoalLiterals.size() - 1; i >= 0; i--) {
-			PlanGraphLiteralNode goalLiteral = localGoalLiterals.get(i);
-			if (goalLiteral.getLevel() == 0)
-				localGoalLiterals.remove(goalLiteral);
-		}
-
-		// If GoalLiterals Size is 0, we are done! Add that plan!
-		if (localGoalLiterals.size() == 0) {
-			return new ArrayList<RelaxedPlan>(Arrays.asList(plan));
-		}
-
-		// Foreach Goal Literal, follow its parents.
-		for (PlanGraphLiteralNode goalLiteral : localGoalLiterals) {
-			for (PlanGraphNode actionNode : goalLiteral.parents) {
-				PlanGraphActionNode action = (PlanGraphActionNode) actionNode;
-				int min = action.graph.size();
-				for (PlanGraphActionNode node : plan)
-					if (node.getLevel() < min)
-						min = node.getLevel();
-
-				// Due to relaxed nature, do not use same ground action twice
-				// Do not grab actions beyond current level (min)
-				if (action.getLevel() > min || plan.contains(action))
-					continue;
-
-				ArrayList<PlanGraphLiteralNode> newGoalLiterals = new ArrayList<>(localGoalLiterals);
-				newGoalLiterals.remove(goalLiteral);
-
-				ImmutableArray<? extends Literal> newLiterals = action.parents.get(0).clause.arguments;
-				for (Literal newLiteral : newLiterals)
-					newGoalLiterals.add(action.graph.getLiteral(newLiteral));
-
-				// Skip if this finds the goal again/earlier
-				boolean foundAlreadyReachedGoalLiteral = false;
-				for (PlanGraphLiteralNode foundGoalLiteral : foundGoalLiterals)
-					if (newGoalLiterals.contains(foundGoalLiteral)) {
-						foundAlreadyReachedGoalLiteral = true;
-						break;
-					}
-				
-				if (foundAlreadyReachedGoalLiteral)
-					continue;
-
-				RelaxedPlan planWithNewAction = plan.clone();
-				planWithNewAction.push(action);
-
-				Collection<RelaxedPlan> newPlan = GetAllPossiblePlanGraphPlans(plans, planWithNewAction,
-						newGoalLiterals, absoluteGoalLiterals);
-				if (newPlan != plans)
-					plans.addAll(newPlan);
-			}
-		}
-
-		return plans;
-	}
 }

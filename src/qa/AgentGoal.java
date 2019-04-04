@@ -8,7 +8,6 @@ import sabre.logic.Assignment;
 import sabre.logic.ConjunctiveClause;
 import sabre.logic.Expression;
 import sabre.logic.Literal;
-import sabre.space.SearchSpace;
 
 public class AgentGoal {
 	public static Expression get(Domain domain, Agent agent) {
