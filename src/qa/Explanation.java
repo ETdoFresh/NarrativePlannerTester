@@ -122,7 +122,7 @@ public class Explanation {
 				for (Literal effectLiteral : e.arguments)
 					for (int i = causalChains.size() - 1; i >= 0; i--) {
 						CausalChain causalChain = causalChains.get(i);
-						if (causalChain.head().equals(effectLiteral)) {
+						if (CheckEquals.Literal(causalChain.head(), effectLiteral)) {
 							for (ConjunctiveClause p : currentStep.precondition.toDNF().arguments)
 								for (Literal preconditionLiteral : p.arguments)
 									if (causalChain.canPush(preconditionLiteral))
@@ -174,7 +174,11 @@ public class Explanation {
 		}
 
 		public boolean canPush(Literal literal) {
-			return !history.contains(literal);
+			for(Literal historyLiteral : history)
+				if (CheckEquals.Literal(historyLiteral, literal))
+					return false;
+			
+			return true;
 		}
 
 		public CausalChain push(Literal literal) {
@@ -214,8 +218,7 @@ public class Explanation {
 		for (ConjunctiveClause disjunct : action.effect.toDNF().arguments)
 			for (Literal literal : disjunct.arguments)
 				for (Literal head : causalChainSet.heads())
-					//TODO do a better equals check !(alive(Red) = True) different than alive(Red) = null
-					if (literal.equals(head))
+					if (CheckEquals.Literal(literal, head))
 						return true;
 		
 		return false;
