@@ -80,6 +80,7 @@ public class Main {
 		System.out.println(TITLE);
 		System.out.println(USAGE);
 
+		// Search Loop
 		while (true) {
 			if (lastModified == file.lastModified()) {
 				if (search != null && result != null) {
@@ -187,25 +188,25 @@ public class Main {
 //			GoalGraphs goalGraphs = new GoalGraphs(space);
 
 			// Get all the Relaxed Plans from the PlanGraph
-			ArrayList<RelaxedPlan> plans = new ArrayList<>();
+			ArrayList<RelaxedPlan> relaxedPlans = new ArrayList<>();
 			for (Iterable<Literal> goal : GetDNFLiterals(space.goal))
-				plans.addAll(GetAllPossiblePlanGraphPlans(space.graph, goal));
+				relaxedPlans.addAll(GetAllPossiblePlanGraphPlans(space.graph, goal));
 			
-			System.out.println(INFO + "Explains Domain Goal: " + Explanation.IsValid(plans.get(0), domain.initial, domain.goal));
-			System.out.println(INFO + "Explains Reds Goal: " + Explanation.IsValid(plans.get(0), domain.initial, AgentGoal.get(domain, "Red")));
-			System.out.println(INFO + "Explains Wolfs Goal: " + Explanation.IsValid(plans.get(0), domain.initial, AgentGoal.get(domain, "Wolf")));
-			System.out.println(INFO + "Explains Grandmas Goal: " + Explanation.IsValid(plans.get(0), domain.initial, AgentGoal.get(domain, "Grandma")));
+			System.out.println(INFO + "Explains Domain Goal: " + Explanation.IsValid(relaxedPlans.get(0), domain.initial, domain.goal));
+			System.out.println(INFO + "Explains Reds Goal: " + Explanation.IsValid(relaxedPlans.get(0), domain.initial, AgentGoal.get(domain, "Red")));
+			System.out.println(INFO + "Explains Wolfs Goal: " + Explanation.IsValid(relaxedPlans.get(0), domain.initial, AgentGoal.get(domain, "Wolf")));
+			System.out.println(INFO + "Explains Grandmas Goal: " + Explanation.IsValid(relaxedPlans.get(0), domain.initial, AgentGoal.get(domain, "Grandma")));
 
 			// TODO Comment this out later, just displaying all relaxed Solutions
-			for (int i = 0; i < plans.size(); i++) {
+			for (int i = 0; i < relaxedPlans.size(); i++) {
 				//System.out.println(INFO + "Relaxed Solution #" + i);
 				//System.out.println(plans.get(i));
 			}
 			
 			// TODO Delete this later, Plan2Vector Test
-			RelaxedPlanVector rpv0 = new RelaxedPlanVector(space, plans.get(0));
-			RelaxedPlanVector rpv1 = new RelaxedPlanVector(space, plans.get(2));
-			System.out.println("Comparing these two relaxed plans: \n" + plans.get(0) + "\n" + plans.get(2));
+			RelaxedPlanVector rpv0 = new RelaxedPlanVector(space, relaxedPlans.get(0));
+			RelaxedPlanVector rpv1 = new RelaxedPlanVector(space, relaxedPlans.get(2));
+			System.out.println("Comparing these two relaxed plans: \n" + relaxedPlans.get(0) + "\n" + relaxedPlans.get(2));
 			System.out.println(INFO + "RPV0: " + rpv0);
 			System.out.println(INFO + "RPV1: " + rpv1);
 			System.out.println(INFO + "Intersection = " + rpv0.intersection(rpv1));
@@ -213,61 +214,66 @@ public class Main {
 			System.out.println(INFO + "Action Distance = " + rpv0.intersection(rpv1) / (float) rpv0.union(rpv1));
 			
 			// ---- Clustering test ----
-			RelaxedPlanVector[] planVecs = new RelaxedPlanVector[plans.size()];
-			for(int i=0; i<planVecs.length; i++) {
-				planVecs[i] = new RelaxedPlanVector(space, plans.get(i));
-			}
+			RelaxedPlanVector[] planVecs = new RelaxedPlanVector[relaxedPlans.size()];
+			for(int i=0; i<planVecs.length; i++)
+				planVecs[i] = new RelaxedPlanVector(space, relaxedPlans.get(i));
+			System.out.println("Total plan vectors: " + planVecs.length);
 			int k=3;
-//			RelaxedPlanVector[] centroids = new RelaxedPlanVector[k];
-
-//			System.out.println("Initializing centroids...");
-
-			/*// First attempt at random initialization
-			float weight = (float)planVecs[0].sum()/planVecs[0].size;			
-			System.out.println("Initializing centroids using weight: " + weight);
-			for(int i=0; i<k; i++)
-				centroids[i] = new RelaxedPlanVector(space, weight);
-			*/
 			
-			// Trying to improve initial centroids: Set each centroid to the mean of a different subset of the planVecs
-/*			int segmentLength = planVecs.length / k;
-			int startIndex = 0;
-			for(int i=0; i<k; i++) {
-				ArrayList<RelaxedPlanVector> segment = new ArrayList<>();
-				for(int j=startIndex; j-startIndex<segmentLength; j++)
-					segment.add(planVecs[j]);
-				centroids[i] = RelaxedPlanVector.mean(segment);
-				startIndex += segmentLength;
+			ArrayList<RelaxedPlanVector> uniquePlanVecs = new ArrayList<>();
+			for(RelaxedPlanVector vec : planVecs) {
+				if(!uniquePlanVecs.contains(vec))
+					uniquePlanVecs.add(vec);
 			}
-*/
-/*			System.out.println("Initial centroids: ");
-			for(RelaxedPlanVector centroid : centroids) {
-				System.out.println(centroid.toString() + "\n... Actions: " + centroid.getActions().toString());
+			System.out.println("Unique plan vectors: " + uniquePlanVecs.size());
+
+			ArrayList<RelaxedPlan> uniquePlans = new ArrayList<>();
+			for(RelaxedPlan plan : relaxedPlans) {
+				if(!uniquePlans.contains(plan))
+					uniquePlans.add(plan);
 			}
-*/
-			// Let the clustering begin
-			Clusterer clusterer = new Clusterer(planVecs, k);
+			System.out.println("Unique plans: " + uniquePlans.size());
+
+			// Test k-means / kmedoids
+			Clusterer clusterer = new Clusterer(uniquePlanVecs.toArray(new RelaxedPlanVector[uniquePlanVecs.size()]), k);
 			Random random = new Random();
-			for(int i=0; i<planVecs.length; i++) {
-				int assignment = random.nextInt(k);
-				planVecs[i].clusterAssignment = assignment;
-			}
-
+			for(int i=0; i<uniquePlanVecs.size(); i++) 
+				uniquePlanVecs.get(i).clusterAssignment = random.nextInt(k);			
 			for(int i=0; i<k; i++)
-				System.out.println("Cluster "+i+ " -- Initial assignments: " + clusterer.getAssignments(clusterer.clusters[i].getID()).size());
-
-			clusterer.kmeans();
+				System.out.println("Cluster "+i+ " has " + clusterer.getVectorAssignments(clusterer.clusters[i].id).size() + " initial assignments.");
+			clusterer.kmedoids();
+			System.out.println("---------------------------------");
+			System.out.println("Final centroids:");
+			for(int i=0; i<k; i++)
+				System.out.println(i + ": " + clusterer.clusters[i].centroid + "\nAssignments: " + clusterer.getVectorAssignments(i).size());
+			System.out.println("---------------------------------");
+			
+			
+			// Test k-medoids without vectors
+/*			clusterer = new Clusterer(uniquePlans.toArray(new RelaxedPlan[uniquePlans.size()]), k);
+			random = new Random();
+			for(int i=0; i<uniquePlans.size(); i++) 
+				uniquePlans.get(i).clusterAssignment = random.nextInt(k);
+			for(int i=0; i<k; i++)
+				System.out.println("Cluster "+i+ " has " + clusterer.getPlanAssignments(clusterer.clusters[i].id).size() + " initial assignments.");
+			clusterer.kmedoids();
+			System.out.println("---------------------------------");
+			System.out.println("Final medoids:");
+			for(int i=0; i<k; i++)
+				System.out.println(i + ": " + clusterer.clusters[i].medoid + "\nAssignments: " + clusterer.getPlanAssignments(i).size());
+			System.out.println("---------------------------------");
+*/			
 			// ----------------------------
 			
 			//System.out.println(INFO + "RPV1-RPV0: " + rpv1.minus(rpv0).magnitude() + " " + rpv1.minus(rpv0));
 			//System.out.println();
 			
 			// TODO Delete this later, Magnitude Tester
-			for(int i = 0; i < plans.size(); i++) {
-				for (int j = i; j < plans.size(); j++)
+			for(int i = 0; i < relaxedPlans.size(); i++) {
+				for (int j = i; j < relaxedPlans.size(); j++)
 				{
-					RelaxedPlanVector vi = new RelaxedPlanVector(space, plans.get(i));
-					RelaxedPlanVector vj = new RelaxedPlanVector(space, plans.get(j));
+					RelaxedPlanVector vi = new RelaxedPlanVector(space, relaxedPlans.get(i));
+					RelaxedPlanVector vj = new RelaxedPlanVector(space, relaxedPlans.get(j));
 					//System.out.println("Relaxed Solution Action Distance " + i + " vs " + j + "," + vi.minus(vj).magnitude());	
 				}						
 			}

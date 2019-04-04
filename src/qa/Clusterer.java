@@ -10,13 +10,20 @@ public class Clusterer {
 	
 	public RelaxedPlanCluster[] clusters; // array of clusters. Size = k
 	public RelaxedPlanVector[] planVecs; // array of vectors representing relaxed plans. Size = n
+	public RelaxedPlan[] relaxedPlans;
 	
 	private final int k;
-	private final int n;
 	
 	public Clusterer(RelaxedPlanVector[] planVecs, int k) {
 		this.planVecs = planVecs;
-		this.n = planVecs.length;
+		this.k = k;
+		this.clusters = new RelaxedPlanCluster[k];
+		for(int i=0; i<k; i++)
+			clusters[i] = new RelaxedPlanCluster(i);
+	}
+	
+	public Clusterer(RelaxedPlan[] relaxedPlans, int k) {
+		this.relaxedPlans = relaxedPlans;
 		this.k = k;
 		this.clusters = new RelaxedPlanCluster[k];
 		for(int i=0; i<k; i++)
@@ -24,7 +31,7 @@ public class Clusterer {
 	}
 
 	/** Find the planVecs that are assigned to this cluster */
-	protected ArrayList<RelaxedPlanVector> getAssignments(int clusterID){
+	protected ArrayList<RelaxedPlanVector> getVectorAssignments(int clusterID){
 		ArrayList<RelaxedPlanVector> assigned = new ArrayList<>();
 		for(int i=0; i<planVecs.length; i++) {
 			if(planVecs[i].clusterAssignment == clusterID)
@@ -33,44 +40,126 @@ public class Clusterer {
 		return assigned;
 	}
 
-	/** Set the cluster centroid to the mean of its current assignments */
-	private void updateCentroid(RelaxedPlanCluster cluster) {
-		cluster.setCentroid(RelaxedPlanVector.mean(getAssignments(cluster.getID())));
-		System.out.println("Mean of: " + getAssignments(cluster.getID()) + " = " + cluster.getCentroid());
+	protected ArrayList<RelaxedPlan> getPlanAssignments(int clusterID){
+		ArrayList<RelaxedPlan> assigned = new ArrayList<>();
+		for(int i=0; i<relaxedPlans.length; i++) {
+			if(relaxedPlans[i].clusterAssignment == clusterID)
+				assigned.add(relaxedPlans[i]);
+		}
+		return assigned;
 	}
 
-	public void kmeans() {	
-		int assignmentsChanged;
-		do{
-			for(RelaxedPlanCluster cluster : clusters) {
-				if(cluster.getCentroid()!=null) {
-					System.out.println("Cluster " + cluster.getID() + "\n-- centroid: " + cluster.getCentroid());
-					System.out.println("... Events: " + cluster.getCentroid().getActions().toString());
-					System.out.println("... # Assignments: " + getAssignments(cluster.getID()).size());
-				}
-			}
+	
+	/** Set the cluster centroid to the mean of its current assignments */
+	private void updateCentroid(RelaxedPlanCluster cluster) {
+		cluster.centroid = RelaxedPlanVector.mean(getVectorAssignments(cluster.id));
+	}
+	
+	private void updateMedoid(RelaxedPlanCluster cluster) {
+		cluster.centroid = RelaxedPlanVector.medoid(getVectorAssignments(cluster.id));
+	}
 
+	private void updateMedoid(RelaxedPlanCluster cluster, boolean withoutVectors) {
+		cluster.medoid = RelaxedPlan.medoid(getPlanAssignments(cluster.id));
+	}
+	
+	public void kmedoids() {
+		System.out.println("K-MEDOIDS (using vectors): ");
+		int iteration = 1;
+		int assignmentsChanged;
+		do {
 			assignmentsChanged = 0;
-			// Update cluster centroids to reflect their current assignments
+			// Update medoids
 			for(RelaxedPlanCluster cluster : clusters)
-				updateCentroid(cluster);
-			// Update assignment for each planVec
+				updateMedoid(cluster);
+			// Update assignments
 			for(int i=0; i<planVecs.length; i++) {
 				float minDistance = Float.MAX_VALUE;
-				int assignment = -1;
+				int clusterToAssign = -1;
 				for(int c=0; c<k; c++) {
-					float distance = planVecs[i].actionDistance(clusters[c].getCentroid());
+					float distance = planVecs[i].jaccard(clusters[c].centroid);
 					if(distance < minDistance) {
 						minDistance = distance;
-						assignment = c;
+						clusterToAssign = c;
 					}
 				}
-				if(planVecs[i].clusterAssignment != assignment) {
-					planVecs[i].clusterAssignment = assignment;
+				if(planVecs[i].clusterAssignment != clusterToAssign) {
+					planVecs[i].clusterAssignment = clusterToAssign;
 					assignmentsChanged++;
 				}
 			}
-			System.out.println("changed " + assignmentsChanged + " assignments");			
+			System.out.println("Iteration " + iteration + " changed " + assignmentsChanged + " assignments.");
+			iteration++;
+		} while(assignmentsChanged > 0);
+	}
+	
+	public void kmedoids(boolean withoutVectors) {
+		System.out.println("K-MEDOIDS (with RelaxedPlans, no vectors): ");
+		int iteration = 1;
+		int assignmentsChanged;
+		do {
+			assignmentsChanged = 0;
+			// Update medoids
+			for(RelaxedPlanCluster cluster : clusters)
+				updateMedoid(cluster, withoutVectors);
+			// Update assignments
+			for(int i=0; i<relaxedPlans.length; i++) {
+				float minDistance = Float.MAX_VALUE;
+				int clusterToAssign = -1;
+				for(int c=0; c<k; c++) {
+					float distance = relaxedPlans[i].jaccard(clusters[c].medoid);
+					if(distance < minDistance) {
+						minDistance = distance;
+						clusterToAssign = c;
+					}
+				}
+				if(relaxedPlans[i].clusterAssignment != clusterToAssign) {
+					relaxedPlans[i].clusterAssignment = clusterToAssign;
+					assignmentsChanged++;
+				}
+			}
+			System.out.println("Iteration " + iteration + " changed " + assignmentsChanged + " assignments.");
+			iteration++;
+		} while(assignmentsChanged > 0);
+	}
+	
+	public void kmeans() {
+		System.out.println("K-MEANS: ");
+		int iteration = 1;
+		int assignmentsChanged;
+		do{
+			assignmentsChanged = 0;
+
+			/*for(RelaxedPlanCluster cluster : clusters) {
+				if(cluster.getCentroid()!=null) {
+					System.out.println("Cluster " + cluster.getID() + "\n-- centroid: " + cluster.getCentroid());
+					System.out.println("... Events: " + cluster.getCentroid().toActionList().toString());
+					System.out.println("... # Assignments: " + getAssignments(cluster.getID()).size());
+				}
+			}*/
+
+			// Update cluster centroids to reflect their current assignments
+			for(RelaxedPlanCluster cluster : clusters)
+				updateCentroid(cluster);
+			
+			// Update assignment for each planVec
+			for(int i=0; i<planVecs.length; i++) {
+				float minDistance = Float.MAX_VALUE;
+				int clusterToAssign = -1;
+				for(int c=0; c<k; c++) {
+					float distance = planVecs[i].jaccard(clusters[c].centroid);
+					if(distance < minDistance) {
+						minDistance = distance;
+						clusterToAssign = c;
+					}
+				}
+				if(planVecs[i].clusterAssignment != clusterToAssign) {
+					planVecs[i].clusterAssignment = clusterToAssign;
+					assignmentsChanged++;
+				}
+			}
+			System.out.println("Iteration " + iteration +" changed " + assignmentsChanged + " assignments.");			
+			iteration++;
 		} while (assignmentsChanged > 0);
 	}	
 }

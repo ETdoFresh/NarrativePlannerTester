@@ -22,5 +22,5 @@ public class PlanGraphActionNode extends PlanGraphEventNode {
 		}
 		else
 			return false;
-	}
+	}	
 }
