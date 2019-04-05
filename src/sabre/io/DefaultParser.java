@@ -381,6 +381,7 @@ public class DefaultParser extends Parser {
 	public DefaultParser() {
 		// Ignore the contents of parentheses during lookahead.
 		setBrackets("(", ")");
+		
 		// Type Definition
 		addRule(TYPE_DEFINITION,
 			"type", Pattern.SYMBOL, "extends", new List(Pattern.SYMBOL, ","), ";");
@@ -496,11 +497,12 @@ public class DefaultParser extends Parser {
 			Expression.class, ";");
 		setBuilder(STANDALONE_EXPRESSION, STANDALONE_EXPRESSION_BUILDER);
 		// Goal Definition (must come before property definition)
-		addRule(GOAL_DEFINITION,
-			"goal", ":", Expression.class, ";");
-		setBuilder(GOAL_DEFINITION, GOAL_BUILDER);
+		addRule(GOAL_DEFINITION, "goal", ":", Expression.class, ";");
+		setBuilder(GOAL_DEFINITION, GOAL_BUILDER);		
+		
 		// Domain
 		NonTerminal definition = new NonTerminal("definition");
+		addRule(definition, LANDMARK_DEFINITION); // needs to come before property definition because of similar syntax
 		addRule(definition, GOAL_DEFINITION); // needs to come before property definition because of similar syntax
 		addRule(definition, TYPE_DEFINITION);
 		addRule(definition, ENTITY_DEFINITION);
@@ -510,5 +512,19 @@ public class DefaultParser extends Parser {
 		addRule(Domain.class,
 			"domain", ":", Pattern.STRING, ";", new List(definition, ""));
 		setBuilder(Domain.class, DOMAIN_BUILDER);
+		
+		addRule(LANDMARK_DEFINITION, "landmark", ":", Pattern.STRING, ";");
+		setBuilder(LANDMARK_DEFINITION, LANDMARK_BUILDER);
 	}
+	
+	private static final NonTerminal LANDMARK_DEFINITION = new NonTerminal("landmark");
+	private static final Builder LANDMARK_BUILDER = new Builder() {
+
+		@Override
+		public Object build(ParseTree tree) throws ParseException {
+			DomainBuilder builder = getDomainBuilder(tree);
+			builder.setLandmark(tree.child(0).build(String.class));
+			return null;
+		}
+	};
 }

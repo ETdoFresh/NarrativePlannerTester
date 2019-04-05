@@ -17,6 +17,7 @@ public class DomainBuilder {
 	private String name;
 	private String comment;
 	private Expression goal;
+	private String landmark;
 	
 	public DomainBuilder(Domain domain) {
 		this.domain = new Domain(domain, domain.name, domain.comment, domain.goal);
@@ -26,7 +27,9 @@ public class DomainBuilder {
 	}
 	
 	public Domain getDomain() {
-		return new Domain(domain, name, comment, goal);
+		Domain newDomain = new Domain(domain, name, comment, goal);
+		newDomain.landmark = landmark;
+		return newDomain;
 	}
 
 	//-------------------------------------------------------------------------
@@ -35,6 +38,11 @@ public class DomainBuilder {
 	
 	public void setName(String name) {
 		this.name = name;
+	}
+	
+	public void setLandmark(String landmark) {
+		this.landmark = landmark;
+		domain.landmark = landmark;
 	}
 	
 	public void setComment(String comment) {
