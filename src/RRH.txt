@@ -1,7 +1,8 @@
-// [0]-------------------------------------------------
 domain: "Little Red Riding Hood";
+goal: location(Cookies) = Grandma & !alive(Grandma);
 
-// [1]-------------------------------------------------
+landmark: "Hello world! I need to figure out how to put some steps in here!";
+
 // Types
 type character extends agent;
 type item;
@@ -29,6 +30,7 @@ alive(Grandma);
 location(Red) = Home;
 location(Wolf) = Forest;
 location(Grandma) = Cottage;
+location(Cookies) = Red;
 path(Home, Forest);
 path(Forest, Home);
 path(Forest, Cottage);
@@ -73,9 +75,3 @@ action eat(character character*, character other, place place){
 	);
 	effect: !alive(other);
 }
-
-// [2]-------------------------------------------------
-goal: location(Cookies) = Grandma & !alive(Grandma);
-
-// [3]-------------------------------------------------
-location(Cookies) = Red;
