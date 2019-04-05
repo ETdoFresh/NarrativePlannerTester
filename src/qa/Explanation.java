@@ -12,19 +12,8 @@ import sabre.util.ImmutableArray;
 
 public class Explanation {
 	public Agent agent;
-	public RelaxedPlan plan;
-	public InitialState initial;
 	public Expression goals;
-	public HashMap<ConjunctiveClause, CausalChainSet> causalChainMap = new HashMap<>();
 	public CausalChainSet causalChainSet;
-	public int currentStepIndex = -1;
-
-	public Explanation(RelaxedPlan plan, ImmutableArray<Expression> initial, Expression goals) {
-		this.plan = plan;
-		this.goals = goals;
-		this.initial = new InitialState(initial);
-		this.currentStepIndex = plan.size() - 1;
-	}
 
 	public Explanation(Agent agent, Expression agentGoal) {
 		this.agent = agent;
@@ -32,7 +21,6 @@ public class Explanation {
 
 		for (ConjunctiveClause goal : goals.toDNF().arguments) {
 			causalChainSet = new CausalChainSet(goal); // TODO remove this later and fix code to handle DNF
-			causalChainMap.put(goal, causalChainSet);
 		}
 	}
 	
@@ -48,51 +36,6 @@ public class Explanation {
 	
 	public void applyAction(Action action) {
 		causalChainSet.addOrRemoveChainUsing(action);
-	}
-
-	public boolean build() {
-		if (currentStepIndex < 0)
-			return false;
-
-		// Create Initial Causal Chains
-		for (ConjunctiveClause goal : goals.toDNF().arguments) {
-			causalChainSet = new CausalChainSet(goal); // TODO remove this later and fix code to handle DNF
-			causalChainMap.put(goal, causalChainSet);
-		}
-
-		// Working backwards on RelaxedPlan, Find first step that has an effect that
-		// contains one (or more) causal chain heads
-		while (currentStepIndex >= 0) {
-			Action currentStep = plan.get(currentStepIndex).event;
-			if (!causalChainLiteralExistsIn(currentStep.effect)) {
-				currentStepIndex--;
-			} else {
-				causalChainSet.addOrRemoveChainUsing(currentStep);
-				currentStepIndex--;
-			}
-		}
-		return initialStateContainsAllCausalChainHeads();
-	}
-
-	private boolean initialStateContainsAllCausalChainHeads() {
-		for (Literal head : causalChainSet.heads())
-			if (!initial.contains(head))
-				return false;
-
-		return true;
-	}
-
-	private boolean causalChainLiteralExistsIn(Expression effect) {
-		for (ConjunctiveClause e : effect.toDNF().arguments)
-			for (Literal l : e.arguments)
-				if (causalChainSet.headContains(l))
-					return true;
-		return false;
-	}
-
-	public static boolean IsValid(RelaxedPlan plan, ImmutableArray<Expression> initial, Expression goals) {
-		Explanation explanation = new Explanation(plan, initial, goals);
-		return explanation.build();
 	}
 	
 	@Override
@@ -194,23 +137,6 @@ public class Explanation {
 		@Override
 		public String toString() {
 			return history.toString();
-		}
-	}
-
-	private class InitialState {
-		ImmutableArray<Expression> initial;
-
-		public InitialState(ImmutableArray<Expression> initial) {
-			this.initial = initial;
-		}
-
-		public boolean contains(Literal literal) {
-			for (Expression expression : initial)
-				for (ConjunctiveClause clause : expression.toDNF().arguments)
-					if (clause.arguments.contains(literal))
-						return true;
-
-			return false;
 		}
 	}
 
