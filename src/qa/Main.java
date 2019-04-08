@@ -71,6 +71,8 @@ public class Main {
 				for(RelaxedPlan plan : relaxedPlans)
 					System.out.println(plan);
 				
+				ArrayList<RelaxedPlan> filteredPlans = Landmark.filter(relaxedPlans, domain.landmark, space);
+				
 				// ---- Clustering test ----
 				RelaxedPlanVector[] planVecs = new RelaxedPlanVector[relaxedPlans.size()];
 				for(int i=0; i<planVecs.length; i++)

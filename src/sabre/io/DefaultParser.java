@@ -514,6 +514,7 @@ public class DefaultParser extends Parser {
 		setBuilder(Domain.class, DOMAIN_BUILDER);
 		
 		addRule(LANDMARK_DEFINITION, "landmark", ":", Pattern.STRING, ";");
+		//addRule(LANDMARK_DEFINITION, "landmark", ":", Pattern.SYMBOL, "(", new List(parameter, ","), ")");
 		setBuilder(LANDMARK_DEFINITION, LANDMARK_BUILDER);
 	}
 	
