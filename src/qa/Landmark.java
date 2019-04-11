@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import sabre.Action;
 import sabre.graph.PlanGraphActionNode;
+import sabre.graph.PlanGraphEventNode;
 import sabre.space.SearchSpace;
 
 public class Landmark {
@@ -22,7 +23,7 @@ public class Landmark {
 
 	private static boolean containsAtLeastOneStep(RelaxedPlan relaxedPlan, ArrayList<Action> landmarkSteps) {
 		for(Action action : landmarkSteps)
-			for (PlanGraphActionNode relaxedAction : relaxedPlan)
+			for (PlanGraphEventNode relaxedAction : relaxedPlan)
 				if (action.equals(relaxedAction.event))
 					return true;
 		

@@ -4,12 +4,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
-import qa.Explanation.CausalChain;
 import sabre.Agent;
 import sabre.Domain;
 import sabre.graph.PlanGraph;
 import sabre.graph.PlanGraphActionNode;
-import sabre.graph.PlanGraphAxiomNode;
 import sabre.graph.PlanGraphEventNode;
 import sabre.graph.PlanGraphLiteralNode;
 import sabre.graph.PlanGraphNode;
@@ -78,6 +76,8 @@ public class RelaxedPlanExtractor {
 							newGoalLiterals, initialGoalLiterals, newExplanations);
 					if (newPlan != plans)
 						plans.addAll(newPlan);
+				} else {
+					// TODO: Handle axioms (but not yet; no axioms in Camelot domain now)
 				}
 			}
 		}
