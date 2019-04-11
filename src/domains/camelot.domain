@@ -2,7 +2,6 @@ domain: "Camelot";
 goal: location(Medicine) = Peter;
 
 // Types
-
 type location;
 type place extends location;
 type container extends location;
@@ -11,27 +10,21 @@ type item;
 type weapon extends item;
 type coin extends item;
 
-// Places
-place :	Home;
-place :	Town;
-place :	Market;
-place :	Camp;
-
-// Characters	
+// Entities
 character : Peter;
 character : Merchant;
 character : Guard;
 character : Bandit;
-
-// Items
+place :	Home;
+place :	Town;
+place :	Market;
+place :	Camp;
 coin : PeterCoin;
 coin : BanditCoin;
 item : Medicine;
 weapon : MerchantSword;
 weapon : GuardSword;
 weapon : BanditSword;
-
-// Containers
 container : Chest;
 
 // Properties
@@ -40,19 +33,22 @@ place :		location(character);
 place :		location(container);
 location :	location(item);
 boolean :	alive(character) = True;
-boolean :	valuable(item); 
 boolean :	criminal(character);
+boolean :   knowsCriminal(character, character);
 boolean :	attacked(character);
 weapon :	wielding(character);
 
-path(Home, Town);
-path(Town, Market);
-path(Town, Camp);
-path(Camp, Town);
-path(Market, Town);
-path(Town, Home);
+// Intentions
+intends(Peter, alive(Peter));
+intends(Peter, location(Medicine) = Peter);
+intends(Peter, location(Peter) = Home);
+intends(Merchant, location(Merchant) = Market);
+intends(Merchant, alive(Merchant));
+intends(Guard, alive(Guard));
+intends(Bandit, alive(Bandit));
 
-location(Peter) = Home;
+// State
+location(Peter) = Market;
 location(Merchant) = Market;
 location(Guard) = Market;
 location(Bandit) = Camp;
@@ -63,56 +59,15 @@ location(Medicine) = Merchant;
 location(MerchantSword) = Merchant;
 location(GuardSword) = Guard;
 location(BanditSword) = Bandit;
-
-intends(Peter, alive(Peter));
-intends(Peter, location(Medicine) = Peter);
-intends(Peter, location(Peter) = Market);
-intends(Merchant, alive(Merchant));
-intends(Merchant, location(Merchant) = Market);
-intends(Guard, alive(Guard));
-intends(Bandit, alive(Bandit));
-
-valuable(PeterCoin);
-valuable(BanditCoin);
-valuable(Medicine);
-
 criminal(Bandit);
-
-//axiom merchantWillTrade(character c, item cItem, item mItem){
-//	precondition: (
-//		location(c) = Market &
-//		!criminal(c) &
-//		location(cItem) = c &
-//		location(mItem) = Merchant &
-//		valuable(cItem) &
-//		!intends(Merchant, location(mItem) = c)
-//	);
-//	effect: (
-//		intends(Merchant, location(mItem) = c) &
-//		intends(Merchant, location(cItem) = Merchant)
-//	);	
-//}
-
-//axiom guardWants(character c){
-//	precondition: (
-//		criminal(c) & location(c) = Market & !intends(Guard, !alive(c))
-//	);
-//	effect: (
-//		intends(Guard, !alive(c))
-//	);
-//}
-
-//axiom banditWants(item i){
-//		precondition: (
-//			valuable(i) & !intends(Bandit, location(i) = Chest)			
-//		);
-//		effect: (
-//			intends(Bandit, location(i) = Chest)
-//		);
-//}
+path(Home, Town);
+path(Town, Market);
+path(Town, Camp);
+path(Camp, Town);
+path(Market, Town);
+path(Town, Home);
 
 // Actions
-
 action walk(character character*, place from, place to){
 	precondition: (
 		location(character) = from & 
@@ -123,6 +78,49 @@ action walk(character character*, place from, place to){
 		location(character) = to
 	);
 }
+
+action buy(character character*, item item, coin coin){
+	precondition: (
+		location(item) = Merchant &
+		location(character) = Market &
+		location(Merchant) = Market &
+		location(coin) = character &
+		criminal(character) = False
+	);
+	effect: (
+		location(item) = character &
+		location(coin) = Merchant
+	);
+}
+
+action reportCriminal(character character*, character criminal, place place){
+	precondition: (
+		knowsCriminal(character, criminal) &
+		location(character) = place &
+		location(Guard) = place
+	);
+	effect: (
+		knowsCriminal(Guard, criminal) &
+		intends(Guard, !alive(criminal))
+	);
+}
+
+action steal(character character*, character victim, item item, weapon weapon, place place){
+	precondition: (
+		alive(character) &
+		alive(victim) &
+		location(character) = place &
+		location(victim) = place &
+		location(item) = victim &
+		wielding(character) = weapon &
+		wielding(victim) = Null
+	);
+	effect: (
+		location(item) = character &
+		knowsCriminal(victim, character)
+	);
+}
+
 
 action draw(character character*, weapon weapon){
 	precondition: (
@@ -182,29 +180,48 @@ action putInContainer(character character*, item item, container container, plac
 	);
 }
 
-action buy(character character*, item item, coin coin){
-	precondition: (
-		location(item) = Merchant &
-		location(character) = Market &
-		location(Merchant) = Market &
-		location(coin) = character &
-		criminal(character) = False
-	);
-	effect: (
-		location(item) = character &
-		location(coin) = Merchant
-	);
-}
+//action trade(character a*, character b*, item itemA, item itemB, place place){
+//	precondition: (
+//		location(a) = place &
+//		location(b) = place &
+//		location(itemA) = a &
+//		location(itemB) = b
+//	);
+//	effect: (
+//		location(itemA) = b &
+//		location(itemB) = a
+//	);
+//}
 
-action trade(character a*, character b*, item itemA, item itemB, place place){
-	precondition: (
-		location(a) = place &
-		location(b) = place &
-		location(itemA) = a &
-		location(itemB) = b
-	);
-	effect: (
-		location(itemA) = b &
-		location(itemB) = a
-	);
-}
+//axiom merchantWillTrade(character c, item cItem, item mItem){
+//	precondition: (
+//		location(c) = Market &
+//		!criminal(c) &
+//		location(cItem) = c &
+//		location(mItem) = Merchant &
+//		valuable(cItem) &
+//		!intends(Merchant, location(mItem) = c)
+//	);
+//	effect: (
+//		intends(Merchant, location(mItem) = c) &
+//		intends(Merchant, location(cItem) = Merchant)
+//	);	
+//}
+
+//axiom guardWants(character c){
+//	precondition: (
+//		criminal(c) & location(c) = Market & !intends(Guard, !alive(c))
+//	);
+//	effect: (
+//		intends(Guard, !alive(c))
+//	);
+//}
+
+//axiom banditWants(item i){
+//		precondition: (
+//			valuable(i) & !intends(Bandit, location(i) = Chest)			
+//		);
+//		effect: (
+//			intends(Bandit, location(i) = Chest)
+//		);
+//}

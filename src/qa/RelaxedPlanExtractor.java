@@ -8,6 +8,7 @@ import sabre.Agent;
 import sabre.Domain;
 import sabre.graph.PlanGraph;
 import sabre.graph.PlanGraphActionNode;
+import sabre.graph.PlanGraphAxiomNode;
 import sabre.graph.PlanGraphEventNode;
 import sabre.graph.PlanGraphLiteralNode;
 import sabre.graph.PlanGraphNode;
@@ -61,7 +62,7 @@ public class RelaxedPlanExtractor {
 		for (PlanGraphLiteralNode goalLiteral : localGoalLiterals) {
 			for (PlanGraphNode node : goalLiteral.parents) {
 				ArrayList<PlanGraphLiteralNode> newGoalLiterals = new ArrayList<>(localGoalLiterals);
-				newGoalLiterals.remove(goalLiteral);
+				newGoalLiterals.remove(goalLiteral);				
 				if(node instanceof PlanGraphActionNode) {
 					PlanGraphActionNode actionNode = (PlanGraphActionNode) node;
 					ImmutableArray<? extends Literal> newLiterals = actionNode.parents.get(0).clause.arguments;
@@ -99,13 +100,16 @@ public class RelaxedPlanExtractor {
 		return newExplanations;
 	}
 	
-	private static boolean canBeExplainedForAllConsentingCharacters(PlanGraphActionNode node, 
+	private static boolean canBeExplainedForAllConsentingCharacters(PlanGraphEventNode eventNode, 
 			ArrayList<Explanation> explanations) {
-		for (Term agent : node.event.agents) {
+		if(eventNode instanceof PlanGraphAxiomNode)
+			return true;
+		PlanGraphActionNode actionNode = (PlanGraphActionNode)eventNode;
+		for (Term agent : actionNode.event.agents) {
 			boolean explained = false;
 			for (Explanation explanation : explanations) {
 				if (explanation.agent.equals(agent))
-					if (explanation.containsEffect(node.event))
+					if (explanation.containsEffect(actionNode.event))
 						explained = true;
 			}
 			if(!explained)
