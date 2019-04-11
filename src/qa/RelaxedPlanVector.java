@@ -39,6 +39,19 @@ public class RelaxedPlanVector {
 		}
 	}
 	
+	/** Construct a randomized vector with no reference to the space (for initial cluster centroids) */
+	public RelaxedPlanVector(int n, float weight) {
+		this.size = n;
+		this.actionValues = new boolean[size];
+		Random random = new Random();
+		for(int i=0; i<size; i++) {
+			if(random.nextFloat() < weight)
+				actionValues[i] = true;
+			else
+				actionValues[i] = false;
+		}
+	}
+	
 	/** Get the list of actions represented by this vector */
 	public ArrayList<Action> toActionList() {
 		ArrayList<Action> actions = new ArrayList<>();
@@ -56,7 +69,9 @@ public class RelaxedPlanVector {
 	
 	/** Get the intersection of this and another vector */
 	protected int intersection(RelaxedPlanVector other) {
-		if(size != other.size) {
+		if(other.size == 0)
+			return 0;
+		if(size != other.size) {			
 			System.out.println("Huh? Vectors not the same size: "+size+", "+other.size);
 			return -1;
 		}
@@ -98,8 +113,10 @@ public class RelaxedPlanVector {
 		return meanVector;
 	}
 
-	public static RelaxedPlanVector medoid(ArrayList<RelaxedPlanVector> planVecs) {
+	public static RelaxedPlanVector medoid(ArrayList<RelaxedPlanVector> planVecs, int size) {
 		RelaxedPlanVector medoid = null;
+		if(planVecs.size() == 0)
+			return new RelaxedPlanVector(size, 0);
 		float[] averageDistances = new float[planVecs.size()];
 		for(int i=0; i<planVecs.size(); i++) {
 			float sum = 0;
@@ -116,7 +133,7 @@ public class RelaxedPlanVector {
 			}
 		}
 		if(medoid==null)
-			return new RelaxedPlanVector(space, 0);
+			return new RelaxedPlanVector(size, 0);
 		return medoid;
 	}
 	

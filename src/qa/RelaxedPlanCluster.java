@@ -6,8 +6,9 @@ public class RelaxedPlanCluster {
 	protected RelaxedPlanVector centroid;
 	protected RelaxedPlan medoid;
 	
-	public RelaxedPlanCluster(int id){
+	public RelaxedPlanCluster(int id, int n){
 		this.id = id;
+		this.centroid = new RelaxedPlanVector(n, 0);
 	}
 	
 	@Override

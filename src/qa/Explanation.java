@@ -3,8 +3,8 @@ package qa;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import sabre.Action;
 import sabre.Agent;
+import sabre.Event;
 import sabre.logic.ConjunctiveClause;
 import sabre.logic.Expression;
 import sabre.logic.Literal;
@@ -46,8 +46,8 @@ public class Explanation {
 		return new Explanation(agent, goals, causalChainSet);
 	}
 	
-	public void applyAction(Action action) {
-		causalChainSet.addOrRemoveChainUsing(action);
+	public void applyEvent(Event event) {
+		causalChainSet.addOrRemoveChainUsing(event);
 	}
 
 	public boolean build() {
@@ -63,7 +63,7 @@ public class Explanation {
 		// Working backwards on RelaxedPlan, Find first step that has an effect that
 		// contains one (or more) causal chain heads
 		while (currentStepIndex >= 0) {
-			Action currentStep = plan.get(currentStepIndex).event;
+			Event currentStep = plan.get(currentStepIndex).event;
 			if (!causalChainLiteralExistsIn(currentStep.effect)) {
 				currentStepIndex--;
 			} else {
@@ -117,7 +117,7 @@ public class Explanation {
 			return new CausalChainSet(causalChains);
 		}
 
-		public void addOrRemoveChainUsing(Action currentStep) {
+		public void addOrRemoveChainUsing(Event currentStep) {
 			for (ConjunctiveClause e : currentStep.effect.toDNF().arguments)
 				for (Literal effectLiteral : e.arguments)
 					for (int i = causalChains.size() - 1; i >= 0; i--) {
@@ -214,8 +214,8 @@ public class Explanation {
 		}
 	}
 
-	public boolean containsEffect(Action action) {
-		for (ConjunctiveClause disjunct : action.effect.toDNF().arguments)
+	public boolean containsEffect(Event event) {
+		for (ConjunctiveClause disjunct : event.effect.toDNF().arguments)
 			for (Literal literal : disjunct.arguments)
 				for (Literal head : causalChainSet.heads())
 					if (CheckEquals.Literal(literal, head))

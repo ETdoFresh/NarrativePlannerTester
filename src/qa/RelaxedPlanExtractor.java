@@ -9,9 +9,10 @@ import sabre.Agent;
 import sabre.Domain;
 import sabre.graph.PlanGraph;
 import sabre.graph.PlanGraphActionNode;
+import sabre.graph.PlanGraphAxiomNode;
+import sabre.graph.PlanGraphEventNode;
 import sabre.graph.PlanGraphLiteralNode;
 import sabre.graph.PlanGraphNode;
-import sabre.logic.Expression;
 import sabre.logic.Literal;
 import sabre.logic.Term;
 import sabre.space.SearchSpace;
@@ -23,7 +24,6 @@ public class RelaxedPlanExtractor {
 	static Collection<RelaxedPlan> GetAllPossiblePlanGraphPlans(SearchSpace space, Iterable<? extends Literal> goal) {
 		ArrayList<PlanGraphLiteralNode> goalLiterals = getGoalLiterals(space.graph, goal);
 		ArrayList<Explanation> explanations = getExplanations(space.domain);
-
 		return RelaxedPlanExtractor.GetAllPossiblePlanGraphPlans(new ArrayList<RelaxedPlan>(), new RelaxedPlan(),
 				goalLiterals, goalLiterals, explanations);
 	}
@@ -61,42 +61,36 @@ public class RelaxedPlanExtractor {
 
 		// For each Goal Literal, follow its parents.
 		for (PlanGraphLiteralNode goalLiteral : localGoalLiterals) {
-			for (PlanGraphNode actionNode : goalLiteral.parents) {
-				PlanGraphActionNode action = (PlanGraphActionNode) actionNode;
-
+			for (PlanGraphNode node : goalLiteral.parents) {
 				ArrayList<PlanGraphLiteralNode> newGoalLiterals = new ArrayList<>(localGoalLiterals);
 				newGoalLiterals.remove(goalLiteral);
-
-				ImmutableArray<? extends Literal> newLiterals = action.parents.get(0).clause.arguments;
-				for (Literal newLiteral : newLiterals)
-					newGoalLiterals.add(action.graph.getLiteral(newLiteral));
-
-				if (!canBeExplainedByAtLeastOneConsentingCharacter(action, explanations))
-					continue;
-
-				RelaxedPlan planWithNewAction = plan.clone();
-				planWithNewAction.push(action);
-
-				ArrayList<Explanation> newExplanations = cloneExplanation(explanations, action);
-
-				Collection<RelaxedPlan> newPlan = GetAllPossiblePlanGraphPlans(plans, planWithNewAction,
-						newGoalLiterals, initialGoalLiterals, newExplanations);
-				
-				if (newPlan != plans)
-					plans.addAll(newPlan);
+				if(node instanceof PlanGraphActionNode) {
+					PlanGraphActionNode actionNode = (PlanGraphActionNode) node;
+					ImmutableArray<? extends Literal> newLiterals = actionNode.parents.get(0).clause.arguments;
+					for (Literal newLiteral : newLiterals)
+						newGoalLiterals.add(actionNode.graph.getLiteral(newLiteral));
+					if (!canBeExplainedForAllConsentingCharacters(actionNode, explanations))
+						continue;
+					RelaxedPlan planWithNewEvent = plan.clone();
+					planWithNewEvent.push(actionNode);
+					ArrayList<Explanation> newExplanations = cloneExplanation(explanations, actionNode);
+					Collection<RelaxedPlan> newPlan = GetAllPossiblePlanGraphPlans(plans, planWithNewEvent,
+							newGoalLiterals, initialGoalLiterals, newExplanations);
+					if (newPlan != plans)
+						plans.addAll(newPlan);
+				}
 			}
 		}
-
 		return plans;
 	}
 
 	private static ArrayList<Explanation> cloneExplanation(ArrayList<Explanation> explanations,
-			PlanGraphActionNode action) {
+			PlanGraphEventNode action) {
 		ArrayList<Explanation> newExplanations = new ArrayList<>();
 		for (Explanation explanation : explanations) {
 			if (explanation.containsEffect(action.event)) {
 				Explanation newExplanation = explanation.clone();
-				newExplanation.applyAction(action.event);
+				newExplanation.applyEvent(action.event);
 				newExplanations.add(newExplanation);
 			} else
 				newExplanations.add(explanation);
@@ -104,7 +98,23 @@ public class RelaxedPlanExtractor {
 		}
 		return newExplanations;
 	}
-
+	
+	private static boolean canBeExplainedForAllConsentingCharacters(PlanGraphActionNode node, 
+			ArrayList<Explanation> explanations) {
+		for (Term agent : node.event.agents) {
+			boolean explained = false;
+			for (Explanation explanation : explanations) {
+				if (explanation.agent.equals(agent))
+					if (explanation.containsEffect(node.event))
+						explained = true;
+			}
+			if(!explained)
+				return false;
+		}
+		return true;
+	}
+	
+	// this is not the right question 
 	private static boolean canBeExplainedByAtLeastOneConsentingCharacter(PlanGraphActionNode actionNode,
 			ArrayList<Explanation> explanations) {
 		for (Term agent : actionNode.event.agents)

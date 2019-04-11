@@ -34,7 +34,7 @@ public class Main {
 	private static final String TITLE = "Planning Domain Automated Tester v" + VERSION + ", by " + CREDITS
 			+ "\n using the Sabre Narrative Planner v0.32 by Stephen G. Ware";
 	private static final String USAGE = "... Sit back, relax, and enjoy the demo ...\n";
-	private static final String FILE = "RRH.txt";
+	private static final String FILE = "domains/camelot.domain";
 
 	static long lastModified = 0;
 	static boolean firstRun = true;
@@ -67,59 +67,7 @@ public class Main {
 				checkGoalTrueInitialState(domain, initial);
 
 				PlanGraph planGraph = createExtendedPlanGraph(space, initial);
-				ArrayList<RelaxedPlan> relaxedPlans = getRelaxedPlans(space);
-				for(RelaxedPlan plan : relaxedPlans)
-					System.out.println(plan);
 				
-				// ---- Clustering test ----
-				RelaxedPlanVector[] planVecs = new RelaxedPlanVector[relaxedPlans.size()];
-				for(int i=0; i<planVecs.length; i++)
-					planVecs[i] = new RelaxedPlanVector(space, relaxedPlans.get(i));				
-				ArrayList<RelaxedPlanVector> uniquePlanVecs = new ArrayList<>();
-				for(RelaxedPlanVector vec : planVecs) {
-					if(!uniquePlanVecs.contains(vec))
-						uniquePlanVecs.add(vec);
-				}
-				ArrayList<RelaxedPlan> uniquePlans = new ArrayList<>();
-				for(RelaxedPlan plan : relaxedPlans) {
-					if(!uniquePlans.contains(plan))
-						uniquePlans.add(plan);
-				}
-				System.out.println("Total plan vectors: " + planVecs.length);
-				System.out.println("Unique plan vectors: " + uniquePlanVecs.size());
-				System.out.println("Unique plans: " + uniquePlans.size());
-
-				// Test k-means / kmedoids
-				int k=3;
-				Clusterer clusterer = new Clusterer(uniquePlanVecs.toArray(new RelaxedPlanVector[uniquePlanVecs.size()]), k);
-				Random random = new Random();
-				for(int i=0; i<uniquePlanVecs.size(); i++) 
-					uniquePlanVecs.get(i).clusterAssignment = random.nextInt(k);			
-				for(int i=0; i<k; i++)
-					System.out.println("Cluster "+i+ " has " + clusterer.getVectorAssignments(clusterer.clusters[i].id).size() + " initial assignments.");
-				clusterer.kmedoids();
-				System.out.println("---------------------------------");
-				System.out.println("Final centroids:");
-				for(int i=0; i<k; i++)
-					System.out.println(i + ": " + clusterer.clusters[i].centroid + "\nAssignments: " + clusterer.getVectorAssignments(i).size());
-				System.out.println("---------------------------------");
-				
-				// Test k-medoids without vectors
-	/*			clusterer = new Clusterer(uniquePlans.toArray(new RelaxedPlan[uniquePlans.size()]), k);
-				random = new Random();
-				for(int i=0; i<uniquePlans.size(); i++) 
-					uniquePlans.get(i).clusterAssignment = random.nextInt(k);
-				for(int i=0; i<k; i++)
-					System.out.println("Cluster "+i+ " has " + clusterer.getPlanAssignments(clusterer.clusters[i].id).size() + " initial assignments.");
-				clusterer.kmedoids();
-				System.out.println("---------------------------------");
-				System.out.println("Final medoids:");
-				for(int i=0; i<k; i++)
-					System.out.println(i + ": " + clusterer.clusters[i].medoid + "\nAssignments: " + clusterer.getPlanAssignments(i).size());
-				System.out.println("---------------------------------");
-	*/			
-				// ----------------------------
-
 				// Number of actions available from the initial state
 				int firstSteps = 0;
 				System.out.println(Text.INFO + "Actions possible from initial state: ");
@@ -154,6 +102,8 @@ public class Main {
 					// continue;
 				}
 
+				clusterTest(space);
+
 				// Check if a solution exists
 				Planner planner = new Planner();
 				planner.setSearchSpace(space);
@@ -162,7 +112,7 @@ public class Main {
 				search.push(root);
 				System.out.println(Text.BLANK + "Searching for next solution...");
 				try {
-					result = runInteruptably(() -> search.getNextSolution());
+					result = runInteruptably(() -> search.getNextSolution()); // <--- search
 				} catch (Exception ex) {
 					System.out.println(Text.FAIL + "Exception while searching for solution: " + ex);
 					continue;
@@ -180,6 +130,65 @@ public class Main {
 				continue;
 			}
 		}
+	}
+	
+	private static void clusterTest(SearchSpace space) {
+		System.out.println("Let's try clustering...");
+		ArrayList<RelaxedPlan> relaxedPlans = getRelaxedPlans(space);
+		System.out.println("Got all the relaxed plans:");
+		for(RelaxedPlan plan : relaxedPlans)
+			System.out.println(plan);
+
+		RelaxedPlanVector[] planVecs = new RelaxedPlanVector[relaxedPlans.size()];
+		for(int i=0; i<planVecs.length; i++)
+			planVecs[i] = new RelaxedPlanVector(space, relaxedPlans.get(i));				
+		ArrayList<RelaxedPlanVector> uniquePlanVecs = new ArrayList<>();
+		for(RelaxedPlanVector vec : planVecs) {
+			if(!uniquePlanVecs.contains(vec))
+				uniquePlanVecs.add(vec);
+		}
+		ArrayList<RelaxedPlan> uniquePlans = new ArrayList<>();
+		for(RelaxedPlan plan : relaxedPlans) {
+			if(!uniquePlans.contains(plan))
+				uniquePlans.add(plan);
+		}
+		System.out.println("Total plan vectors: " + planVecs.length);
+		System.out.println("Unique plan vectors: " + uniquePlanVecs.size());
+		System.out.println("Unique plans: " + uniquePlans.size());
+
+		// Test k-means / kmedoids
+		int k=3;
+		System.out.println("About to create a new Clusterer");
+		Clusterer clusterer = new Clusterer(uniquePlanVecs.toArray(new RelaxedPlanVector[uniquePlanVecs.size()]), k, space.actions.size());
+		Random random = new Random();
+		System.out.println("About to randomly assign plans to clusters.");
+		for(int i=0; i<uniquePlanVecs.size(); i++) 
+			uniquePlanVecs.get(i).clusterAssignment = random.nextInt(k);			
+		for(int i=0; i<k; i++)
+			System.out.println("Cluster "+i+ " has " + clusterer.getVectorAssignments(clusterer.clusters[i].id).size() + " initial assignments.");
+		clusterer.kmedoids();
+		System.out.println("---------------------------------");
+		System.out.println("Final centroids:");
+		for(int i=0; i<k; i++)
+			System.out.println(i + ": " + clusterer.clusters[i].centroid + "\nAssignments: " + clusterer.getVectorAssignments(i).size());
+		System.out.println("---------------------------------");
+		
+		// Test k-medoids without vectors
+		/*clusterer = new Clusterer(uniquePlans.toArray(new RelaxedPlan[uniquePlans.size()]), k);
+		random = new Random();
+		for(int i=0; i<uniquePlans.size(); i++) 
+			uniquePlans.get(i).clusterAssignment = random.nextInt(k);
+		for(int i=0; i<k; i++)
+			System.out.println("Cluster "+i+ " has " + clusterer.getPlanAssignments(clusterer.clusters[i].id).size() + " initial assignments.");
+		clusterer.kmedoids(false);
+		System.out.println("---------------------------------");
+		System.out.println("Final medoids:");
+		for(int i=0; i<k; i++)
+			System.out.println(i + ": " + clusterer.clusters[i].medoid + "\nAssignments: " + clusterer.getPlanAssignments(i).size());
+		System.out.println("---------------------------------");
+		*/
+		// ----------------------------
+
 	}
 
 	private static ArrayList<RelaxedPlan> getRelaxedPlans(SearchSpace space) {

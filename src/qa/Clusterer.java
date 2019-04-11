@@ -13,21 +13,26 @@ public class Clusterer {
 	public RelaxedPlan[] relaxedPlans;
 	
 	private final int k;
+
+	protected final int n;
 	
-	public Clusterer(RelaxedPlanVector[] planVecs, int k) {
+	public Clusterer(RelaxedPlanVector[] planVecs, int k, int n) {
 		this.planVecs = planVecs;
 		this.k = k;
+		this.n = n;
 		this.clusters = new RelaxedPlanCluster[k];
+		System.out.println("About to initialize clusters in Clusterer constructor");
 		for(int i=0; i<k; i++)
-			clusters[i] = new RelaxedPlanCluster(i);
+			clusters[i] = new RelaxedPlanCluster(i, n);
 	}
 	
-	public Clusterer(RelaxedPlan[] relaxedPlans, int k) {
+	public Clusterer(RelaxedPlan[] relaxedPlans, int k, int n) {
 		this.relaxedPlans = relaxedPlans;
 		this.k = k;
+		this.n = n;
 		this.clusters = new RelaxedPlanCluster[k];
 		for(int i=0; i<k; i++)
-			clusters[i] = new RelaxedPlanCluster(i);
+			clusters[i] = new RelaxedPlanCluster(i, n);
 	}
 
 	/** Find the planVecs that are assigned to this cluster */
@@ -56,7 +61,7 @@ public class Clusterer {
 	}
 	
 	private void updateMedoid(RelaxedPlanCluster cluster) {
-		cluster.centroid = RelaxedPlanVector.medoid(getVectorAssignments(cluster.id));
+		cluster.centroid = RelaxedPlanVector.medoid(getVectorAssignments(cluster.id), n);
 	}
 
 	private void updateMedoid(RelaxedPlanCluster cluster, boolean withoutVectors) {

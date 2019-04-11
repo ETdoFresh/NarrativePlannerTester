@@ -4,28 +4,28 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import sabre.Action;
-import sabre.graph.PlanGraphActionNode;
+import sabre.graph.PlanGraphEventNode;
 
-public class RelaxedPlan implements Iterable<PlanGraphActionNode> {
-	private ArrayList<PlanGraphActionNode> actions = new ArrayList<PlanGraphActionNode>(); 
+public class RelaxedPlan implements Iterable<PlanGraphEventNode> {
+	private ArrayList<PlanGraphEventNode> actions = new ArrayList<PlanGraphEventNode>(); 
 	public int clusterAssignment = -1;
-
+	
 	public RelaxedPlan clone() {
 		RelaxedPlan clone = new RelaxedPlan();
 		clone.actions.addAll(actions);
 		return clone;
 	}
 	
-	public PlanGraphActionNode last() {
+	public PlanGraphEventNode last() {
 		if (size() > 0) return actions.get(size()-1);
 		else return null;
 	}
 	
-	public void push(PlanGraphActionNode action) {
+	public void push(PlanGraphEventNode action) {
 		actions.add(0, action);
 	}
 	
-	public PlanGraphActionNode get(int index) {
+	public PlanGraphEventNode get(int index) {
 		return actions.get(index);
 	}
 	
@@ -33,19 +33,19 @@ public class RelaxedPlan implements Iterable<PlanGraphActionNode> {
 		return actions.size();
 	}
 	
-	public boolean contains(PlanGraphActionNode o) {
+	public boolean contains(PlanGraphEventNode o) {
 		return actions.contains(o);
 	}
 	
 	public boolean contains(Action action) {
-		for(PlanGraphActionNode actionNode : actions)
+		for(PlanGraphEventNode actionNode : actions)
 			if (action.equals(actionNode.event))
 				return true;
 		
 		return false;
 	}
 
-	public Iterator<PlanGraphActionNode> iterator() {
+	public Iterator<PlanGraphEventNode> iterator() {
 		return actions.iterator();
 	}
 	
@@ -57,7 +57,7 @@ public class RelaxedPlan implements Iterable<PlanGraphActionNode> {
 		if(other==null)
 			return 0;
 		float count = 0;
-		for(PlanGraphActionNode action : actions) {
+		for(PlanGraphEventNode action : actions) {
 			if(other.contains(action))
 				count++;
 		}
@@ -67,9 +67,9 @@ public class RelaxedPlan implements Iterable<PlanGraphActionNode> {
 	public float union(RelaxedPlan other) {
 		if(other==null)
 			return size();
-		ArrayList<PlanGraphActionNode> union = new ArrayList<>();
+		ArrayList<PlanGraphEventNode> union = new ArrayList<>();
 		union.addAll(actions);
-		for(PlanGraphActionNode action : ((RelaxedPlan)other).actions)
+		for(PlanGraphEventNode action : ((RelaxedPlan)other).actions)
 			if(!union.contains(action))
 				union.add(action);
 		return (float)union.size();
@@ -92,6 +92,8 @@ public class RelaxedPlan implements Iterable<PlanGraphActionNode> {
 				medoid = plans.get(i);
 			}
 		}
+		if(medoid==null)
+			return new RelaxedPlan();
 		return medoid;
 	}
 	
@@ -110,7 +112,7 @@ public class RelaxedPlan implements Iterable<PlanGraphActionNode> {
 	@Override
 	public String toString() {
 		String str = "";
-		for(PlanGraphActionNode action : actions)
+		for(PlanGraphEventNode action : actions)
 			str += Text.BLANK + action + "\n";
 		return str;
 	}

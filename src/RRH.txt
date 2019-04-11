@@ -37,6 +37,7 @@ path(Cottage, Forest);
 // Character goals
 intends(Red, location(Cookies) = Grandma);
 intends(Grandma, location(Grandma) = Cottage);
+intends(Grandma, location(Cookies) = Grandma);
 intends(Wolf, !alive(Red));
 intends(Wolf, !alive(Grandma));
 
