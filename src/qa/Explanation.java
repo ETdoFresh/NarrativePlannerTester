@@ -12,19 +12,8 @@ import sabre.util.ImmutableArray;
 
 public class Explanation {
 	public Agent agent;
-	public RelaxedPlan plan;
-	public InitialState initial;
 	public Expression goals;
-	public HashMap<ConjunctiveClause, CausalChainSet> causalChainMap = new HashMap<>();
 	public CausalChainSet causalChainSet;
-	public int currentStepIndex = -1;
-
-	public Explanation(RelaxedPlan plan, ImmutableArray<Expression> initial, Expression goals) {
-		this.plan = plan;
-		this.goals = goals;
-		this.initial = new InitialState(initial);
-		this.currentStepIndex = plan.size() - 1;
-	}
 
 	public Explanation(Agent agent, Expression agentGoal) {
 		this.agent = agent;
@@ -32,7 +21,6 @@ public class Explanation {
 
 		for (ConjunctiveClause goal : goals.toDNF().arguments) {
 			causalChainSet = new CausalChainSet(goal); // TODO remove this later and fix code to handle DNF
-			causalChainMap.put(goal, causalChainSet);
 		}
 	}
 	
@@ -50,7 +38,7 @@ public class Explanation {
 		causalChainSet.addOrRemoveChainUsing(event);
 	}
 
-	public boolean build() {
+	/*public boolean build() {
 		if (currentStepIndex < 0)
 			return false;
 
@@ -93,7 +81,8 @@ public class Explanation {
 	public static boolean IsValid(RelaxedPlan plan, ImmutableArray<Expression> initial, Expression goals) {
 		Explanation explanation = new Explanation(plan, initial, goals);
 		return explanation.build();
-	}
+	}*/
+
 	
 	@Override
 	public String toString() {

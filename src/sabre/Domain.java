@@ -28,6 +28,7 @@ public class Domain implements Serializable {
 	public final ImmutableSet<Axiom> axioms = new MutableSet<>(new Axiom[0]);
 	public final ImmutableArray<Expression> initial = new MutableArray<>(new Expression[0]);
 	public final Expression goal;
+	public String landmark = "";
 	
 	public Domain(String name, String comment) {
 		this.name = name;
