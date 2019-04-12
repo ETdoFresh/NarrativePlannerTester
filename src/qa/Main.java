@@ -67,6 +67,9 @@ public class Main {
 				checkGoalTrueInitialState(domain, initial);
 
 				PlanGraph planGraph = createExtendedPlanGraph(space, initial);
+                ArrayList<RelaxedPlan> relaxedPlans = getRelaxedPlans(space);
+                for(RelaxedPlan plan : relaxedPlans)
+                    System.out.println(plan);
 				
 				// Number of actions available from the initial state
 				int firstSteps = 0;

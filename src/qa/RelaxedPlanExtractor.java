@@ -1,5 +1,7 @@
 package qa;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,7 +47,7 @@ public class RelaxedPlanExtractor {
 	static Collection<RelaxedPlan> GetAllPossiblePlanGraphPlans(ArrayList<RelaxedPlan> plans, RelaxedPlan plan,
 			ArrayList<PlanGraphLiteralNode> localGoalLiterals, ArrayList<PlanGraphLiteralNode> initialGoalLiterals,
 			ArrayList<Explanation> explanations) {
-		
+
 		// Remove Initial State Literals from GoalLiterals
 		for (int i = localGoalLiterals.size() - 1; i >= 0; i--) {
 			PlanGraphLiteralNode goalLiteral = localGoalLiterals.get(i);
@@ -62,14 +64,19 @@ public class RelaxedPlanExtractor {
 		for (PlanGraphLiteralNode goalLiteral : localGoalLiterals) {
 			for (PlanGraphNode node : goalLiteral.parents) {
 				ArrayList<PlanGraphLiteralNode> newGoalLiterals = new ArrayList<>(localGoalLiterals);
-				newGoalLiterals.remove(goalLiteral);				
-				if(node instanceof PlanGraphActionNode) {
+				newGoalLiterals.remove(goalLiteral);
+				if (node instanceof PlanGraphActionNode) {
+					
 					PlanGraphActionNode actionNode = (PlanGraphActionNode) node;
+					if (!canBeExplainedForAllConsentingCharacters(actionNode, explanations))
+						continue;
+					
+					//DebugThis(plans, plan, localGoalLiterals, initialGoalLiterals, explanations);
+					
 					ImmutableArray<? extends Literal> newLiterals = actionNode.parents.get(0).clause.arguments;
 					for (Literal newLiteral : newLiterals)
 						newGoalLiterals.add(actionNode.graph.getLiteral(newLiteral));
-					if (!canBeExplainedForAllConsentingCharacters(actionNode, explanations))
-						continue;
+					
 					RelaxedPlan planWithNewEvent = plan.clone();
 					planWithNewEvent.push(actionNode);
 					ArrayList<Explanation> newExplanations = cloneExplanation(explanations, actionNode);
@@ -83,6 +90,26 @@ public class RelaxedPlanExtractor {
 			}
 		}
 		return plans;
+	}
+
+	private static void DebugThis(ArrayList<RelaxedPlan> plans, RelaxedPlan plan,
+			ArrayList<PlanGraphLiteralNode> localGoalLiterals, ArrayList<PlanGraphLiteralNode> initialGoalLiterals,
+			ArrayList<Explanation> explanations) {
+		try {
+			
+			// This passed our filters!!!
+			
+			BufferedWriter writer = new BufferedWriter(new FileWriter("DebugThis.txt", true));
+			//writer.append("plans: " + plans + "\n");
+			writer.append("plan: " + plan);
+			writer.append("localGoalLiterals: " + localGoalLiterals + "\n");
+			//writer.append("initialGoalLiterals: " + initialGoalLiterals + "\n");
+			writer.append("explanations: " + explanations + "\n");
+			writer.append("-----------------------------------------------------------" + "\n");
+			writer.append("" + "\n");
+			writer.close();
+		} catch (Exception ex) {
+		}
 	}
 
 	private static ArrayList<Explanation> cloneExplanation(ArrayList<Explanation> explanations,
@@ -99,26 +126,28 @@ public class RelaxedPlanExtractor {
 		}
 		return newExplanations;
 	}
-	
-	private static boolean canBeExplainedForAllConsentingCharacters(PlanGraphEventNode eventNode, 
+
+	private static boolean canBeExplainedForAllConsentingCharacters(PlanGraphEventNode eventNode,
 			ArrayList<Explanation> explanations) {
-		if(eventNode instanceof PlanGraphAxiomNode)
+		if (eventNode instanceof PlanGraphAxiomNode)
 			return true;
-		PlanGraphActionNode actionNode = (PlanGraphActionNode)eventNode;
+		PlanGraphActionNode actionNode = (PlanGraphActionNode) eventNode;
 		for (Term agent : actionNode.event.agents) {
 			boolean explained = false;
 			for (Explanation explanation : explanations) {
 				if (explanation.agent.equals(agent))
-					if (explanation.containsEffect(actionNode.event))
+					if (explanation.containsEffect(actionNode.event)) {
 						explained = true;
+						break;
+					}
 			}
-			if(!explained)
+			if (!explained)
 				return false;
 		}
 		return true;
 	}
-	
-	// this is not the right question 
+
+	// this is not the right question
 	private static boolean canBeExplainedByAtLeastOneConsentingCharacter(PlanGraphActionNode actionNode,
 			ArrayList<Explanation> explanations) {
 		for (Term agent : actionNode.event.agents)

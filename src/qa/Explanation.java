@@ -37,52 +37,6 @@ public class Explanation {
 	public void applyEvent(Event event) {
 		causalChainSet.addOrRemoveChainUsing(event);
 	}
-
-	/*public boolean build() {
-		if (currentStepIndex < 0)
-			return false;
-
-		// Create Initial Causal Chains
-		for (ConjunctiveClause goal : goals.toDNF().arguments) {
-			causalChainSet = new CausalChainSet(goal); // TODO remove this later and fix code to handle DNF
-			causalChainMap.put(goal, causalChainSet);
-		}
-
-		// Working backwards on RelaxedPlan, Find first step that has an effect that
-		// contains one (or more) causal chain heads
-		while (currentStepIndex >= 0) {
-			Event currentStep = plan.get(currentStepIndex).event;
-			if (!causalChainLiteralExistsIn(currentStep.effect)) {
-				currentStepIndex--;
-			} else {
-				causalChainSet.addOrRemoveChainUsing(currentStep);
-				currentStepIndex--;
-			}
-		}
-		return initialStateContainsAllCausalChainHeads();
-	}
-
-	private boolean initialStateContainsAllCausalChainHeads() {
-		for (Literal head : causalChainSet.heads())
-			if (!initial.contains(head))
-				return false;
-
-		return true;
-	}
-
-	private boolean causalChainLiteralExistsIn(Expression effect) {
-		for (ConjunctiveClause e : effect.toDNF().arguments)
-			for (Literal l : e.arguments)
-				if (causalChainSet.headContains(l))
-					return true;
-		return false;
-	}
-
-	public static boolean IsValid(RelaxedPlan plan, ImmutableArray<Expression> initial, Expression goals) {
-		Explanation explanation = new Explanation(plan, initial, goals);
-		return explanation.build();
-	}*/
-
 	
 	@Override
 	public String toString() {
@@ -183,23 +137,6 @@ public class Explanation {
 		@Override
 		public String toString() {
 			return history.toString();
-		}
-	}
-
-	private class InitialState {
-		ImmutableArray<Expression> initial;
-
-		public InitialState(ImmutableArray<Expression> initial) {
-			this.initial = initial;
-		}
-
-		public boolean contains(Literal literal) {
-			for (Expression expression : initial)
-				for (ConjunctiveClause clause : expression.toDNF().arguments)
-					if (clause.arguments.contains(literal))
-						return true;
-
-			return false;
 		}
 	}
 
