@@ -37,6 +37,7 @@ boolean :	criminal(character);
 boolean :   knowsCriminal(character, character);
 boolean :	attacked(character);
 weapon :	wielding(character);
+boolean :	merchandise(item);
 
 // Intentions
 intends(Peter, alive(Peter));
@@ -66,6 +67,8 @@ path(Town, Camp);
 path(Camp, Town);
 path(Market, Town);
 path(Town, Home);
+merchandise(MerchantSword);
+merchandise(Medicine);
 
 // Actions
 action walk(character character*, place from, place to){
@@ -81,6 +84,7 @@ action walk(character character*, place from, place to){
 
 action buy(character character*, item item, coin coin){
 	precondition: (
+		merchandise(item) &
 		location(item) = Merchant &
 		location(character) = Market &
 		location(Merchant) = Market &
