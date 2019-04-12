@@ -29,11 +29,10 @@ import sabre.state.ArrayState;
 
 public class Main {
 
-	private static final String VERSION = "0.01.1";
-	private static final String CREDITS = "Rachel Farrell and Edward Garcia";
-	private static final String TITLE = "Planning Domain Automated Tester v" + VERSION + ", by " + CREDITS
-			+ "\n using the Sabre Narrative Planner v0.32 by Stephen G. Ware";
-	private static final String USAGE = "... Sit back, relax, and enjoy the demo ...\n";
+	private static final String VERSION = "v0.01.1";
+	private static final String CREDITS = "by Edward Garcia, Rachelyn Farrell, and Stephen G. Ware";
+	private static final String TITLE = "Planning Domain Automated Tester (PDAT), " + VERSION + "\n " + CREDITS + "\n";
+	private static final String USAGE = "TODO: Write usage";
 	private static final String FILE = "domains/camelot.domain";
 
 	static long lastModified = 0;
@@ -80,9 +79,6 @@ public class Main {
 						firstSteps++;
 					}
 				System.out.println("\t (" + firstSteps + " total)");
-
-				// TODO: Actions *motivated* from initial state, i.e. possible and the
-				// characters would consent
 
 				// Check for any unusable action schemas
 				HashSet<Action> unusedActions = new HashSet<Action>();
@@ -236,7 +232,6 @@ public class Main {
 		// Clear/Reset Screen
 		System.out.flush();
 		System.out.println(TITLE);
-		System.out.println(USAGE);
 	}
 
 	private static void openDomainTxtFile() {
