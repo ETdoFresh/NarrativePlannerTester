@@ -112,7 +112,7 @@ public class Clusterer {
 				float minDistance = Float.MAX_VALUE;
 				int clusterToAssign = -1;
 				for(int c=0; c<k; c++) {
-					float distance = relaxedPlans[i].jaccard(clusters[c].medoid);
+					float distance = relaxedPlans[i].actionDistance(clusters[c].medoid);
 					if(distance < minDistance) {
 						minDistance = distance;
 						clusterToAssign = c;

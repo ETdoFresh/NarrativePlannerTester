@@ -2,6 +2,7 @@ package qa;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Stack;
 
 import sabre.Agent;
 import sabre.Event;
@@ -14,28 +15,31 @@ public class Explanation {
 	public Agent agent;
 	public Expression goals;
 	public CausalChainSet causalChainSet;
+	public Stack<Event> steps;
 
 	public Explanation(Agent agent, Expression agentGoal) {
 		this.agent = agent;
 		this.goals = agentGoal;
-
+		this.steps = new Stack<>();		
 		for (ConjunctiveClause goal : goals.toDNF().arguments) {
 			causalChainSet = new CausalChainSet(goal); // TODO remove this later and fix code to handle DNF
 		}
 	}
 	
-	private Explanation(Agent agent, Expression goals, CausalChainSet causalChainSet) {
+	private Explanation(Agent agent, Expression goals, CausalChainSet causalChainSet, Stack<Event> steps) {
 		this.agent = agent;
 		this.goals = goals;
 		this.causalChainSet = causalChainSet.clone();
+		this.steps = steps;
 	}
 	
 	public Explanation clone() {
-		return new Explanation(agent, goals, causalChainSet);
+		return new Explanation(agent, goals, causalChainSet, steps);
 	}
 	
 	public void applyEvent(Event event) {
 		causalChainSet.addOrRemoveChainUsing(event);
+		steps.push(event);
 	}
 	
 	@Override

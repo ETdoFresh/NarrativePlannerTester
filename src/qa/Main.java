@@ -33,7 +33,7 @@ public class Main {
 	private static final String CREDITS = "by Edward Garcia, Rachelyn Farrell, and Stephen G. Ware";
 	private static final String TITLE = "Planning Domain Automated Tester (PDAT), " + VERSION + "\n " + CREDITS + "\n";
 	private static final String USAGE = "TODO: Write usage";
-	private static final String FILE = "domains/camelot.domain";
+	private static final String FILE = "RRH.txt";
 
 	static long lastModified = 0;
 	static boolean firstRun = true;
@@ -111,7 +111,7 @@ public class Main {
 				search.push(root);
 				System.out.println(Text.BLANK + "Searching for next solution...");
 				try {
-					result = runInteruptably(() -> search.getNextSolution()); // <--- search
+					//result = runInteruptably(() -> search.getNextSolution()); // <---------------------- search
 				} catch (Exception ex) {
 					System.out.println(Text.FAIL + "Exception while searching for solution: " + ex);
 					continue;
@@ -173,7 +173,7 @@ public class Main {
 		System.out.println("---------------------------------");
 		
 		// Test k-medoids without vectors
-		/*clusterer = new Clusterer(uniquePlans.toArray(new RelaxedPlan[uniquePlans.size()]), k);
+		clusterer = new Clusterer(uniquePlans.toArray(new RelaxedPlan[uniquePlans.size()]), k, space.actions.size());
 		random = new Random();
 		for(int i=0; i<uniquePlans.size(); i++) 
 			uniquePlans.get(i).clusterAssignment = random.nextInt(k);
@@ -185,7 +185,7 @@ public class Main {
 		for(int i=0; i<k; i++)
 			System.out.println(i + ": " + clusterer.clusters[i].medoid + "\nAssignments: " + clusterer.getPlanAssignments(i).size());
 		System.out.println("---------------------------------");
-		*/
+		
 		// ----------------------------
 
 	}

@@ -7,12 +7,14 @@ import sabre.Action;
 import sabre.graph.PlanGraphEventNode;
 
 public class RelaxedPlan implements Iterable<PlanGraphEventNode> {
-	private ArrayList<PlanGraphEventNode> actions = new ArrayList<PlanGraphEventNode>(); 
+	private ArrayList<PlanGraphEventNode> actions = new ArrayList<>(); 
+	public ArrayList<Explanation> explanations = new ArrayList<>();
 	public int clusterAssignment = -1;
 	
 	public RelaxedPlan clone() {
 		RelaxedPlan clone = new RelaxedPlan();
 		clone.actions.addAll(actions);
+		clone.explanations.addAll(explanations);
 		return clone;
 	}
 	
@@ -49,7 +51,7 @@ public class RelaxedPlan implements Iterable<PlanGraphEventNode> {
 		return actions.iterator();
 	}
 	
-	public float jaccard(RelaxedPlan other) {
+	public float actionDistance(RelaxedPlan other) {
 		return 1f - this.intersection(other) / this.union(other);
 	}
 	
@@ -81,7 +83,7 @@ public class RelaxedPlan implements Iterable<PlanGraphEventNode> {
 		for(int i=0; i<plans.size(); i++) {
 			float sum = 0;
 			for(RelaxedPlan other : plans) {
-				sum += plans.get(i).jaccard(other);
+				sum += plans.get(i).actionDistance(other);
 			}
 			averageDistances[i] = sum / plans.size();
 		}
@@ -89,7 +91,7 @@ public class RelaxedPlan implements Iterable<PlanGraphEventNode> {
 		for(int i=0; i<plans.size(); i++) {
 			if(averageDistances[i] < minDistance) {
 				minDistance = averageDistances[i];
-				medoid = plans.get(i);
+				medoid = plans.get(i).clone();
 			}
 		}
 		if(medoid==null)
