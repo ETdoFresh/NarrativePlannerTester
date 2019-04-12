@@ -84,7 +84,6 @@ action walk(character character*, place from, place to){
 
 action buy(character character*, item item, coin coin){
 	precondition: (
-		merchandise(item) &
 		location(item) = Merchant &
 		location(character) = Market &
 		location(Merchant) = Market &
