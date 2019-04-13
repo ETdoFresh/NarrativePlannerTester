@@ -162,9 +162,30 @@ public class Explanation {
 			return history.get(0);
 		}
 
+		public Literal tail() {
+			return history.get(history.size() - 1);
+		}
+
 		@Override
 		public String toString() {
 			return history.toString();
+		}
+	}
+
+	public void noveltyPruneChains() {
+		for (int i = causalChainSet.causalChains.size() - 1; i >= 0; i--) {
+			CausalChain chain = causalChainSet.causalChains.get(i);
+			for (int j = causalChainSet.causalChains.size() - 1; j >= 0; j--) {
+				CausalChain otherChain = causalChainSet.causalChains.get(j);
+
+				if (!chain.equals(otherChain))
+					if (chain.head().equals(otherChain.head()))
+						if (chain.tail().equals(otherChain.tail()))
+							if (otherChain.history.containsAll(chain.history)) {
+								causalChainSet.causalChains.remove(i);
+								break;
+							}
+			}
 		}
 	}
 
