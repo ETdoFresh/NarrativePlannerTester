@@ -70,6 +70,7 @@ path(Town, Home);
 merchandise(MerchantSword);
 merchandise(Medicine);
 
+
 // Actions
 action walk(character character*, place from, place to){
 	precondition: (
@@ -81,6 +82,7 @@ action walk(character character*, place from, place to){
 		location(character) = to
 	);
 }
+
 
 action buy(character character*, item item, coin coin){
 	precondition: (
