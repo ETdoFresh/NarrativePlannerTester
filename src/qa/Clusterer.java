@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
 
+import sabre.space.SearchSpace;
+
 public class Clusterer {
 	
 	public RelaxedPlanCluster[] clusters; // array of clusters. Size = k
@@ -16,17 +18,19 @@ public class Clusterer {
 
 	protected final int n;
 	
+	private SearchSpace space;
+	
 	public Clusterer(RelaxedPlanVector[] planVecs, int k, int n) {
 		this.planVecs = planVecs;
 		this.k = k;
 		this.n = n;
 		this.clusters = new RelaxedPlanCluster[k];
-		System.out.println("About to initialize clusters in Clusterer constructor");
 		for(int i=0; i<k; i++)
 			clusters[i] = new RelaxedPlanCluster(i, n);
 	}
 	
-	public Clusterer(RelaxedPlan[] relaxedPlans, int k, int n) {
+	public Clusterer(RelaxedPlan[] relaxedPlans, int k, int n, SearchSpace space) {
+		this.space = space;
 		this.relaxedPlans = relaxedPlans;
 		this.k = k;
 		this.n = n;
@@ -54,6 +58,27 @@ public class Clusterer {
 		return assigned;
 	}
 
+	public RelaxedPlan[] getExemplars() {
+		RelaxedPlan[] plans = new RelaxedPlan[k];
+		for(RelaxedPlanCluster cluster : clusters) {
+			RelaxedPlan exemplar = cluster.medoid.clone();
+			ArrayList<RelaxedPlan> assignments = getPlanAssignments(cluster.id);
+			while(!exemplar.isValid(space)) {
+				assignments.remove(exemplar);
+				if(assignments.isEmpty())
+					break;
+				exemplar = RelaxedPlan.medoid(assignments);
+			}
+			if(exemplar.isValid(space))
+				System.out.println("Found a valid one!");
+			// if the exemplar is valid, put it in the array; otherwise put a null plan
+			if(exemplar.isValid(space))
+				plans[cluster.id] = exemplar.clone();
+			else
+				plans[cluster.id] = null;
+		}
+		return plans;
+	}
 	
 	/** Set the cluster centroid to the mean of its current assignments */
 	private void updateCentroid(RelaxedPlanCluster cluster) {

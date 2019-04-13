@@ -4,7 +4,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import sabre.Action;
+import sabre.Event;
 import sabre.graph.PlanGraphEventNode;
+import sabre.space.SearchSpace;
+import sabre.state.ArrayState;
+import sabre.state.MutableArrayState;
 
 public class RelaxedPlan implements Iterable<PlanGraphEventNode> {
 	private ArrayList<PlanGraphEventNode> actions = new ArrayList<>(); 
@@ -16,6 +20,21 @@ public class RelaxedPlan implements Iterable<PlanGraphEventNode> {
 		clone.actions.addAll(actions);
 		clone.explanations.addAll(explanations);
 		return clone;
+	}
+	
+	public boolean isValid(SearchSpace space) {
+		boolean invalid = false;
+		MutableArrayState state = new MutableArrayState(space);
+		for(int i=0; i<actions.size(); i++) {
+			Event event = actions.get(i).event;
+			if(event.precondition.test(state))
+				event.effect.impose(state, state); // really?
+			else {
+				invalid = true;
+				break;
+			}
+		}
+		return !invalid && space.goal.test(state);
 	}
 	
 	public PlanGraphEventNode last() {

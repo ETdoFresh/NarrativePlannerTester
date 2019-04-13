@@ -6,18 +6,25 @@ import java.util.Set;
 import sabre.Action;
 import sabre.Event;
 import sabre.Plan;
+import sabre.graph.PlanGraphEventNode;
 
 public class Distance {
 
 	static float isifDistance(RelaxedPlan a, RelaxedPlan b) {
-		Set<Event> E_a;
-		Set<Event> E_b;
-		
-		for(Action step : a) {
-			
+		Set<Event> E_a = new HashSet<>();
+		Set<Event> E_b = new HashSet<>();
+
+		// TODO: Only add important steps
+		for(PlanGraphEventNode step : a) {
+			E_a.add(step.event);			
 		}
-		Set<IFSummary> J_a;
-		Set<IFSummary> J_b;
+		for(PlanGraphEventNode step : b) {
+			E_b.add(step.event);
+		}
+
+		// TODO: Add intention frame summaries
+		Set<Object> J_a = new HashSet<>();
+		Set<Object> J_b = new HashSet<>();
 		
 		return 1 - 0.5f * (jaccard(E_a, E_b) + jaccard(J_a, J_b));
 	}
