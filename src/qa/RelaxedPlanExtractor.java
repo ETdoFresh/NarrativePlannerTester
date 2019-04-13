@@ -71,7 +71,8 @@ public class RelaxedPlanExtractor {
 					if (!canBeExplainedForAllConsentingCharacters(actionNode, explanations))
 						continue;
 					
-					//DebugThis(plans, plan, localGoalLiterals, initialGoalLiterals, explanations);
+					if (!canExtendAtLeastOneCluster(explanations, actionNode))
+						continue;
 					
 					ImmutableArray<? extends Literal> newLiterals = actionNode.parents.get(0).clause.arguments;
 					for (Literal newLiteral : newLiterals)
@@ -80,6 +81,7 @@ public class RelaxedPlanExtractor {
 					RelaxedPlan planWithNewEvent = plan.clone();
 					planWithNewEvent.push(actionNode);
 					ArrayList<Explanation> newExplanations = cloneExplanation(explanations, actionNode);
+					
 					Collection<RelaxedPlan> newPlan = GetAllPossiblePlanGraphPlans(plans, planWithNewEvent,
 							newGoalLiterals, initialGoalLiterals, newExplanations);
 					if (newPlan != plans)
@@ -90,6 +92,15 @@ public class RelaxedPlanExtractor {
 			}
 		}
 		return plans;
+	}
+
+	private static boolean canExtendAtLeastOneCluster(ArrayList<Explanation> explanations,
+			PlanGraphActionNode actionNode) {
+		for (Explanation explanation : explanations)
+			if (explanation.canExtendAtLeastOneCluster(actionNode))
+				return true;
+		
+		return false;
 	}
 
 	private static void DebugThis(ArrayList<RelaxedPlan> plans, RelaxedPlan plan,

@@ -33,7 +33,7 @@ public class Main {
 	private static final String CREDITS = "by Edward Garcia, Rachelyn Farrell, and Stephen G. Ware";
 	private static final String TITLE = "Planning Domain Automated Tester (PDAT), " + VERSION + "\n " + CREDITS + "\n";
 	private static final String USAGE = "TODO: Write usage";
-	private static final String FILE = "RRH.txt";
+	private static final String FILE = "domains/camelot.domain";
 
 	static long lastModified = 0;
 	static boolean firstRun = true;
