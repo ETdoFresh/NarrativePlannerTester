@@ -66,20 +66,30 @@ public class RelaxedPlanExtractor {
 				ArrayList<PlanGraphLiteralNode> newGoalLiterals = new ArrayList<>(localGoalLiterals);
 				newGoalLiterals.remove(goalLiteral);
 				if (node instanceof PlanGraphActionNode) {
-					
+
+					// Just to get the speed of the planner up
+					if (actionAlreadyExistsIn(plan, node))
+						continue;
+
 					PlanGraphActionNode actionNode = (PlanGraphActionNode) node;
 					if (!canBeExplainedForAllConsentingCharacters(actionNode, explanations))
 						continue;
-					
-					//DebugThis(plans, plan, localGoalLiterals, initialGoalLiterals, explanations);
-					
+
+					if (!canExtendAtLeastOneCluster(explanations, actionNode))
+						continue;
+
 					ImmutableArray<? extends Literal> newLiterals = actionNode.parents.get(0).clause.arguments;
 					for (Literal newLiteral : newLiterals)
 						newGoalLiterals.add(actionNode.graph.getLiteral(newLiteral));
-					
+
 					RelaxedPlan planWithNewEvent = plan.clone();
 					planWithNewEvent.push(actionNode);
 					ArrayList<Explanation> newExplanations = cloneExplanation(explanations, actionNode);
+
+					// Just trying another pruning method...
+					for (Explanation newExplanation : newExplanations)
+						newExplanation.noveltyPruneChains();
+
 					Collection<RelaxedPlan> newPlan = GetAllPossiblePlanGraphPlans(plans, planWithNewEvent,
 							newGoalLiterals, initialGoalLiterals, newExplanations);
 					if (newPlan != plans)
@@ -92,18 +102,31 @@ public class RelaxedPlanExtractor {
 		return plans;
 	}
 
+	private static boolean actionAlreadyExistsIn(RelaxedPlan plan, PlanGraphNode node) {
+		return plan.contains(((PlanGraphActionNode) node).event);
+	}
+
+	private static boolean canExtendAtLeastOneCluster(ArrayList<Explanation> explanations,
+			PlanGraphActionNode actionNode) {
+		for (Explanation explanation : explanations)
+			if (explanation.canExtendAtLeastOneCluster(actionNode))
+				return true;
+
+		return false;
+	}
+
 	private static void DebugThis(ArrayList<RelaxedPlan> plans, RelaxedPlan plan,
 			ArrayList<PlanGraphLiteralNode> localGoalLiterals, ArrayList<PlanGraphLiteralNode> initialGoalLiterals,
 			ArrayList<Explanation> explanations) {
 		try {
-			
+
 			// This passed our filters!!!
-			
+
 			BufferedWriter writer = new BufferedWriter(new FileWriter("DebugThis.txt", true));
-			//writer.append("plans: " + plans + "\n");
+			// writer.append("plans: " + plans + "\n");
 			writer.append("plan: " + plan);
 			writer.append("localGoalLiterals: " + localGoalLiterals + "\n");
-			//writer.append("initialGoalLiterals: " + initialGoalLiterals + "\n");
+			// writer.append("initialGoalLiterals: " + initialGoalLiterals + "\n");
 			writer.append("explanations: " + explanations + "\n");
 			writer.append("-----------------------------------------------------------" + "\n");
 			writer.append("" + "\n");
