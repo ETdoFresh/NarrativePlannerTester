@@ -5,7 +5,11 @@ import java.util.Iterator;
 
 import sabre.Action;
 import sabre.Event;
+import sabre.graph.PlanGraphActionNode;
+import sabre.graph.PlanGraphAxiomNode;
 import sabre.graph.PlanGraphEventNode;
+import sabre.logic.ConjunctiveClause;
+import sabre.logic.Literal;
 import sabre.space.SearchSpace;
 import sabre.state.ArrayState;
 import sabre.state.MutableArrayState;
@@ -20,6 +24,53 @@ public class RelaxedPlan implements Iterable<PlanGraphEventNode> {
 		clone.actions.addAll(actions);
 		clone.explanations.addAll(explanations);
 		return clone;
+	}
+	
+	public int getCausalDegree(PlanGraphEventNode action, SearchSpace space) {
+		int degree = 0;
+		if(action instanceof PlanGraphAxiomNode)
+			return degree;
+		// for each action prior to this one
+		for(int i=0; i<actions.indexOf(action); i++)
+			// degree++ for each effect that matches a precondition of this action
+			for(ConjunctiveClause effect : actions.get(i).event.effect.toDNF().arguments)
+				for(Literal e_literal : effect.arguments) 
+					for(ConjunctiveClause precondition : action.event.precondition.toDNF().arguments) 
+						for(Literal p_literal : precondition.arguments) 
+							if(CheckEquals.Literal(e_literal, p_literal))
+								degree++;
+		// for each action after this one
+		for(int i=actions.indexOf(action); i<actions.size(); i++)
+			// degree++ for each precondition that matches an effect of this action
+			for(ConjunctiveClause precondition : actions.get(i).event.precondition.toDNF().arguments)
+				for(Literal p_literal : precondition.arguments)
+					for(ConjunctiveClause effect : action.event.effect.toDNF().arguments)
+						for(Literal e_literal : effect.arguments)
+							if(CheckEquals.Literal(p_literal, e_literal))
+								degree++;
+		// also +1 for each goal achieved by this action's effects
+		for(ConjunctiveClause goal : space.goal.toDNF().arguments)
+			for(Literal g_literal : goal.arguments)
+				for(ConjunctiveClause effect : action.event.effect.toDNF().arguments)
+					for(Literal e_literal : effect.arguments)
+						if(CheckEquals.Literal(e_literal, g_literal))
+							degree++;
+		return degree;
+	}
+	
+	public ArrayList<PlanGraphEventNode> getImportantSteps(SearchSpace space){
+		ArrayList<PlanGraphEventNode> importantSteps = new ArrayList<>();
+		int[] causalDegrees = new int[actions.size()];
+		for(int i=0; i<actions.size(); i++)
+			causalDegrees[i] = getCausalDegree(actions.get(i), space);
+		int maxCausalDegree = 0;
+		for(int i=0; i<actions.size(); i++)
+			if(causalDegrees[i] > maxCausalDegree)
+				maxCausalDegree = causalDegrees[i];
+		for(int i=0; i<actions.size(); i++)
+			if(causalDegrees[i] == maxCausalDegree)
+				importantSteps.add(actions.get(i));
+		return importantSteps;
 	}
 	
 	public boolean isValid(SearchSpace space) {
