@@ -5,13 +5,11 @@ import java.util.Iterator;
 
 import sabre.Action;
 import sabre.Event;
-import sabre.graph.PlanGraphActionNode;
 import sabre.graph.PlanGraphAxiomNode;
 import sabre.graph.PlanGraphEventNode;
 import sabre.logic.ConjunctiveClause;
 import sabre.logic.Literal;
 import sabre.space.SearchSpace;
-import sabre.state.ArrayState;
 import sabre.state.MutableArrayState;
 
 public class RelaxedPlan implements Iterable<PlanGraphEventNode> {
