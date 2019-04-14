@@ -70,20 +70,28 @@ public class RelaxedPlanExtractor {
 					if (node.getLevel() > maxLevel)
 						continue;
 					
-					// Just to get the speed of the planner up
-					if (actionAlreadyExistsIn(plan, node))
-						continue;
+					// Removing Filter as this may be excessive/unneeded
+//					if (actionAlreadyExistsIn(plan, node))
+//						continue;
 
 					PlanGraphActionNode actionNode = (PlanGraphActionNode) node;
 					if (!canBeExplainedForAllConsentingCharacters(actionNode, explanations))
 						continue;
 
-					if (!canExtendAtLeastOneCluster(explanations, actionNode))
-						continue;
+					// Removing Filter as this may be excessive/unneeded
+//					if (!canExtendAtLeastOneCluster(explanations, actionNode))
+//						continue;
 
-					ImmutableArray<? extends Literal> newLiterals = actionNode.parents.get(0).clause.arguments;
 					ArrayList<PlanGraphLiteralNode> newGoalLiterals = new ArrayList<>(localGoalLiterals);
-					newGoalLiterals.remove(goalLiteral);
+					
+					// Remove all effects of chosen action from newGoalLiterals
+					for (PlanGraphNode child : actionNode.children)
+						if (child instanceof PlanGraphLiteralNode)
+							if (newGoalLiterals.contains(child))
+								newGoalLiterals.remove(child);
+
+					// Add preconditions as newGoalLiterals
+					ImmutableArray<? extends Literal> newLiterals = actionNode.parents.get(0).clause.arguments;
 					for (Literal newLiteral : newLiterals)
 						newGoalLiterals.add(actionNode.graph.getLiteral(newLiteral));
 
@@ -91,9 +99,10 @@ public class RelaxedPlanExtractor {
 					planWithNewEvent.push(actionNode);
 					ArrayList<Explanation> newExplanations = cloneExplanation(explanations, actionNode);
 
+					// Removing Filter as this may be excessive/unneeded
 					// Just trying another pruning method...
-					for (Explanation newExplanation : newExplanations)
-						newExplanation.noveltyPruneChains();
+//					for (Explanation newExplanation : newExplanations)
+//						newExplanation.noveltyPruneChains();
 
 					Collection<RelaxedPlan> newPlan = GetAllPossiblePlanGraphPlans(plans, planWithNewEvent,
 							newGoalLiterals, initialGoalLiterals, newExplanations, maxLevel - 1);
