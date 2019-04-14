@@ -1,7 +1,7 @@
 domain: "Little Red Riding Hood";
-goal: location(Cookies) = Grandma & !alive(Grandma);
+goal: !alive(Red);
 
-landmark: "walk(Red, Home, Forest) & walk(Red, Forest, Cottage)";
+//landmark: "walk(Red, Home, Forest) & walk(Red, Forest, Cottage)";
 
 // Types
 type character extends agent;

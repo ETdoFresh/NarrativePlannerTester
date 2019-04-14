@@ -1,5 +1,5 @@
 domain: "Camelot";
-goal: location(Medicine) = Peter;
+goal: location(Medicine) = Peter & location(Peter) = Home;
 
 // Types
 type location;
@@ -49,7 +49,7 @@ intends(Guard, alive(Guard));
 intends(Bandit, alive(Bandit));
 
 // State
-location(Peter) = Market;
+location(Peter) = Home;
 location(Merchant) = Market;
 location(Guard) = Market;
 location(Bandit) = Camp;
@@ -70,6 +70,7 @@ path(Town, Home);
 merchandise(MerchantSword);
 merchandise(Medicine);
 
+
 // Actions
 action walk(character character*, place from, place to){
 	precondition: (
@@ -81,6 +82,7 @@ action walk(character character*, place from, place to){
 		location(character) = to
 	);
 }
+
 
 action buy(character character*, item item, coin coin){
 	precondition: (

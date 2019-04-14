@@ -69,8 +69,6 @@ public class Clusterer {
 					break;
 				exemplar = RelaxedPlan.medoid(assignments);
 			}
-			if(exemplar.isValid(space))
-				System.out.println("Found a valid one!");
 			// if the exemplar is valid, put it in the array; otherwise put a null plan
 			if(exemplar.isValid(space))
 				plans[cluster.id] = exemplar.clone();

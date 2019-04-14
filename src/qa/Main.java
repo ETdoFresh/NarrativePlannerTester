@@ -133,6 +133,7 @@ public class Main {
 		ArrayList<RelaxedPlan> relaxedPlans = getRelaxedPlans(space);
 		ArrayList<RelaxedPlan> validPlans = new ArrayList<>();
 		for(RelaxedPlan plan : relaxedPlans) {	
+			System.out.println("Important: " + plan.getImportantSteps(space));
 			if(plan.isValid(space))
 				validPlans.add(plan);
 		}

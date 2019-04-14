@@ -79,7 +79,7 @@ public class RelaxedPlanExtractor {
 						continue;
 
 					// Removing Filter as this may be excessive/unneeded
-//					if (!canExtendAtLeastOneCluster(explanations, actionNode))
+//					if (!canExtendAtLeastOneChain(explanations, actionNode))
 //						continue;
 
 					ArrayList<PlanGraphLiteralNode> newGoalLiterals = new ArrayList<>(localGoalLiterals);
@@ -120,10 +120,10 @@ public class RelaxedPlanExtractor {
 		return plan.contains(((PlanGraphActionNode) node).event);
 	}
 
-	private static boolean canExtendAtLeastOneCluster(ArrayList<Explanation> explanations,
+	private static boolean canExtendAtLeastOneChain(ArrayList<Explanation> explanations,
 			PlanGraphActionNode actionNode) {
 		for (Explanation explanation : explanations)
-			if (explanation.canExtendAtLeastOneCluster(actionNode))
+			if (explanation.canExtendAtLeastOneChain(actionNode))
 				return true;
 
 		return false;
