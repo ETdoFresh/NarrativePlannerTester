@@ -53,7 +53,7 @@ public class Explanation {
 		return false;
 	}
 
-	public boolean canExtendAtLeastOneCluster(PlanGraphActionNode actionNode) {
+	public boolean canExtendAtLeastOneChain(PlanGraphActionNode actionNode) {
 		for (ConjunctiveClause disjunct : actionNode.event.effect.toDNF().arguments)
 			for (Literal effectLiteral : disjunct.arguments)
 				for (CausalChain causalChain : causalChainSet.causalChains)

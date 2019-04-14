@@ -78,7 +78,7 @@ public class RelaxedPlanExtractor {
 					if (!canBeExplainedForAllConsentingCharacters(actionNode, explanations))
 						continue;
 
-					if (!canExtendAtLeastOneCluster(explanations, actionNode))
+					if (!canExtendAtLeastOneChain(explanations, actionNode))
 						continue;
 
 					ImmutableArray<? extends Literal> newLiterals = actionNode.parents.get(0).clause.arguments;
@@ -95,10 +95,10 @@ public class RelaxedPlanExtractor {
 					for (Explanation newExplanation : newExplanations)
 						newExplanation.noveltyPruneChains();
 
-					Collection<RelaxedPlan> newPlan = GetAllPossiblePlanGraphPlans(plans, planWithNewEvent,
+					Collection<RelaxedPlan> newPlans = GetAllPossiblePlanGraphPlans(plans, planWithNewEvent,
 							newGoalLiterals, initialGoalLiterals, newExplanations, maxLevel - 1);
-					if (newPlan != plans)
-						plans.addAll(newPlan);
+					if (newPlans != plans)
+						plans.addAll(newPlans);
 				} else {
 					// TODO: Handle axioms (but not yet; no axioms in Camelot domain now)
 				}
@@ -111,10 +111,10 @@ public class RelaxedPlanExtractor {
 		return plan.contains(((PlanGraphActionNode) node).event);
 	}
 
-	private static boolean canExtendAtLeastOneCluster(ArrayList<Explanation> explanations,
+	private static boolean canExtendAtLeastOneChain(ArrayList<Explanation> explanations,
 			PlanGraphActionNode actionNode) {
 		for (Explanation explanation : explanations)
-			if (explanation.canExtendAtLeastOneCluster(actionNode))
+			if (explanation.canExtendAtLeastOneChain(actionNode))
 				return true;
 
 		return false;
