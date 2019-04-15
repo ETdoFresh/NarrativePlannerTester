@@ -26,8 +26,51 @@ public class RelaxedPlanExtractor {
 		ArrayList<PlanGraphLiteralNode> goalLiterals = getGoalLiterals(space.graph, goal);
 		ArrayList<Explanation> explanations = getExplanations(space.domain);
 		int maxLevel = space.graph.size();
-		return RelaxedPlanExtractor.GetAllPossiblePlanGraphPlans(new ArrayList<RelaxedPlan>(), new RelaxedPlan(),
-				goalLiterals, goalLiterals, explanations, maxLevel);
+
+		return computeLiteralsIndividuallyAndUnionCombinations(goalLiterals, explanations, maxLevel);
+
+		// Use this if you don't want to use the union each plan algorithm above.
+		//return GetAllPossiblePlanGraphPlans(new ArrayList<RelaxedPlan>(), new RelaxedPlan(), goalLiterals, goalLiterals, explanations, maxLevel);
+	}
+
+	private static Collection<RelaxedPlan> computeLiteralsIndividuallyAndUnionCombinations(
+			ArrayList<PlanGraphLiteralNode> goalLiterals, ArrayList<Explanation> explanations, int maxLevel) {
+		// Create plans for each literal, and get combination of all relaxed union plans
+		// Union removes same step from happening multiple times.
+		ArrayList<Collection<RelaxedPlan>> plans = new ArrayList<>();
+		for (PlanGraphLiteralNode goalLiteral : goalLiterals) {
+			ArrayList<PlanGraphLiteralNode> initialGoalLiteral = new ArrayList<>();
+			initialGoalLiteral.add(goalLiteral);
+			plans.add(GetAllPossiblePlanGraphPlans(new ArrayList<RelaxedPlan>(), new RelaxedPlan(), initialGoalLiteral,
+					initialGoalLiteral, explanations, maxLevel));
+		}
+		ArrayList<RelaxedPlan> unionedPlans = getCombinedPlans(0, plans, new RelaxedPlan());
+		
+		// Remove Duplicate Plans
+		for (int i = unionedPlans.size()-1; i >=0;i--)
+			for (int j = i - 1; j >= 0; j--)
+			if (unionedPlans.get(i).size() == unionedPlans.get(j).size())
+				if (unionedPlans.get(i).intersection(unionedPlans.get(j)) == unionedPlans.get(i).size()) {
+					unionedPlans.remove(i);
+					break;
+				}
+		return unionedPlans;
+	}
+
+	private static ArrayList<RelaxedPlan> getCombinedPlans(int i, ArrayList<Collection<RelaxedPlan>> listOfPlans,
+			RelaxedPlan newPlan) {
+		ArrayList<RelaxedPlan> newListOfPlans = new ArrayList<>();
+
+		if (i == listOfPlans.size()) {
+			newListOfPlans.add(newPlan);
+			return newListOfPlans;
+		}
+
+		Collection<RelaxedPlan> plans = listOfPlans.get(i);
+		for (RelaxedPlan plan : plans) {
+			newListOfPlans.addAll(getCombinedPlans(i + 1, listOfPlans, newPlan.unionClone(plan)));
+		}
+		return newListOfPlans;
 	}
 
 	private static ArrayList<Explanation> getExplanations(Domain domain) {
@@ -49,11 +92,13 @@ public class RelaxedPlanExtractor {
 			ArrayList<PlanGraphLiteralNode> localGoalLiterals, ArrayList<PlanGraphLiteralNode> initialGoalLiterals,
 			ArrayList<Explanation> explanations, int maxLevel) {
 
-		// Remove Initial State Literals from GoalLiterals
+		// Remove Initial State Literals from localGoalLiterals
+		// Only doing this if goal is true in initial state
+		localGoalLiterals = new ArrayList<>(localGoalLiterals); // copy()
 		for (int i = localGoalLiterals.size() - 1; i >= 0; i--) {
-			PlanGraphLiteralNode goalLiteral = localGoalLiterals.get(i);
-			if (goalLiteral.getLevel() == 0)
-				localGoalLiterals.remove(goalLiteral);
+			PlanGraphLiteralNode localGoalLiteral = localGoalLiterals.get(i);
+			if (localGoalLiteral.getLevel() == 0)
+				localGoalLiterals.remove(localGoalLiteral);
 		}
 
 		// If GoalLiterals Size is 0, we are done! Add that plan!
@@ -65,11 +110,11 @@ public class RelaxedPlanExtractor {
 		for (PlanGraphLiteralNode goalLiteral : localGoalLiterals) {
 			for (PlanGraphNode node : goalLiteral.parents) {
 				if (node instanceof PlanGraphActionNode) {
-					
+
 					// Only consider plans the size of plangraph
 					if (node.getLevel() > maxLevel)
 						continue;
-					
+
 					// Removing Filter as this may be excessive/unneeded
 //					if (actionAlreadyExistsIn(plan, node))
 //						continue;
@@ -83,7 +128,7 @@ public class RelaxedPlanExtractor {
 //						continue;
 
 					ArrayList<PlanGraphLiteralNode> newGoalLiterals = new ArrayList<>(localGoalLiterals);
-					
+
 					// Remove all effects of chosen action from newGoalLiterals
 					for (PlanGraphNode child : actionNode.children)
 						if (child instanceof PlanGraphLiteralNode)
@@ -94,6 +139,13 @@ public class RelaxedPlanExtractor {
 					ImmutableArray<? extends Literal> newLiterals = actionNode.parents.get(0).clause.arguments;
 					for (Literal newLiteral : newLiterals)
 						newGoalLiterals.add(actionNode.graph.getLiteral(newLiteral));
+
+					// Remove Initial State Literals from newGoalLiterals
+//					for (int i = newGoalLiterals.size() - 1; i >= 0; i--) {
+//						PlanGraphLiteralNode newGoalLiteral = newGoalLiterals.get(i);
+//						if (newGoalLiteral.getLevel() == 0)
+//							newGoalLiterals.remove(newGoalLiteral);
+//					}
 
 					RelaxedPlan planWithNewEvent = plan.clone();
 					planWithNewEvent.push(actionNode);
