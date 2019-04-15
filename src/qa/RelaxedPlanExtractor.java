@@ -23,23 +23,11 @@ public class RelaxedPlanExtractor {
 
 	// Returns a list of all possible PlanGraph Plans
 	static Collection<RelaxedPlan> GetAllPossiblePlanGraphPlans(SearchSpace space, Iterable<? extends Literal> goal) {
-		ArrayList<RelaxedPlanLiteralNode> goalLiterals = getGoalLiterals(space.graph, goal);
+		ArrayList<PlanGraphLiteralNode> goalLiterals = getGoalLiterals(space.graph, goal);
 		ArrayList<Explanation> explanations = getExplanations(space.domain);
-		ArrayList<ArrayList<RelaxedPlanEventNode>> plans = new ArrayList<>();
-		ArrayList<RelaxedPlanEventNode> plan = new ArrayList<>();
-		plans.add(plan);
-		plans = GetAllPossiblePlanGraphPlans(plans, plan, goalLiterals, goalLiterals, explanations);
-		return GetRelaxedPlans(plans);
-	}
-
-	private static Collection<RelaxedPlan> GetRelaxedPlans(ArrayList<ArrayList<RelaxedPlanEventNode>> plans) {
-		ArrayList<RelaxedPlan> relaxedPlans = new ArrayList<>();
-		for (ArrayList<RelaxedPlanEventNode> plan : plans) {
-			RelaxedPlan relaxedPlan = new RelaxedPlan();
-			for (RelaxedPlanEventNode event : plan)
-				relaxedPlan.push(event.node);
-		}
-		return relaxedPlans;
+		int maxLevel = space.graph.size();
+		return RelaxedPlanExtractor.GetAllPossiblePlanGraphPlans(new ArrayList<RelaxedPlan>(), new RelaxedPlan(),
+				goalLiterals, goalLiterals, explanations, maxLevel);
 	}
 
 	private static ArrayList<Explanation> getExplanations(Domain domain) {
@@ -50,39 +38,43 @@ public class RelaxedPlanExtractor {
 		return explanations;
 	}
 
-	private static ArrayList<RelaxedPlanLiteralNode> getGoalLiterals(PlanGraph graph,
-			Iterable<? extends Literal> goal) {
-		ArrayList<RelaxedPlanLiteralNode> planGraphGoal = new ArrayList<>();
+	private static ArrayList<PlanGraphLiteralNode> getGoalLiterals(PlanGraph graph, Iterable<? extends Literal> goal) {
+		ArrayList<PlanGraphLiteralNode> planGraphGoal = new ArrayList<>();
 		for (Literal literal : goal)
-			planGraphGoal.add(new RelaxedPlanLiteralNode(graph.getLiteral(literal), graph.size() - 1));
+			planGraphGoal.add(graph.getLiteral(literal));
 		return planGraphGoal;
 	}
 
-	static ArrayList<ArrayList<RelaxedPlanEventNode>> GetAllPossiblePlanGraphPlans(
-			ArrayList<ArrayList<RelaxedPlanEventNode>> plans, ArrayList<RelaxedPlanEventNode> plan,
-			ArrayList<RelaxedPlanLiteralNode> localGoalLiterals, ArrayList<RelaxedPlanLiteralNode> initialGoalLiterals,
-			ArrayList<Explanation> explanations) {
+	static Collection<RelaxedPlan> GetAllPossiblePlanGraphPlans(ArrayList<RelaxedPlan> plans, RelaxedPlan plan,
+			ArrayList<PlanGraphLiteralNode> localGoalLiterals, ArrayList<PlanGraphLiteralNode> initialGoalLiterals,
+			ArrayList<Explanation> explanations, int maxLevel) {
+
+		// Remove Initial State Literals from GoalLiterals
+		for (int i = localGoalLiterals.size() - 1; i >= 0; i--) {
+			PlanGraphLiteralNode goalLiteral = localGoalLiterals.get(i);
+			if (goalLiteral.getLevel() == 0)
+				localGoalLiterals.remove(goalLiteral);
+		}
 
 		// If GoalLiterals Size is 0, we are done! Add that plan!
-		if (localGoalLiterals.size() == 0)
-			return new ArrayList<ArrayList<RelaxedPlanEventNode>>(Arrays.asList(plan));
+		if (localGoalLiterals.size() == 0) {
+			return new ArrayList<RelaxedPlan>(Arrays.asList(plan));
+		}
 
 		// For each Goal Literal, follow its parents.
-		for (RelaxedPlanLiteralNode goalLiteral : localGoalLiterals) {
-			for (RelaxedPlanEventNode event : goalLiteral.parents()) {
-				if (event.node instanceof PlanGraphActionNode) {
-
-					if (event.level > goalLiteral.level)
+		for (PlanGraphLiteralNode goalLiteral : localGoalLiterals) {
+			for (PlanGraphNode node : goalLiteral.parents) {
+				if (node instanceof PlanGraphActionNode) {
+					
+					// Only consider plans the size of plangraph
+					if (node.getLevel() > maxLevel)
 						continue;
-
-					if (!selectOnlyOneEventPerLayer(event, plan))
-						continue;
-
+					
 					// Removing Filter as this may be excessive/unneeded
-					if (plan.contains(event))
-						continue;
+//					if (actionAlreadyExistsIn(plan, node))
+//						continue;
 
-					PlanGraphActionNode actionNode = (PlanGraphActionNode) event.node;
+					PlanGraphActionNode actionNode = (PlanGraphActionNode) node;
 					if (!canBeExplainedForAllConsentingCharacters(actionNode, explanations))
 						continue;
 
@@ -90,30 +82,21 @@ public class RelaxedPlanExtractor {
 //					if (!canExtendAtLeastOneChain(explanations, actionNode))
 //						continue;
 
-					ArrayList<RelaxedPlanLiteralNode> newGoalLiterals = new ArrayList<>(localGoalLiterals);
-
+					ArrayList<PlanGraphLiteralNode> newGoalLiterals = new ArrayList<>(localGoalLiterals);
+					
 					// Remove all effects of chosen action from newGoalLiterals
-					for (RelaxedPlanLiteralNode child : event.children())
-						if (newGoalLiterals.contains(child))
-							newGoalLiterals.remove(child);
+					for (PlanGraphNode child : actionNode.children)
+						if (child instanceof PlanGraphLiteralNode)
+							if (newGoalLiterals.contains(child))
+								newGoalLiterals.remove(child);
 
 					// Add preconditions as newGoalLiterals
-					for (RelaxedPlanLiteralNode preconditionLiteral : event.parents())
-						if (!newGoalLiterals.contains(preconditionLiteral))
-							newGoalLiterals.add(preconditionLiteral);
+					ImmutableArray<? extends Literal> newLiterals = actionNode.parents.get(0).clause.arguments;
+					for (Literal newLiteral : newLiterals)
+						newGoalLiterals.add(actionNode.graph.getLiteral(newLiteral));
 
-					// Remove Initial State Literals from NewGoalLiterals
-					for (int i = newGoalLiterals.size() - 1; i >= 0; i--) {
-						RelaxedPlanLiteralNode newGoalLiteral = newGoalLiterals.get(i);
-						if (newGoalLiteral.node.getLevel() == 0)
-							newGoalLiterals.remove(newGoalLiteral);
-					}
-
-//					if (stillContainsRelaxedLevelZeroLiteral(newGoalLiterals))
-//						continue;
-
-					ArrayList<RelaxedPlanEventNode> planWithNewEvent = new ArrayList<>(plan); // clone()
-					planWithNewEvent.add(0, event); // push()
+					RelaxedPlan planWithNewEvent = plan.clone();
+					planWithNewEvent.push(actionNode);
 					ArrayList<Explanation> newExplanations = cloneExplanation(explanations, actionNode);
 
 					// Removing Filter as this may be excessive/unneeded
@@ -121,8 +104,8 @@ public class RelaxedPlanExtractor {
 //					for (Explanation newExplanation : newExplanations)
 //						newExplanation.noveltyPruneChains();
 
-					ArrayList<ArrayList<RelaxedPlanEventNode>> newPlan = GetAllPossiblePlanGraphPlans(plans,
-							planWithNewEvent, newGoalLiterals, initialGoalLiterals, newExplanations);
+					Collection<RelaxedPlan> newPlan = GetAllPossiblePlanGraphPlans(plans, planWithNewEvent,
+							newGoalLiterals, initialGoalLiterals, newExplanations, maxLevel - 1);
 					if (newPlan != plans)
 						plans.addAll(newPlan);
 				} else {
@@ -133,25 +116,8 @@ public class RelaxedPlanExtractor {
 		return plans;
 	}
 
-	private static boolean selectOnlyOneEventPerLayer(RelaxedPlanEventNode event,
-			ArrayList<RelaxedPlanEventNode> plan) {
-		int minLevel = Integer.MAX_VALUE;
-		for (RelaxedPlanEventNode eventNode : plan)
-			if (minLevel > eventNode.level)
-				minLevel = eventNode.level;
-
-		if (event.level >= minLevel)
-			return false;
-		else
-			return true;
-	}
-
-	private static boolean stillContainsRelaxedLevelZeroLiteral(ArrayList<RelaxedPlanLiteralNode> newGoalLiterals) {
-		for (RelaxedPlanLiteralNode literalNode : newGoalLiterals)
-			if (literalNode.level == 0)
-				return true;
-
-		return false;
+	private static boolean actionAlreadyExistsIn(RelaxedPlan plan, PlanGraphNode node) {
+		return plan.contains(((PlanGraphActionNode) node).event);
 	}
 
 	private static boolean canExtendAtLeastOneChain(ArrayList<Explanation> explanations,
