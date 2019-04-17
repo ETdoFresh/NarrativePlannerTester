@@ -205,7 +205,7 @@ public class Main {
 	private static ArrayList<RelaxedPlan> getRelaxedPlans(SearchSpace space) {
 		ArrayList<RelaxedPlan> plans = new ArrayList<>();
 		for (ConjunctiveClause goal : space.goal.toDNF().arguments)
-			plans.addAll(RelaxedPlanExtractor.GetAllPossiblePlanGraphPlans(space, goal.arguments));
+			RelaxedPlanExtractor.GetAllPossiblePlans(space, goal.arguments, plans);
 		return plans;
 	}
 
