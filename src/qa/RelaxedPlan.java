@@ -205,4 +205,10 @@ public class RelaxedPlan implements Iterable<PlanGraphEventNode> {
 			str += Text.BLANK + action + "\n";
 		return str;
 	}
+
+	public void removeNoOps() {
+		for (int i = actions.size()-1; i >= 0; i--)
+			if (actions.get(i).toString().contains("NoOp:"))
+				actions.remove(i);
+	}
 }

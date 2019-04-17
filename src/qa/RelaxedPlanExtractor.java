@@ -49,7 +49,6 @@ public class RelaxedPlanExtractor {
 			ArrayList<Explanation> explanations, RelaxedPlan plan, ArrayList<RelaxedPlan> plans) {
 		if (level == 0) {
 			plans.add(plan);
-			System.out.println(plan);
 		} else {
 			ArrayList<HashSet<PlanGraphEventNode>> sets = new ArrayList<>();
 			GetAllPossibleSteps(new ArrayList<>(goalsAtThisLevel), level, 0, explanations, new HashSet<>(), sets);

@@ -33,7 +33,7 @@ public class Main {
 	private static final String CREDITS = "by Edward Garcia, Rachelyn Farrell, and Stephen G. Ware";
 	private static final String TITLE = "Planning Domain Automated Tester (PDAT), " + VERSION + "\n " + CREDITS + "\n";
 	private static final String USAGE = "TODO: Write usage";
-	private static final String FILE = "domains/camelot.domain";
+	private static final String FILE = "rrh.txt";
 
 	static long lastModified = 0;
 	static boolean firstRun = true;
@@ -206,6 +206,19 @@ public class Main {
 		ArrayList<RelaxedPlan> plans = new ArrayList<>();
 		for (ConjunctiveClause goal : space.goal.toDNF().arguments)
 			RelaxedPlanExtractor.GetAllPossiblePlans(space, goal.arguments, plans);
+		
+		// Remove NoOps
+		for (RelaxedPlan plan : plans)
+			plan.removeNoOps();
+		
+		// Deduplicate Plans
+		for (int i = plans.size() -1; i >= 0; i--)
+			for (int j = i - 1; j >= 0; j--)
+				if (plans.get(i).equals(plans.get(j))) {
+					plans.remove(i);
+					break;
+				}
+		
 		return plans;
 	}
 
