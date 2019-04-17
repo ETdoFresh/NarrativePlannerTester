@@ -1,26 +1,18 @@
 package qa;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 
 import sabre.Agent;
 import sabre.Domain;
 import sabre.graph.PlanGraph;
 import sabre.graph.PlanGraphActionNode;
-import sabre.graph.PlanGraphAxiomNode;
 import sabre.graph.PlanGraphClauseNode;
 import sabre.graph.PlanGraphEventNode;
 import sabre.graph.PlanGraphLiteralNode;
 import sabre.graph.PlanGraphNode;
-import sabre.logic.ConjunctiveClause;
 import sabre.logic.Literal;
-import sabre.logic.Term;
 import sabre.space.SearchSpace;
-import sabre.util.ImmutableArray;
 
 public class RelaxedPlanExtractor {
 
@@ -78,19 +70,47 @@ public class RelaxedPlanExtractor {
 
 		if (i == goalsAtThisLevel.size()) {
 			sets.add(set);
+
 		} else {
 			for (PlanGraphNode node : goalsAtThisLevel.get(i).parents) {
 				if (node.getLevel() > level)
 					continue;
 
 				if (node instanceof PlanGraphEventNode) {
-					int nextI = i + 1;
 					PlanGraphEventNode eventNode = (PlanGraphEventNode) node;
-					HashSet<PlanGraphEventNode> newSet = new HashSet<>(set);
-					newSet.add(eventNode);
-					GetAllPossibleSteps(goalsAtThisLevel, level, nextI, explanations, newSet, sets);
+					GetAllWaysToConsent(goalsAtThisLevel, level, i, 0, eventNode, explanations, set, sets);
 				}
 			}
 		}
+	}
+
+	static void GetAllWaysToConsent(ArrayList<PlanGraphLiteralNode> goalsAtThisLevel, int level, int i, int j,
+			PlanGraphEventNode eventNode, ArrayList<Explanation> explanations, HashSet<PlanGraphEventNode> set,
+			ArrayList<HashSet<PlanGraphEventNode>> sets) {
+		PlanGraphActionNode actionNode = eventNode instanceof PlanGraphActionNode ? (PlanGraphActionNode) eventNode
+				: null;
+		if (actionNode == null || j == actionNode.event.agents.size()) {
+			int nextI = i + 1;
+			HashSet<PlanGraphEventNode> newSet = new HashSet<>(set);
+			newSet.add(eventNode);
+			GetAllPossibleSteps(goalsAtThisLevel, level, nextI, explanations, newSet, sets);
+		} else {
+			for (Explanation oldExplanation : explanations) {
+				if (oldExplanation.agent.equals(actionNode.event.agents.get(j))) {
+					Explanation newExplanation = oldExplanation.add(actionNode);
+					if (newExplanation != null)
+						GetAllWaysToConsent(goalsAtThisLevel, level, i, j + 1, eventNode,
+								replace(oldExplanation, newExplanation, explanations), set, sets);
+				}
+			}
+		}
+	}
+
+	private static ArrayList<Explanation> replace(Explanation oldExplanation, Explanation newExplanation,
+			ArrayList<Explanation> explanations) {
+		ArrayList<Explanation> newExplanations = new ArrayList<>(explanations);
+		newExplanations.remove(oldExplanation);
+		newExplanations.add(newExplanation);
+		return newExplanations;
 	}
 }

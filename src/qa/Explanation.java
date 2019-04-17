@@ -85,4 +85,12 @@ public class Explanation {
 		}
 	}
 
+	public Explanation add(PlanGraphActionNode actionNode) {
+		if (!containsEffect(actionNode.event))
+			return null;
+		
+		Explanation newExplanation = clone();
+		newExplanation.applyEvent(actionNode.event);
+		return newExplanation;
+	}
 }
