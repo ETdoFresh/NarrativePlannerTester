@@ -96,6 +96,11 @@ public class RelaxedPlan implements Iterable<PlanGraphEventNode> {
 	public void push(PlanGraphEventNode action) {
 		actions.add(0, action);
 	}
+	
+	public void pushAll(Iterable<PlanGraphEventNode> actions) {
+		for(PlanGraphEventNode action : actions)
+			push(action);
+	}
 
 	public PlanGraphEventNode get(int index) {
 		return actions.get(index);

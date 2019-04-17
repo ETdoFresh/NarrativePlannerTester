@@ -67,6 +67,10 @@ public class Main {
 
 				PlanGraph planGraph = createExtendedPlanGraph(space, initial);
 				
+				ArrayList<RelaxedPlan> plans = new ArrayList<>();
+				for (ConjunctiveClause goal : space.goal.toDNF().arguments)
+					RelaxedPlanExtractor.GetAllPossiblePlans(space, goal.arguments, plans);
+				
 				// Number of actions available from the initial state
 				int firstSteps = 0;
 				System.out.println(Text.INFO + "Actions possible from initial state: ");
