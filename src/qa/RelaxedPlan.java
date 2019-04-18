@@ -1,6 +1,7 @@
 package qa;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 
 import sabre.Action;
@@ -210,5 +211,10 @@ public class RelaxedPlan implements Iterable<PlanGraphEventNode> {
 		for (int i = actions.size()-1; i >= 0; i--)
 			if (actions.get(i).toString().contains("NoOp:"))
 				actions.remove(i);
+	}
+
+	public void pushAll(HashSet<RelaxedNode> set) {
+		for(RelaxedNode node : set)
+			push(node.eventNode);
 	}
 }

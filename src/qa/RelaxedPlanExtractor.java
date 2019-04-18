@@ -30,6 +30,16 @@ public class RelaxedPlanExtractor {
 			planGraphGoal.add(graph.getLiteral(literal));
 		return planGraphGoal;
 	}
+	
+	static HashSet<PlanGraphLiteralNode> GetAllPreconditions(HashSet<RelaxedNode> set) {
+		HashSet<PlanGraphLiteralNode> literals = new HashSet<>();
+		for (RelaxedNode node : set)
+			for (PlanGraphClauseNode clauseNode : node.eventNode.parents)
+				for (Literal literal : clauseNode.clause.arguments)
+					literals.add(node.eventNode.graph.getLiteral(literal));
+
+		return literals;
+	}
 
 	static void GetAllPossiblePlans(SearchSpace space, Iterable<? extends Literal> goal, ArrayList<RelaxedPlan> plans) {
 		HashSet<PlanGraphLiteralNode> goalLiterals = new HashSet<>(getGoalLiterals(space.graph, goal));
@@ -42,31 +52,22 @@ public class RelaxedPlanExtractor {
 		if (level == 0) {
 			plans.add(plan);
 		} else {
-			ArrayList<HashSet<PlanGraphEventNode>> sets = new ArrayList<>();
+			ArrayList<HashSet<RelaxedNode>> sets = new ArrayList<>();
 			GetAllPossibleSteps(new ArrayList<>(goalsAtThisLevel), level, 0, explanations, new HashSet<>(), sets);
-			for (HashSet<PlanGraphEventNode> set : sets) {
+			for (HashSet<RelaxedNode> set : sets) {
 				HashSet<PlanGraphLiteralNode> newGoals = GetAllPreconditions(set);
 				int previousLevel = level - 1;
 				RelaxedPlan planWithSet = plan.clone();
 				planWithSet.pushAll(set);
-				GetAllPossiblePlans(newGoals, previousLevel, explanations, planWithSet, plans);
+				for(RelaxedNode node : set)
+					GetAllPossiblePlans(newGoals, previousLevel, node.explanations, planWithSet, plans);
 			}
 		}
 	}
 
-	static HashSet<PlanGraphLiteralNode> GetAllPreconditions(HashSet<PlanGraphEventNode> set) {
-		HashSet<PlanGraphLiteralNode> literals = new HashSet<>();
-		for (PlanGraphEventNode step : set)
-			for (PlanGraphClauseNode clauseNode : step.parents)
-				for (Literal literal : clauseNode.clause.arguments)
-					literals.add(step.graph.getLiteral(literal));
-
-		return literals;
-	}
-
 	static void GetAllPossibleSteps(ArrayList<PlanGraphLiteralNode> goalsAtThisLevel, int level, int i,
-			ArrayList<Explanation> explanations, HashSet<PlanGraphEventNode> set,
-			ArrayList<HashSet<PlanGraphEventNode>> sets) {
+			ArrayList<Explanation> explanations, HashSet<RelaxedNode> set,
+			ArrayList<HashSet<RelaxedNode>> sets) {
 
 		if (i == goalsAtThisLevel.size()) {
 			sets.add(set);
@@ -85,14 +86,14 @@ public class RelaxedPlanExtractor {
 	}
 
 	static void GetAllWaysToConsent(ArrayList<PlanGraphLiteralNode> goalsAtThisLevel, int level, int i, int j,
-			PlanGraphEventNode eventNode, ArrayList<Explanation> explanations, HashSet<PlanGraphEventNode> set,
-			ArrayList<HashSet<PlanGraphEventNode>> sets) {
+			PlanGraphEventNode eventNode, ArrayList<Explanation> explanations, HashSet<RelaxedNode> set,
+			ArrayList<HashSet<RelaxedNode>> sets) {
 		PlanGraphActionNode actionNode = eventNode instanceof PlanGraphActionNode ? (PlanGraphActionNode) eventNode
 				: null;
 		if (actionNode == null || j == actionNode.event.agents.size()) {
 			int nextI = i + 1;
-			HashSet<PlanGraphEventNode> newSet = new HashSet<>(set);
-			newSet.add(eventNode);
+			HashSet<RelaxedNode> newSet = new HashSet<>(set);
+			newSet.add(new RelaxedNode(eventNode, explanations));
 			GetAllPossibleSteps(goalsAtThisLevel, level, nextI, explanations, newSet, sets);
 		} else {
 			for (Explanation oldExplanation : explanations) {
