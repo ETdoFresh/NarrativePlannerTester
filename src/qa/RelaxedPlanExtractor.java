@@ -114,4 +114,51 @@ public class RelaxedPlanExtractor {
 		newExplanations.add(newExplanation);
 		return newExplanations;
 	}
+	
+	
+	
+	static void GetAllPossibleClassicalPlans(SearchSpace space, Iterable<? extends Literal> goal, ArrayList<RelaxedPlan> plans) {
+		HashSet<PlanGraphLiteralNode> goalLiterals = new HashSet<>(getGoalLiterals(space.graph, goal));
+		GetAllPossibleClassicalPlans(goalLiterals, space.graph.size() - 1, new RelaxedPlan(), plans);
+	}
+
+	static void GetAllPossibleClassicalPlans(HashSet<PlanGraphLiteralNode> goalsAtThisLevel, int level,
+			RelaxedPlan plan, ArrayList<RelaxedPlan> plans) {
+		if (level == 0) {
+			plans.add(plan);
+		} else {
+			ArrayList<HashSet<RelaxedNode>> sets = new ArrayList<>();
+			GetAllPossibleClassicalSteps(new ArrayList<>(goalsAtThisLevel), level, 0,  new HashSet<>(), sets);
+			for (HashSet<RelaxedNode> set : sets) {
+				HashSet<PlanGraphLiteralNode> newGoals = GetAllPreconditions(set);
+				int previousLevel = level - 1;
+				RelaxedPlan planWithSet = plan.clone();
+				planWithSet.pushAll(set);
+				for(RelaxedNode node : set)
+					GetAllPossibleClassicalPlans(newGoals, previousLevel, planWithSet, plans);
+			}
+		}
+	}
+
+	static void GetAllPossibleClassicalSteps(ArrayList<PlanGraphLiteralNode> goalsAtThisLevel, int level, int i,
+			HashSet<RelaxedNode> set, ArrayList<HashSet<RelaxedNode>> sets) {
+
+		if (i == goalsAtThisLevel.size()) {
+			sets.add(set);
+
+		} else {
+			for (PlanGraphNode node : goalsAtThisLevel.get(i).parents) {
+				if (node.getLevel() > level)
+					continue;
+
+				if (node instanceof PlanGraphEventNode) {
+					PlanGraphEventNode eventNode = (PlanGraphEventNode) node;
+					int nextI = i + 1;
+					HashSet<RelaxedNode> newSet = new HashSet<>(set);
+					newSet.add(new RelaxedNode(eventNode, null));
+					GetAllPossibleClassicalSteps(goalsAtThisLevel, level, nextI, newSet, sets);
+				}
+			}
+		}
+	}
 }

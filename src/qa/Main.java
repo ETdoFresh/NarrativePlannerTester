@@ -65,11 +65,25 @@ public class Main {
 				ArrayState initial = new ArrayState(space);
 				checkGoalTrueInitialState(domain, initial);
 
-				PlanGraph planGraph = createExtendedPlanGraph(space, initial);
+				PlanGraph planGraph = createExtendedPlanGraph(space, initial);				
 				
+				ArrayList<RelaxedPlan> previousResults = getRelaxedPlans(space);
+				
+				// Get Classical Plans Start ------------------------------------------------------------
 				ArrayList<RelaxedPlan> plans = new ArrayList<>();
 				for (ConjunctiveClause goal : space.goal.toDNF().arguments)
-					RelaxedPlanExtractor.GetAllPossiblePlans(space, goal.arguments, plans);
+					RelaxedPlanExtractor.GetAllPossibleClassicalPlans(space, goal.arguments, plans);
+				
+				for (RelaxedPlan plan : plans)
+					plan.removeNoOps();
+				
+				for (int i = plans.size() -1; i >= 0; i--)
+					for (int j = i - 1; j >= 0; j--)
+						if (plans.get(i).equals(plans.get(j))) {
+							plans.remove(i);
+							break;
+						}
+				// Get Classical Plans End --------------------------------------------------------------
 				
 				// Number of actions available from the initial state
 				int firstSteps = 0;
