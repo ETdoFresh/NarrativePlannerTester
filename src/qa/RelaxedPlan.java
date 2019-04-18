@@ -192,6 +192,9 @@ public class RelaxedPlan implements Iterable<RelaxedNode> {
 		if (!(other instanceof RelaxedPlan))
 			return false;
 		RelaxedPlan otherPlan = (RelaxedPlan) other;
+		if (size() != otherPlan.size())
+			return false;
+		
 		for (int i = 0; i < nodes.size(); i++) {
 			if (!nodes.get(i).eventNode.event.equals(otherPlan.nodes.get(i).eventNode.event))
 				return false;

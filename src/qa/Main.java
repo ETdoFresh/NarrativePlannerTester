@@ -77,12 +77,14 @@ public class Main {
 				for (RelaxedPlan plan : plans)
 					plan.removeNoOps();
 				
+				// Maybe deduplicating too many plans. Check plans.equals()
 				for (int i = plans.size() -1; i >= 0; i--)
 					for (int j = i - 1; j >= 0; j--)
 						if (plans.get(i).equals(plans.get(j))) {
 							plans.remove(i);
 							break;
 						}
+				
 				// Get Classical Plans End --------------------------------------------------------------
 				
 				// Number of actions available from the initial state
