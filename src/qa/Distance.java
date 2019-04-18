@@ -15,11 +15,11 @@ public class Distance {
 		Set<Event> E_b = new HashSet<>();
 
 		// TODO: Only add important steps
-		for(PlanGraphEventNode step : a) {
-			E_a.add(step.event);			
+		for(RelaxedNode step : a) {
+			E_a.add(step.eventNode.event);			
 		}
-		for(PlanGraphEventNode step : b) {
-			E_b.add(step.event);
+		for(RelaxedNode step : b) {
+			E_b.add(step.eventNode.event);
 		}
 
 		// TODO: Add intention frame summaries

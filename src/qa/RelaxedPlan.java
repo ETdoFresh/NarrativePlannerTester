@@ -13,70 +13,70 @@ import sabre.logic.Literal;
 import sabre.space.SearchSpace;
 import sabre.state.MutableArrayState;
 
-public class RelaxedPlan implements Iterable<PlanGraphEventNode> {
-	private ArrayList<PlanGraphEventNode> actions = new ArrayList<>();
+public class RelaxedPlan implements Iterable<RelaxedNode> {
+	private ArrayList<RelaxedNode> nodes = new ArrayList<>();
 	public ArrayList<Explanation> explanations = new ArrayList<>();
 	public int clusterAssignment = -1;
 
 	public RelaxedPlan clone() {
 		RelaxedPlan clone = new RelaxedPlan();
-		clone.actions.addAll(actions);
+		clone.nodes.addAll(nodes);
 		clone.explanations.addAll(explanations);
 		return clone;
 	}
 
-	public int getCausalDegree(PlanGraphEventNode action, SearchSpace space) {
+	public int getCausalDegree(RelaxedNode node, SearchSpace space) {
 		int degree = 0;
-		if (action instanceof PlanGraphAxiomNode)
+		if (node.eventNode instanceof PlanGraphAxiomNode)
 			return degree;
 		// for each action prior to this one
-		for (int i = 0; i < actions.indexOf(action); i++)
+		for (int i = 0; i < nodes.indexOf(node); i++)
 			// degree++ for each effect that matches a precondition of this action
-			for (ConjunctiveClause effect : actions.get(i).event.effect.toDNF().arguments)
+			for (ConjunctiveClause effect : nodes.get(i).eventNode.event.effect.toDNF().arguments)
 				for (Literal e_literal : effect.arguments)
-					for (ConjunctiveClause precondition : action.event.precondition.toDNF().arguments)
+					for (ConjunctiveClause precondition : node.eventNode.event.precondition.toDNF().arguments)
 						for (Literal p_literal : precondition.arguments)
 							if (CheckEquals.Literal(e_literal, p_literal))
 								degree++;
 		// for each action after this one
-		for (int i = actions.indexOf(action); i < actions.size(); i++)
+		for (int i = nodes.indexOf(node); i < nodes.size(); i++)
 			// degree++ for each precondition that matches an effect of this action
-			for (ConjunctiveClause precondition : actions.get(i).event.precondition.toDNF().arguments)
+			for (ConjunctiveClause precondition : nodes.get(i).eventNode.event.precondition.toDNF().arguments)
 				for (Literal p_literal : precondition.arguments)
-					for (ConjunctiveClause effect : action.event.effect.toDNF().arguments)
+					for (ConjunctiveClause effect : node.eventNode.event.effect.toDNF().arguments)
 						for (Literal e_literal : effect.arguments)
 							if (CheckEquals.Literal(p_literal, e_literal))
 								degree++;
 		// also +1 for each goal achieved by this action's effects
 		for (ConjunctiveClause goal : space.goal.toDNF().arguments)
 			for (Literal g_literal : goal.arguments)
-				for (ConjunctiveClause effect : action.event.effect.toDNF().arguments)
+				for (ConjunctiveClause effect : node.eventNode.event.effect.toDNF().arguments)
 					for (Literal e_literal : effect.arguments)
 						if (CheckEquals.Literal(e_literal, g_literal))
 							degree++;
 		return degree;
 	}
 
-	public ArrayList<PlanGraphEventNode> getImportantSteps(SearchSpace space) {
-		ArrayList<PlanGraphEventNode> importantSteps = new ArrayList<>();
-		int[] causalDegrees = new int[actions.size()];
-		for (int i = 0; i < actions.size(); i++)
-			causalDegrees[i] = getCausalDegree(actions.get(i), space);
+	public ArrayList<RelaxedNode> getImportantSteps(SearchSpace space) {
+		ArrayList<RelaxedNode> importantSteps = new ArrayList<>();
+		int[] causalDegrees = new int[nodes.size()];
+		for (int i = 0; i < nodes.size(); i++)
+			causalDegrees[i] = getCausalDegree(nodes.get(i), space);
 		int maxCausalDegree = 0;
-		for (int i = 0; i < actions.size(); i++)
+		for (int i = 0; i < nodes.size(); i++)
 			if (causalDegrees[i] > maxCausalDegree)
 				maxCausalDegree = causalDegrees[i];
-		for (int i = 0; i < actions.size(); i++)
+		for (int i = 0; i < nodes.size(); i++)
 			if (causalDegrees[i] == maxCausalDegree)
-				importantSteps.add(actions.get(i));
+				importantSteps.add(nodes.get(i));
 		return importantSteps;
 	}
 
 	public boolean isValid(SearchSpace space) {
 		boolean invalid = false;
 		MutableArrayState state = new MutableArrayState(space);
-		for (int i = 0; i < actions.size(); i++) {
-			Event event = actions.get(i).event;
+		for (int i = 0; i < nodes.size(); i++) {
+			Event event = nodes.get(i).eventNode.event;
 			if (event.precondition.test(state))
 				event.effect.impose(state, state); // really?
 			else {
@@ -87,44 +87,44 @@ public class RelaxedPlan implements Iterable<PlanGraphEventNode> {
 		return !invalid && space.goal.test(state);
 	}
 
-	public PlanGraphEventNode last() {
+	public RelaxedNode last() {
 		if (size() > 0)
-			return actions.get(size() - 1);
+			return nodes.get(size() - 1);
 		else
 			return null;
 	}
 
-	public void push(PlanGraphEventNode action) {
-		actions.add(0, action);
+	public void push(RelaxedNode action) {
+		nodes.add(0, action);
 	}
 	
-	public void pushAll(Iterable<PlanGraphEventNode> actions) {
-		for(PlanGraphEventNode action : actions)
-			push(action);
+	public void pushAll(Iterable<RelaxedNode> nodes) {
+		for(RelaxedNode node : nodes)
+			push(node);
 	}
 
-	public PlanGraphEventNode get(int index) {
-		return actions.get(index);
+	public RelaxedNode get(int index) {
+		return nodes.get(index);
 	}
 
 	public int size() {
-		return actions.size();
+		return nodes.size();
 	}
 
-	public boolean contains(PlanGraphEventNode o) {
-		return actions.contains(o);
+	public boolean contains(RelaxedNode o) {
+		return nodes.contains(o);
 	}
 
 	public boolean contains(Action action) {
-		for (PlanGraphEventNode actionNode : actions)
-			if (action.equals(actionNode.event))
+		for (RelaxedNode node : nodes)
+			if (action.equals(node.eventNode.event))
 				return true;
 
 		return false;
 	}
 
-	public Iterator<PlanGraphEventNode> iterator() {
-		return actions.iterator();
+	public Iterator<RelaxedNode> iterator() {
+		return nodes.iterator();
 	}
 
 	public float actionDistance(RelaxedPlan other) {
@@ -135,8 +135,8 @@ public class RelaxedPlan implements Iterable<PlanGraphEventNode> {
 		if (other == null)
 			return 0;
 		float count = 0;
-		for (PlanGraphEventNode action : actions) {
-			if (other.contains(action))
+		for (RelaxedNode node : nodes) {
+			if (other.contains(node))
 				count++;
 		}
 		return count;
@@ -145,11 +145,11 @@ public class RelaxedPlan implements Iterable<PlanGraphEventNode> {
 	public float union(RelaxedPlan other) {
 		if (other == null)
 			return size();
-		ArrayList<PlanGraphEventNode> union = new ArrayList<>();
-		union.addAll(actions);
-		for (PlanGraphEventNode action : ((RelaxedPlan) other).actions)
-			if (!union.contains(action))
-				union.add(action);
+		ArrayList<RelaxedNode> union = new ArrayList<>();
+		union.addAll(nodes);
+		for (RelaxedNode node : ((RelaxedPlan) other).nodes)
+			if (!union.contains(node))
+				union.add(node);
 		return (float) union.size();
 	}
 
@@ -159,9 +159,9 @@ public class RelaxedPlan implements Iterable<PlanGraphEventNode> {
 		if (other == null || this == other)
 			return unioned;
 		
-		for (PlanGraphEventNode action : (other).actions)
-			if (!unioned.actions.contains(action))
-				unioned.actions.add(action);
+		for (RelaxedNode node : (other).nodes)
+			if (!unioned.nodes.contains(node))
+				unioned.nodes.add(node);
 		return unioned;
 	}
 
@@ -192,8 +192,8 @@ public class RelaxedPlan implements Iterable<PlanGraphEventNode> {
 		if (!(other instanceof RelaxedPlan))
 			return false;
 		RelaxedPlan otherPlan = (RelaxedPlan) other;
-		for (int i = 0; i < actions.size(); i++) {
-			if (!actions.get(i).event.equals(otherPlan.actions.get(i).event))
+		for (int i = 0; i < nodes.size(); i++) {
+			if (!nodes.get(i).eventNode.event.equals(otherPlan.nodes.get(i).eventNode.event))
 				return false;
 		}
 		return true;
@@ -202,19 +202,19 @@ public class RelaxedPlan implements Iterable<PlanGraphEventNode> {
 	@Override
 	public String toString() {
 		String str = "";
-		for (PlanGraphEventNode action : actions)
-			str += Text.BLANK + action + "\n";
+		for (RelaxedNode node : nodes)
+			str += Text.BLANK + node + "\n";
 		return str;
 	}
 
 	public void removeNoOps() {
-		for (int i = actions.size()-1; i >= 0; i--)
-			if (actions.get(i).toString().contains("NoOp:"))
-				actions.remove(i);
+		for (int i = nodes.size()-1; i >= 0; i--)
+			if (nodes.get(i).toString().contains("NoOp:"))
+				nodes.remove(i);
 	}
 
 	public void pushAll(HashSet<RelaxedNode> set) {
 		for(RelaxedNode node : set)
-			push(node.eventNode);
+			push(node);
 	}
 }

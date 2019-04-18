@@ -23,8 +23,8 @@ public class Landmark {
 
 	private static boolean containsAtLeastOneStep(RelaxedPlan relaxedPlan, ArrayList<Action> landmarkSteps) {
 		for(Action action : landmarkSteps)
-			for (PlanGraphEventNode relaxedAction : relaxedPlan)
-				if (action.equals(relaxedAction.event))
+			for (RelaxedNode node : relaxedPlan)
+				if (action.equals(node.eventNode.event))
 					return true;
 		
 		return false;
