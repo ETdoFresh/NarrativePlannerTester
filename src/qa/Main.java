@@ -69,23 +69,9 @@ public class Main {
 				
 				ArrayList<RelaxedPlan> previousResults = getRelaxedPlans(space);
 				
-				// Get Classical Plans Start ------------------------------------------------------------
-				ArrayList<RelaxedPlan> plans = new ArrayList<>();
-				for (ConjunctiveClause goal : space.goal.toDNF().arguments)
-					RelaxedPlanExtractor.GetAllPossibleClassicalPlans(space, goal.arguments, plans);
-				
-				for (RelaxedPlan plan : plans)
-					plan.removeNoOps();
-				
-				// Maybe deduplicating too many plans. Check plans.equals()
-				for (int i = plans.size() -1; i >= 0; i--)
-					for (int j = i - 1; j >= 0; j--)
-						if (plans.get(i).equals(plans.get(j))) {
-							plans.remove(i);
-							break;
-						}
-				
-				// Get Classical Plans End --------------------------------------------------------------
+				ArrayList<RelaxedPlan> plans = RelaxedPlanExtractor.GetAllPossibleClassicalPlans(space, space.goal);
+				RelaxedPlanCleaner.RemoveNoOps(plans);
+				RelaxedPlanCleaner.RemoveDuplicates(plans);
 				
 				// Number of actions available from the initial state
 				int firstSteps = 0;
@@ -219,9 +205,7 @@ public class Main {
 	}
 
 	private static ArrayList<RelaxedPlan> getRelaxedPlans(SearchSpace space) {
-		ArrayList<RelaxedPlan> plans = new ArrayList<>();
-		for (ConjunctiveClause goal : space.goal.toDNF().arguments)
-			RelaxedPlanExtractor.GetAllPossiblePlans(space, goal.arguments, plans);
+		ArrayList<RelaxedPlan> plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
 		
 		// Remove NoOps
 		for (RelaxedPlan plan : plans)
