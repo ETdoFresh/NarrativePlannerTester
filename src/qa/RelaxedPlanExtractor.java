@@ -1,6 +1,7 @@
 package qa;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 
 import sabre.Agent;
@@ -11,9 +12,12 @@ import sabre.graph.PlanGraphClauseNode;
 import sabre.graph.PlanGraphEventNode;
 import sabre.graph.PlanGraphLiteralNode;
 import sabre.graph.PlanGraphNode;
+import sabre.logic.Assignment;
 import sabre.logic.ConjunctiveClause;
 import sabre.logic.Expression;
 import sabre.logic.Literal;
+import sabre.logic.NegatedLiteral;
+import sabre.logic.Term;
 import sabre.space.SearchSpace;
 
 public class RelaxedPlanExtractor {
@@ -27,7 +31,7 @@ public class RelaxedPlanExtractor {
 		}
 		return plans;
 	}
-	
+
 	static ArrayList<RelaxedPlan> GetAllPossibleClassicalPlans(SearchSpace space, Expression goals) {
 		ArrayList<RelaxedPlan> plans = new ArrayList<>();
 		for (ConjunctiveClause goal : goals.toDNF().arguments) {
@@ -40,10 +44,24 @@ public class RelaxedPlanExtractor {
 	private static ArrayList<PlanGraphLiteralNode> getGoalLiterals(PlanGraph graph, Iterable<? extends Literal> goal) {
 		ArrayList<PlanGraphLiteralNode> planGraphGoal = new ArrayList<>();
 		for (Literal literal : goal)
-			planGraphGoal.add(graph.getLiteral(literal));
+			if (literal instanceof NegatedLiteral) {
+				NegatedLiteral negatedLiteral = (NegatedLiteral) literal;
+				if (negatedLiteral.argument instanceof Assignment) {
+					Assignment assignment = (Assignment) negatedLiteral.argument;
+					for (PlanGraphLiteralNode otherLiteral : graph.literals)
+						if (otherLiteral.literal instanceof Assignment) {
+							Assignment otherAssignment = (Assignment) otherLiteral.literal;
+							if (assignment.property.equals(otherAssignment.property))
+								if (assignment.arguments.equals(otherAssignment.arguments))
+									if (!assignment.value.equals(otherAssignment.value))
+										planGraphGoal.add(otherLiteral);
+						}
+				}
+			} else
+				planGraphGoal.add(graph.getLiteral(literal));
 		return planGraphGoal;
 	}
-	
+
 	private static ArrayList<Explanation> getExplanations(Domain domain) {
 		ArrayList<Explanation> explanations = new ArrayList<>();
 		for (Agent agent : domain.agents)
@@ -69,7 +87,7 @@ public class RelaxedPlanExtractor {
 		newExplanations.add(newExplanation);
 		return newExplanations;
 	}
-	
+
 	private static void GetAllPossiblePlans(HashSet<PlanGraphLiteralNode> goalsAtThisLevel, int level,
 			ArrayList<Explanation> explanations, RelaxedPlan plan, ArrayList<RelaxedPlan> plans) {
 		if (level == 0) {
@@ -166,5 +184,81 @@ public class RelaxedPlanExtractor {
 				}
 			}
 		}
+	}
+
+	static ArrayList<RelaxedPlan> GetAllPossiblePGEPlans(SearchSpace space, Expression goals,
+			HashMap<Agent, ArrayList<RelaxedPlan>> agentsPlans) {
+		ArrayList<RelaxedPlan> plans = new ArrayList<>();
+		for (ConjunctiveClause goal : goals.toDNF().arguments) {
+			HashSet<PlanGraphLiteralNode> goalLiterals = new HashSet<>(getGoalLiterals(space.graph, goal.arguments));
+			GetAllPossiblePGEPlans(goalLiterals, space.graph.size() - 1, agentsPlans, new RelaxedPlan(), plans);
+		}
+		return plans;
+	}
+
+	private static void GetAllPossiblePGEPlans(HashSet<PlanGraphLiteralNode> goalsAtThisLevel, int level,
+			HashMap<Agent, ArrayList<RelaxedPlan>> agentsPlans, RelaxedPlan plan, ArrayList<RelaxedPlan> plans) {
+		if (level == 0) {
+			plans.add(plan);
+		} else {
+			ArrayList<HashSet<RelaxedNode>> sets = new ArrayList<>();
+			GetAllPossiblePGESteps(new ArrayList<>(goalsAtThisLevel), level, agentsPlans, 0, new HashSet<>(), sets);
+			for (HashSet<RelaxedNode> set : sets) {
+				HashSet<PlanGraphLiteralNode> newGoals = GetAllPreconditions(set);
+				int previousLevel = level - 1;
+				RelaxedPlan planWithSet = plan.clone();
+				planWithSet.pushAll(set);
+				GetAllPossiblePGEPlans(newGoals, previousLevel, agentsPlans, planWithSet, plans);
+			}
+		}
+	}
+
+	private static void GetAllPossiblePGESteps(ArrayList<PlanGraphLiteralNode> goalsAtThisLevel, int level,
+			HashMap<Agent, ArrayList<RelaxedPlan>> agentsPlans, int i, HashSet<RelaxedNode> set,
+			ArrayList<HashSet<RelaxedNode>> sets) {
+
+		if (i == goalsAtThisLevel.size()) {
+			sets.add(set);
+
+		} else {
+			for (PlanGraphNode node : goalsAtThisLevel.get(i).parents) {
+				if (node.getLevel() > level)
+					continue;
+
+				if (!explainedByAllConsentingCharacters(node, level, agentsPlans))
+					continue;
+
+				if (node instanceof PlanGraphEventNode) {
+					PlanGraphEventNode eventNode = (PlanGraphEventNode) node;
+					int nextI = i + 1;
+					HashSet<RelaxedNode> newSet = new HashSet<>(set);
+					newSet.add(new RelaxedNode(eventNode, null, level));
+					GetAllPossiblePGESteps(goalsAtThisLevel, level, agentsPlans, nextI, newSet, sets);
+				}
+			}
+		}
+	}
+
+	private static boolean explainedByAllConsentingCharacters(PlanGraphNode node, int level,
+			HashMap<Agent, ArrayList<RelaxedPlan>> agentsPlans) {
+		if (!(node instanceof PlanGraphActionNode))
+			return true;
+
+		PlanGraphActionNode actionNode = (PlanGraphActionNode) node;
+		for (Term term : actionNode.event.agents) {
+			Agent agent = (Agent) term;
+			boolean foundConsentingAction = false;
+			for (RelaxedPlan agentPlan : agentsPlans.get(agent))
+				if (!foundConsentingAction)
+					for (RelaxedNode planNode : agentPlan)
+						if (planNode.eventNode.equals(actionNode))
+							if (planNode.level == level) {
+								foundConsentingAction = true;
+								break;
+							}
+			if (!foundConsentingAction)
+				return false;
+		}
+		return true;
 	}
 }

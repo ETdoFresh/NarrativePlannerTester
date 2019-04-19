@@ -42,12 +42,12 @@ public class Main {
 	static ArrayList<Plan> plans = new ArrayList<Plan>();
 	static File file;
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		printTitle();
 		openDomainTxtFile();
 
 		while (true) {
-			try {
+			//try { // Commented Out for debugging/stack tracing
 				if (lastModified == file.lastModified()) {
 					resumeSearch();
 					continue;
@@ -67,9 +67,11 @@ public class Main {
 
 				PlanGraph planGraph = createExtendedPlanGraph(space, initial);				
 				
-				ArrayList<RelaxedPlan> previousResults = getRelaxedPlans(space);
-				
-				ArrayList<RelaxedPlan> plans = RelaxedPlanExtractor.GetAllPossibleClassicalPlans(space, space.goal);
+				ArrayList<RelaxedPlan> classicalPlan = RelaxedPlanExtractor.GetAllPossibleClassicalPlans(space, space.goal);
+				RelaxedPlanCleaner.RemoveNoOps(classicalPlan);
+				RelaxedPlanCleaner.RemoveDuplicates(classicalPlan);
+				ArrayList<RelaxedPlan> usingExplanations = getRelaxedPlans(space);
+				ArrayList<RelaxedPlan> plans = PlanGraphExplanations.getExplainedPlans(space);
 				RelaxedPlanCleaner.RemoveNoOps(plans);
 				RelaxedPlanCleaner.RemoveDuplicates(plans);
 				
@@ -127,10 +129,10 @@ public class Main {
 					search = null;
 					continue;
 				}
-			} catch (Exception ex) {
-				System.out.println(ex);
-				continue;
-			}
+			//} catch (Exception ex) {
+			//	System.out.println(ex);
+			//	continue;
+			//}
 		}
 	}
 	
