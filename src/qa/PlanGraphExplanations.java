@@ -9,7 +9,6 @@ import sabre.space.SearchSpace;
 
 public class PlanGraphExplanations {
 	public static ArrayList<RelaxedPlan> getExplainedPlans(SearchSpace space) {
-		ArrayList<RelaxedPlan> classicSolution = RelaxedPlanExtractor.GetAllPossibleClassicalPlans(space, space.goal);
 		HashMap<Agent, ArrayList<RelaxedPlan>> agentsPlans = new HashMap<>();
 		for(Agent agent : space.domain.agents)
 			agentsPlans.put(agent, RelaxedPlanExtractor.GetAllPossibleClassicalPlans(space, AgentGoal.get(space.domain, agent)));

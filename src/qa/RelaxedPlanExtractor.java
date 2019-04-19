@@ -152,7 +152,7 @@ public class RelaxedPlanExtractor {
 		if (level == 0) {
 			plans.add(plan);
 		} else {
-			ArrayList<HashSet<RelaxedNode>> sets = new ArrayList<>();
+			HashSet<HashSet<RelaxedNode>> sets = new HashSet<>();
 			GetAllPossibleClassicalSteps(new ArrayList<>(goalsAtThisLevel), level, 0, new HashSet<>(), sets);
 			for (HashSet<RelaxedNode> set : sets) {
 				HashSet<PlanGraphLiteralNode> newGoals = GetAllPreconditions(set);
@@ -165,7 +165,7 @@ public class RelaxedPlanExtractor {
 	}
 
 	private static void GetAllPossibleClassicalSteps(ArrayList<PlanGraphLiteralNode> goalsAtThisLevel, int level, int i,
-			HashSet<RelaxedNode> set, ArrayList<HashSet<RelaxedNode>> sets) {
+			HashSet<RelaxedNode> set, HashSet<HashSet<RelaxedNode>> sets) {
 
 		if (i == goalsAtThisLevel.size()) {
 			sets.add(set);
