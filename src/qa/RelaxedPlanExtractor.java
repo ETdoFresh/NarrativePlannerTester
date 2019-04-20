@@ -24,21 +24,33 @@ public class RelaxedPlanExtractor {
 
 	static ArrayList<RelaxedPlan> GetAllPossiblePlans(SearchSpace space, Expression goals) {
 		ArrayList<RelaxedPlan> plans = new ArrayList<>();
+		HashSet<PlanGraphLiteralNode> initialState = getInitialLiterals(space.graph);
 		for (ConjunctiveClause goal : goals.toDNF().arguments) {
 			HashSet<PlanGraphLiteralNode> goalLiterals = new HashSet<>(getGoalLiterals(space.graph, goal.arguments));
 			ArrayList<Explanation> explanations = getExplanations(space.domain);
-			GetAllPossiblePlans(goalLiterals, space.graph.size() - 1, explanations, new RelaxedPlan(), plans);
+			GetAllPossiblePlans(goalLiterals, initialState, space.graph.size() - 1, explanations, new RelaxedPlan(),
+					plans);
 		}
 		return plans;
 	}
 
 	static ArrayList<RelaxedPlan> GetAllPossibleClassicalPlans(SearchSpace space, Expression goals) {
 		ArrayList<RelaxedPlan> plans = new ArrayList<>();
+		HashSet<PlanGraphLiteralNode> initialState = getInitialLiterals(space.graph);
 		for (ConjunctiveClause goal : goals.toDNF().arguments) {
 			HashSet<PlanGraphLiteralNode> goalLiterals = new HashSet<>(getGoalLiterals(space.graph, goal.arguments));
-			GetAllPossibleClassicalPlans(goalLiterals, space.graph.size() - 1, new RelaxedPlan(), plans);
+			GetAllPossibleClassicalPlans(goalLiterals, initialState, space.graph.size() - 1, new RelaxedPlan(),
+					plans);
 		}
 		return plans;
+	}
+
+	private static HashSet<PlanGraphLiteralNode> getInitialLiterals(PlanGraph graph) {
+		HashSet<PlanGraphLiteralNode> initialLiterals = new HashSet<>();
+		for (PlanGraphLiteralNode literal : graph.literals)
+			if (literal.getLevel() == 0)
+				initialLiterals.add(literal);
+		return initialLiterals;
 	}
 
 	private static ArrayList<PlanGraphLiteralNode> getGoalLiterals(PlanGraph graph, Iterable<? extends Literal> goal) {
@@ -88,9 +100,15 @@ public class RelaxedPlanExtractor {
 		return newExplanations;
 	}
 
-	private static void GetAllPossiblePlans(HashSet<PlanGraphLiteralNode> goalsAtThisLevel, int level,
-			ArrayList<Explanation> explanations, RelaxedPlan plan, ArrayList<RelaxedPlan> plans) {
-		if (level == 0) {
+	private static void GetAllPossiblePlans(HashSet<PlanGraphLiteralNode> goalsAtThisLevel,
+			HashSet<PlanGraphLiteralNode> initialState, int level, ArrayList<Explanation> explanations,
+			RelaxedPlan plan, ArrayList<RelaxedPlan> plans) {
+
+		for (PlanGraphLiteralNode initialLiteral : initialState)
+			if (goalsAtThisLevel.contains(initialLiteral))
+				goalsAtThisLevel.remove(initialLiteral);
+
+		if (level == 0 || goalsAtThisLevel.size() == 0) {
 			plans.add(plan);
 		} else {
 			ArrayList<HashSet<RelaxedNode>> sets = new ArrayList<>();
@@ -101,7 +119,7 @@ public class RelaxedPlanExtractor {
 				RelaxedPlan planWithSet = plan.clone();
 				planWithSet.pushAll(set);
 				for (RelaxedNode node : set)
-					GetAllPossiblePlans(newGoals, previousLevel, node.explanations, planWithSet, plans);
+					GetAllPossiblePlans(newGoals, initialState, previousLevel, node.explanations, planWithSet, plans);
 			}
 		}
 	}
@@ -147,9 +165,14 @@ public class RelaxedPlanExtractor {
 		}
 	}
 
-	private static void GetAllPossibleClassicalPlans(HashSet<PlanGraphLiteralNode> goalsAtThisLevel, int level,
-			RelaxedPlan plan, ArrayList<RelaxedPlan> plans) {
-		if (level == 0) {
+	private static void GetAllPossibleClassicalPlans(HashSet<PlanGraphLiteralNode> goalsAtThisLevel,
+			HashSet<PlanGraphLiteralNode> initialState, int level, RelaxedPlan plan, ArrayList<RelaxedPlan> plans) {
+
+		for (PlanGraphLiteralNode initialLiteral : initialState)
+			if (goalsAtThisLevel.contains(initialLiteral))
+				goalsAtThisLevel.remove(initialLiteral);
+
+		if (level == 0 || goalsAtThisLevel.size() == 0) {
 			plans.add(plan);
 		} else {
 			HashSet<HashSet<RelaxedNode>> sets = new HashSet<>();
@@ -159,7 +182,7 @@ public class RelaxedPlanExtractor {
 				int previousLevel = level - 1;
 				RelaxedPlan planWithSet = plan.clone();
 				planWithSet.pushAll(set);
-				GetAllPossibleClassicalPlans(newGoals, previousLevel, planWithSet, plans);
+				GetAllPossibleClassicalPlans(newGoals, initialState, previousLevel, planWithSet, plans);
 			}
 		}
 	}
@@ -189,16 +212,24 @@ public class RelaxedPlanExtractor {
 	static ArrayList<RelaxedPlan> GetAllPossiblePGEPlans(SearchSpace space, Expression goals,
 			HashMap<Agent, ArrayList<RelaxedPlan>> agentsPlans) {
 		ArrayList<RelaxedPlan> plans = new ArrayList<>();
+		HashSet<PlanGraphLiteralNode> initialState = getInitialLiterals(space.graph);
 		for (ConjunctiveClause goal : goals.toDNF().arguments) {
 			HashSet<PlanGraphLiteralNode> goalLiterals = new HashSet<>(getGoalLiterals(space.graph, goal.arguments));
-			GetAllPossiblePGEPlans(goalLiterals, space.graph.size() - 1, agentsPlans, new RelaxedPlan(), plans);
+			GetAllPossiblePGEPlans(goalLiterals, initialState, space.graph.size() - 1, agentsPlans,
+					new RelaxedPlan(), plans);
 		}
 		return plans;
 	}
 
-	private static void GetAllPossiblePGEPlans(HashSet<PlanGraphLiteralNode> goalsAtThisLevel, int level,
+	private static void GetAllPossiblePGEPlans(HashSet<PlanGraphLiteralNode> goalsAtThisLevel,
+			HashSet<PlanGraphLiteralNode> initialState, int level,
 			HashMap<Agent, ArrayList<RelaxedPlan>> agentsPlans, RelaxedPlan plan, ArrayList<RelaxedPlan> plans) {
-		if (level == 0) {
+		
+		for (PlanGraphLiteralNode initialLiteral : initialState)
+			if (goalsAtThisLevel.contains(initialLiteral))
+				goalsAtThisLevel.remove(initialLiteral);
+		
+		if (level == 0 || goalsAtThisLevel.size() == 0) {
 			plans.add(plan);
 		} else {
 			ArrayList<HashSet<RelaxedNode>> sets = new ArrayList<>();
@@ -208,7 +239,7 @@ public class RelaxedPlanExtractor {
 				int previousLevel = level - 1;
 				RelaxedPlan planWithSet = plan.clone();
 				planWithSet.pushAll(set);
-				GetAllPossiblePGEPlans(newGoals, previousLevel, agentsPlans, planWithSet, plans);
+				GetAllPossiblePGEPlans(newGoals, initialState, previousLevel, agentsPlans, planWithSet, plans);
 			}
 		}
 	}

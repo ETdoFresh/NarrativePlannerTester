@@ -119,22 +119,6 @@ public class SearchSpace implements Serializable {
 		this.tree.clear();
 		for (Slot slot : this.slots)
 			this.tree.put(slot);
-
-		// Add Noops
-		for (Slot slot : this.slots) {			
-			for (Entity entity : domain.entities)
-				if (slot.property.type.equals(entity.types.get(entity.types.size() - 1))) {
-					String name = "NoOp: (" + slot + " = " + entity + ")";
-					String comment = "";
-					ImmutableArray<Logical> arguments = new ImmutableArray<>(new Logical[0]);
-					Expression precondition = new SlotAssignment(slot, entity);
-					Expression effect = precondition;
-					ImmutableSet<Term> agents = new ImmutableSet<>(new Term[0]);
-					Action noOp = new Action(name, comment, arguments, precondition, effect, agents);
-					actions.add(noOp);
-				}
-		}
-
 		this.actions = new ImmutableSet<>(actions, Action.class);
 		this.axioms = new ImmutableSet<>(axioms, Axiom.class);
 		MutablePlanGraph graph = new MutablePlanGraph(this);
