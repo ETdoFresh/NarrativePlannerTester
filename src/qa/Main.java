@@ -33,8 +33,8 @@ public class Main {
 	private static final String CREDITS = "by Edward Garcia, Rachelyn Farrell, and Stephen G. Ware";
 	private static final String TITLE = "Planning Domain Automated Tester (PDAT), " + VERSION + "\n " + CREDITS + "\n";
 	private static final String USAGE = "TODO: Write usage";
-	private static final String FILE = "rrh.txt";
-	//private static final String FILE = "domains/camelot.domain";
+	//private static final String FILE = "rrh.txt";
+	private static final String FILE = "domains/camelot.domain";
 
 	static long lastModified = 0;
 	static boolean firstRun = true;
@@ -67,18 +67,6 @@ public class Main {
 				checkGoalTrueInitialState(domain, initial);
 
 				PlanGraph planGraph = createExtendedPlanGraph(space, initial);				
-				
-				//ArrayList<RelaxedPlan> classicalPlan = RelaxedPlanExtractor.GetAllPossibleClassicalPlans(space, space.goal);
-				//RelaxedPlanCleaner.StopStoryAfterOneAuthorGoalComplete(space, classicalPlan);
-				//RelaxedPlanCleaner.RemoveDuplicates(classicalPlan);
-				
-				//ArrayList<RelaxedPlan> usingExplanations = getRelaxedPlans(space);
-				//RelaxedPlanCleaner.StopStoryAfterOneAuthorGoalComplete(space, usingExplanations);
-				//RelaxedPlanCleaner.RemoveDuplicates(usingExplanations);
-				
-				//ArrayList<RelaxedPlan> plans = PlanGraphExplanations.getExplainedPlans(space);
-				//RelaxedPlanCleaner.StopStoryAfterOneAuthorGoalComplete(space, plans);
-				//RelaxedPlanCleaner.RemoveDuplicates(plans);
 				
 				// Number of actions available from the initial state
 				int firstSteps = 0;
@@ -212,8 +200,8 @@ public class Main {
 	}
 
 	private static ArrayList<RelaxedPlan> getRelaxedPlans(SearchSpace space) {
-		ArrayList<RelaxedPlan> plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
-		//ArrayList<RelaxedPlan> plans = PlanGraphExplanations.getExplainedPlans(space);
+		//ArrayList<RelaxedPlan> plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
+		ArrayList<RelaxedPlan> plans = PlanGraphExplanations.getExplainedPlans(space);
 		RelaxedPlanCleaner.StopStoryAfterOneAuthorGoalComplete(space, plans);
 		RelaxedPlanCleaner.RemoveDuplicates(plans);
 		return plans;
