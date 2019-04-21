@@ -10,7 +10,7 @@ import sabre.logic.ConjunctiveClause;
 import sabre.space.SearchSpace;
 
 public class RelaxedPlanCleaner {
-	public static void RemoveDuplicates(ArrayList<RelaxedPlan> plans) {
+	public static void removeDuplicatePlans(ArrayList<RelaxedPlan> plans) {
 		for (int i = plans.size() - 1; i >= 0; i--)
 			for (int j = i - 1; j >= 0; j--)
 				if (plans.get(i).equals(plans.get(j))) {
@@ -19,7 +19,20 @@ public class RelaxedPlanCleaner {
 				}
 	}
 
-	public static void StopStoryAfterOneAuthorGoalComplete(SearchSpace space, ArrayList<RelaxedPlan> plans) {
+	public static void removeDuplicateSteps(ArrayList<RelaxedPlan> plans) {
+		for (RelaxedPlan plan : plans) {
+			for (int i = 0; i < plan.size(); i++) {
+				RelaxedNode step = plan.get(i);
+				for (int j = plan.size() - 1; j > i; j--) {
+					RelaxedNode otherStep = plan.get(j);
+					if (step.eventNode.equals(otherStep.eventNode))
+						plan.remove(j);
+				}
+			}
+		}
+	}
+
+	public static void stopStoryAfterOneAuthorGoalComplete(SearchSpace space, ArrayList<RelaxedPlan> plans) {
 		HashSet<HashSet<PlanGraphLiteralNode>> authorGoals = new HashSet<>();
 		for (ConjunctiveClause goal : space.goal.toDNF().arguments) {
 			HashSet<PlanGraphLiteralNode> goalLiterals = new HashSet<>(

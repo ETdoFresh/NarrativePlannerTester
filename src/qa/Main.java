@@ -200,10 +200,11 @@ public class Main {
 	}
 
 	private static ArrayList<RelaxedPlan> getRelaxedPlans(SearchSpace space) {
-		//ArrayList<RelaxedPlan> plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
-		ArrayList<RelaxedPlan> plans = PlanGraphExplanations.getExplainedPlans(space);
-		RelaxedPlanCleaner.StopStoryAfterOneAuthorGoalComplete(space, plans);
-		RelaxedPlanCleaner.RemoveDuplicates(plans);
+		ArrayList<RelaxedPlan> plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
+		//ArrayList<RelaxedPlan> plans = PlanGraphExplanations.getExplainedPlans(space);
+		RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(space, plans);
+		RelaxedPlanCleaner.removeDuplicateSteps(plans);
+		RelaxedPlanCleaner.removeDuplicatePlans(plans);
 		return plans;
 	}
 
