@@ -33,7 +33,7 @@ public class Main {
 	private static final String CREDITS = "by Edward Garcia, Rachelyn Farrell, and Stephen G. Ware";
 	private static final String TITLE = "Planning Domain Automated Tester (PDAT), " + VERSION + "\n " + CREDITS + "\n";
 	private static final String USAGE = "TODO: Write usage";
-	//private static final String FILE = "rrh.txt";
+	// private static final String FILE = "rrh.txt";
 	private static final String FILE = "domains/camelot.domain";
 
 	static long lastModified = 0;
@@ -48,108 +48,109 @@ public class Main {
 		openDomainTxtFile();
 
 		while (true) {
-			//try { // Commented Out for debugging/stack tracing
-				if (lastModified == file.lastModified()) {
-					resumeSearch();
-					continue;
+			// try { // Commented Out for debugging/stack tracing
+			if (lastModified == file.lastModified()) {
+				resumeSearch();
+				continue;
+			}
+
+			resetLastModified();
+			printLastModified();
+
+			Domain domain = getDomain();
+			SearchSpace space = getSearchSpace(domain);
+
+			printSpaceStatistics(space);
+			checkDomainGoalEmpty(domain);
+
+			ArrayState initial = new ArrayState(space);
+			checkGoalTrueInitialState(domain, initial);
+
+			PlanGraph planGraph = createExtendedPlanGraph(space, initial);
+
+			// Number of actions available from the initial state
+			int firstSteps = 0;
+			System.out.println(Text.INFO + "Actions possible from initial state: ");
+			for (Action action : space.actions)
+				if (action.precondition.test(initial)) {
+					System.out.println("\t - " + action);
+					firstSteps++;
 				}
+			System.out.println("\t (" + firstSteps + " total)");
 
-				resetLastModified();
-				printLastModified();
-
-				Domain domain = getDomain();
-				SearchSpace space = getSearchSpace(domain);
-
-				printSpaceStatistics(space);
-				checkDomainGoalEmpty(domain);
-
-				ArrayState initial = new ArrayState(space);
-				checkGoalTrueInitialState(domain, initial);
-
-				PlanGraph planGraph = createExtendedPlanGraph(space, initial);				
-				
-				// Number of actions available from the initial state
-				int firstSteps = 0;
-				System.out.println(Text.INFO + "Actions possible from initial state: ");
-				for (Action action : space.actions)
-					if (action.precondition.test(initial)) {
-						System.out.println("\t - " + action);
-						firstSteps++;
+			// Check for any unusable action schemas
+			HashSet<Action> unusedActions = new HashSet<Action>();
+			for (Action action : space.domain.actions) {
+				boolean actionFound = false;
+				for (PlanGraphEventNode graphEvent : space.graph.events)
+					if (action.name == graphEvent.event.name) {
+						actionFound = true;
+						continue;
 					}
-				System.out.println("\t (" + firstSteps + " total)");
+				if (!actionFound)
+					unusedActions.add(action);
+			}
+			if (unusedActions.size() == 0)
+				System.out.println(Text.PASS + Text.ACTIONS);
+			else {
+				System.out.println(Text.WARN + Text.ACTIONS);
+				for (Action action : unusedActions)
+					System.out.println(Text.BLANK + "Unusable: " + action.toString());
+				// continue;
+			}
 
-				// Check for any unusable action schemas
-				HashSet<Action> unusedActions = new HashSet<Action>();
-				for (Action action : space.domain.actions) {
-					boolean actionFound = false;
-					for (PlanGraphEventNode graphEvent : space.graph.events)
-						if (action.name == graphEvent.event.name) {
-							actionFound = true;
-							continue;
-						}
-					if (!actionFound)
-						unusedActions.add(action);
-				}
-				if (unusedActions.size() == 0)
-					System.out.println(Text.PASS + Text.ACTIONS);
-				else {
-					System.out.println(Text.WARN + Text.ACTIONS);
-					for (Action action : unusedActions)
-						System.out.println(Text.BLANK + "Unusable: " + action.toString());
-					// continue;
-				}
+			clusterTest(space);
 
-				clusterTest(space);
-
-				// Check if a solution exists
-				Planner planner = new Planner();
-				planner.setSearchSpace(space);
-				search = planner.getSearchFactory().makeSearch(domain.goal);
-				RootNode root = new RootNode(initial);
-				search.push(root);
-				System.out.println(Text.BLANK + "Searching for next solution...");
-				try {
-					//result = runInteruptably(() -> search.getNextSolution()); // <---------------------- search
-				} catch (Exception ex) {
-					System.out.println(Text.FAIL + "Exception while searching for solution: " + ex);
-					continue;
-				}
-				if (result != null && result.plan != null)
-					System.out.println(Text.PASS + Text.SOLUTION);
-				else {
-					System.out.println(Text.FAIL + Text.SOLUTION);
-					result = null;
-					search = null;
-					continue;
-				}
-			//} catch (Exception ex) {
-			//	System.out.println(ex);
-			//	continue;
-			//}
+			// Check if a solution exists
+			Planner planner = new Planner();
+			planner.setSearchSpace(space);
+			search = planner.getSearchFactory().makeSearch(domain.goal);
+			RootNode root = new RootNode(initial);
+			search.push(root);
+			System.out.println(Text.BLANK + "Searching for next solution...");
+			try {
+				// result = runInteruptably(() -> search.getNextSolution()); //
+				// <---------------------- search
+			} catch (Exception ex) {
+				System.out.println(Text.FAIL + "Exception while searching for solution: " + ex);
+				continue;
+			}
+			if (result != null && result.plan != null)
+				System.out.println(Text.PASS + Text.SOLUTION);
+			else {
+				System.out.println(Text.FAIL + Text.SOLUTION);
+				result = null;
+				search = null;
+				continue;
+			}
+			// } catch (Exception ex) {
+			// System.out.println(ex);
+			// continue;
+			// }
 		}
 	}
-	
+
 	private static void clusterTest(SearchSpace space) {
 		System.out.println("\nLet's try clustering...");
 		ArrayList<RelaxedPlan> relaxedPlans = getRelaxedPlans(space);
 		ArrayList<RelaxedPlan> validPlans = new ArrayList<>();
-		for(RelaxedPlan plan : relaxedPlans) {	
+		for (RelaxedPlan plan : relaxedPlans) {
 			System.out.println("Important: " + plan.getImportantSteps(space));
-			if(plan.isValid(space))
+			if (plan.isValid(space))
 				validPlans.add(plan);
 		}
 
 		RelaxedPlanVector[] planVecs = new RelaxedPlanVector[relaxedPlans.size()];
-		for(int i=0; i<planVecs.length; i++)
-			planVecs[i] = new RelaxedPlanVector(space, relaxedPlans.get(i));				
+		for (int i = 0; i < planVecs.length; i++)
+			planVecs[i] = new RelaxedPlanVector(space, relaxedPlans.get(i));
 		ArrayList<RelaxedPlanVector> uniquePlanVecs = new ArrayList<>();
-		for(RelaxedPlanVector vec : planVecs) {
-			if(!uniquePlanVecs.contains(vec))
+		for (RelaxedPlanVector vec : planVecs) {
+			if (!uniquePlanVecs.contains(vec))
 				uniquePlanVecs.add(vec);
 		}
 		ArrayList<RelaxedPlan> uniquePlans = new ArrayList<>();
-		for(RelaxedPlan plan : relaxedPlans) {
-			if(!uniquePlans.contains(plan))
+		for (RelaxedPlan plan : relaxedPlans) {
+			if (!uniquePlans.contains(plan))
 				uniquePlans.add(plan);
 		}
 		System.out.println("Total plans: " + relaxedPlans.size());
@@ -157,54 +158,66 @@ public class Main {
 		System.out.println("Unique plans: " + uniquePlans.size());
 		System.out.println("Unique plan vectors: " + uniquePlanVecs.size());
 
-		int k=3;
+		int k = 3;
 
-/*
-		System.out.println("TEST K-MEDOIDS USING VECTORS");
-		Clusterer clusterer = new Clusterer(uniquePlanVecs.toArray(new RelaxedPlanVector[uniquePlanVecs.size()]), k, space.actions.size());
-		Random random = new Random();
-		for(int i=0; i<uniquePlanVecs.size(); i++) 
-			uniquePlanVecs.get(i).clusterAssignment = random.nextInt(k);			
-		for(int i=0; i<k; i++)
-			System.out.println("Cluster "+i+ " has " + clusterer.getVectorAssignments(clusterer.clusters[i].id).size() + " initial assignments.");
-		clusterer.kmedoids();
-		System.out.println("---------------------------------");
-		System.out.println("Final centroids:");
-		for(int i=0; i<k; i++)
-			System.out.println(i + ": " + clusterer.clusters[i].centroid + "\nAssignments: " + clusterer.getVectorAssignments(i).size());
-		System.out.println("---------------------------------");
-*/		
+		/*
+		 * System.out.println("TEST K-MEDOIDS USING VECTORS"); Clusterer clusterer = new
+		 * Clusterer(uniquePlanVecs.toArray(new
+		 * RelaxedPlanVector[uniquePlanVecs.size()]), k, space.actions.size()); Random
+		 * random = new Random(); for(int i=0; i<uniquePlanVecs.size(); i++)
+		 * uniquePlanVecs.get(i).clusterAssignment = random.nextInt(k); for(int i=0;
+		 * i<k; i++) System.out.println("Cluster "+i+ " has " +
+		 * clusterer.getVectorAssignments(clusterer.clusters[i].id).size() +
+		 * " initial assignments."); clusterer.kmedoids();
+		 * System.out.println("---------------------------------");
+		 * System.out.println("Final centroids:"); for(int i=0; i<k; i++)
+		 * System.out.println(i + ": " + clusterer.clusters[i].centroid +
+		 * "\nAssignments: " + clusterer.getVectorAssignments(i).size());
+		 * System.out.println("---------------------------------");
+		 */
 		// Test k-medoids without vectors
 		System.out.println("\nTEST K-MEDOIDS (WITHOUT VECTORS)\n");
-		Clusterer clusterer = new Clusterer(uniquePlans.toArray(new RelaxedPlan[uniquePlans.size()]), k, space.actions.size(), space);
+		Clusterer clusterer = new Clusterer(uniquePlans.toArray(new RelaxedPlan[uniquePlans.size()]), k,
+				space.actions.size(), space);
 		Random random = new Random();
-		for(int i=0; i<uniquePlans.size(); i++) 
+		for (int i = 0; i < uniquePlans.size(); i++)
 			uniquePlans.get(i).clusterAssignment = random.nextInt(k);
-		for(int i=0; i<k; i++)
-			System.out.println("Cluster "+i+ " has " + clusterer.getPlanAssignments(clusterer.clusters[i].id).size() + " initial assignments.");
+		for (int i = 0; i < k; i++)
+			System.out.println("Cluster " + i + " has " + clusterer.getPlanAssignments(clusterer.clusters[i].id).size()
+					+ " initial assignments.");
 		clusterer.kmedoids(false);
 		System.out.println("---------------------------------");
 		System.out.println("Final medoids:");
-		for(int i=0; i<k; i++)
-			System.out.println("Cluster " + i + " (" + clusterer.getPlanAssignments(i).size() + " assignments):\n" + clusterer.clusters[i].medoid);
+		for (int i = 0; i < k; i++)
+			System.out.println("Cluster " + i + " (" + clusterer.getPlanAssignments(i).size() + " assignments):\n"
+					+ clusterer.clusters[i].medoid);
 		System.out.println("---------------------------------");
-		
+
 		RelaxedPlan[] exemplars = clusterer.getExemplars();
 		System.out.println("Exempars:");
-		for(int i=0; i<k; i++) {
+		for (int i = 0; i < k; i++) {
 			System.out.println(i + ": " + exemplars[i]);
 		}
-		
+
 		// ----------------------------
 
 	}
 
 	private static ArrayList<RelaxedPlan> getRelaxedPlans(SearchSpace space) {
-		ArrayList<RelaxedPlan> plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
-		//ArrayList<RelaxedPlan> plans = PlanGraphExplanations.getExplainedPlans(space);
+		// Runs much faster, run this plan search first!
+	    ArrayList<RelaxedPlan> plans = PlanGraphExplanations.getExplainedPlans(space);
 		RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(space, plans);
 		RelaxedPlanCleaner.removeDuplicateSteps(plans);
 		RelaxedPlanCleaner.removeDuplicatePlans(plans);
+		FileIO.Write("PlanGraphExplanationsPlan.txt", plans.toString());
+		
+		//ArrayList<RelaxedPlan> plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
+		plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
+		RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(space, plans);
+		RelaxedPlanCleaner.removeDuplicateSteps(plans);
+		RelaxedPlanCleaner.removeDuplicatePlans(plans);
+		FileIO.Write("ExplanationsPlan.txt", plans.toString());
+
 		return plans;
 	}
 

@@ -29,23 +29,23 @@ public class PlanGraphExplanations {
 
 		int level = space.graph.size() - 1;
 		Expression goals = AgentGoal.get(space.domain, agent);
-			
+
 		for (ConjunctiveClause goal : goals.toDNF().arguments)
 			for (PlanGraphLiteralNode node : RelaxedPlanExtractor.getGoalLiterals(space.graph, goal.arguments))
-				for (PlanGraphNode step : node.parents)
-					if (step instanceof PlanGraphEventNode)
-						agentSteps.add(new RelaxedNode((PlanGraphEventNode) step, null, level));
-		
-		
+				if (node.getLevel() > 0)
+					for (PlanGraphNode step : node.parents)
+						if (step instanceof PlanGraphEventNode)
+							agentSteps.add(new RelaxedNode((PlanGraphEventNode) step, null, level));
+
 		HashSet<PlanGraphLiteralNode> initialState = RelaxedPlanExtractor.getInitialLiterals(space.graph);
 		HashSet<PlanGraphLiteralNode> preconditions = RelaxedPlanExtractor.GetAllPreconditions(agentSteps);
-		
+
 		for (int i = level - 1; i > 0; i--) {
 			HashSet<RelaxedNode> newSteps = new HashSet<>();
 			for (PlanGraphLiteralNode node : preconditions) {
 				for (PlanGraphNode step : node.parents)
 					if (step instanceof PlanGraphEventNode) {
-						RelaxedNode newRelaxedNode =new RelaxedNode((PlanGraphEventNode) step, null, i); 
+						RelaxedNode newRelaxedNode = new RelaxedNode((PlanGraphEventNode) step, null, i);
 						agentSteps.add(newRelaxedNode);
 						newSteps.add(newRelaxedNode);
 					}
@@ -55,7 +55,7 @@ public class PlanGraphExplanations {
 				if (preconditions.contains(initialLiteral))
 					preconditions.remove(initialLiteral);
 		}
-		
+
 		return agentSteps;
 
 	}
