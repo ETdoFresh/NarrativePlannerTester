@@ -1,5 +1,5 @@
 domain: "Little Red Riding Hood";
-goal: !alive(Red);
+goal: !alive(Red) | location(Cookies) = Grandma;
 
 //landmark: "walk(Red, Home, Forest) & walk(Red, Forest, Cottage)";
 

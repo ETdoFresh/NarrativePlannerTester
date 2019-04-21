@@ -34,6 +34,7 @@ public class Main {
 	private static final String TITLE = "Planning Domain Automated Tester (PDAT), " + VERSION + "\n " + CREDITS + "\n";
 	private static final String USAGE = "TODO: Write usage";
 	private static final String FILE = "rrh.txt";
+	//private static final String FILE = "domains/camelot.domain";
 
 	static long lastModified = 0;
 	static boolean firstRun = true;
@@ -67,13 +68,17 @@ public class Main {
 
 				PlanGraph planGraph = createExtendedPlanGraph(space, initial);				
 				
-				ArrayList<RelaxedPlan> classicalPlan = RelaxedPlanExtractor.GetAllPossibleClassicalPlans(space, space.goal);
-				RelaxedPlanCleaner.RemoveNoOps(classicalPlan);
-				RelaxedPlanCleaner.RemoveDuplicates(classicalPlan);
-				ArrayList<RelaxedPlan> usingExplanations = getRelaxedPlans(space);
-				ArrayList<RelaxedPlan> plans = PlanGraphExplanations.getExplainedPlans(space);
-				RelaxedPlanCleaner.RemoveNoOps(plans);
-				RelaxedPlanCleaner.RemoveDuplicates(plans);
+				//ArrayList<RelaxedPlan> classicalPlan = RelaxedPlanExtractor.GetAllPossibleClassicalPlans(space, space.goal);
+				//RelaxedPlanCleaner.StopStoryAfterOneAuthorGoalComplete(space, classicalPlan);
+				//RelaxedPlanCleaner.RemoveDuplicates(classicalPlan);
+				
+				//ArrayList<RelaxedPlan> usingExplanations = getRelaxedPlans(space);
+				//RelaxedPlanCleaner.StopStoryAfterOneAuthorGoalComplete(space, usingExplanations);
+				//RelaxedPlanCleaner.RemoveDuplicates(usingExplanations);
+				
+				//ArrayList<RelaxedPlan> plans = PlanGraphExplanations.getExplainedPlans(space);
+				//RelaxedPlanCleaner.StopStoryAfterOneAuthorGoalComplete(space, plans);
+				//RelaxedPlanCleaner.RemoveDuplicates(plans);
 				
 				// Number of actions available from the initial state
 				int firstSteps = 0;
@@ -208,19 +213,9 @@ public class Main {
 
 	private static ArrayList<RelaxedPlan> getRelaxedPlans(SearchSpace space) {
 		ArrayList<RelaxedPlan> plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
-		
-		// Remove NoOps
-		for (RelaxedPlan plan : plans)
-			plan.removeNoOps();
-		
-		// Deduplicate Plans
-		for (int i = plans.size() -1; i >= 0; i--)
-			for (int j = i - 1; j >= 0; j--)
-				if (plans.get(i).equals(plans.get(j))) {
-					plans.remove(i);
-					break;
-				}
-		
+		//ArrayList<RelaxedPlan> plans = PlanGraphExplanations.getExplainedPlans(space);
+		RelaxedPlanCleaner.StopStoryAfterOneAuthorGoalComplete(space, plans);
+		RelaxedPlanCleaner.RemoveDuplicates(plans);
 		return plans;
 	}
 

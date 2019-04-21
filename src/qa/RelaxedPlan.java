@@ -210,14 +210,12 @@ public class RelaxedPlan implements Iterable<RelaxedNode> {
 		return str;
 	}
 
-	public void removeNoOps() {
-		for (int i = nodes.size()-1; i >= 0; i--)
-			if (nodes.get(i).toString().contains("NoOp:"))
-				nodes.remove(i);
-	}
-
 	public void pushAll(HashSet<RelaxedNode> set) {
 		for(RelaxedNode node : set)
 			push(node);
+	}
+
+	public void remove(int i) {
+		nodes.remove(i);
 	}
 }
