@@ -25,7 +25,7 @@ public class RelaxedPlanExtractor {
 	static ArrayList<RelaxedPlan> GetAllPossiblePlans(SearchSpace space, Expression goals) {
 		ArrayList<RelaxedPlan> plans = new ArrayList<>();
 		HashSet<PlanGraphLiteralNode> initialState = getInitialLiterals(space.graph);
-		HashSet<PlanGraphLiteralNode> goalLiterals = combineDisjunctAsConjunctGoal(space, goals);
+		HashSet<PlanGraphLiteralNode> goalLiterals = combineAllAuthorAndCharacterGoals(space, goals);
 		ArrayList<Explanation> explanations = getExplanations(space.domain);
 		GetAllPossiblePlans(goalLiterals, initialState, space.graph.size() - 1, explanations, new RelaxedPlan(), plans);
 
@@ -220,7 +220,7 @@ public class RelaxedPlanExtractor {
 			HashMap<Agent, HashSet<RelaxedNode>> agentsSteps) {
 		ArrayList<RelaxedPlan> plans = new ArrayList<>();
 		HashSet<PlanGraphLiteralNode> initialState = getInitialLiterals(space.graph);
-		HashSet<PlanGraphLiteralNode> goalLiterals = combineDisjunctAsConjunctGoal(space, goals);
+		HashSet<PlanGraphLiteralNode> goalLiterals = combineAllAuthorAndCharacterGoals(space, goals);
 		GetAllPossiblePGEPlans(goalLiterals, initialState, space.graph.size() - 1, agentsSteps, new RelaxedPlan(),
 				plans);
 
@@ -303,11 +303,16 @@ public class RelaxedPlanExtractor {
 		}
 		return true;
 	}
-
-	private static HashSet<PlanGraphLiteralNode> combineDisjunctAsConjunctGoal(SearchSpace space, Expression goals) {
+	
+	private static HashSet<PlanGraphLiteralNode> combineAllAuthorAndCharacterGoals(SearchSpace space, Expression goals) {
 		HashSet<PlanGraphLiteralNode> combination = new HashSet<>();
 		for (ConjunctiveClause goal : goals.toDNF().arguments)
 			combination.addAll(getGoalLiterals(space.graph, goal.arguments));
+		
+		for (Agent agent : space.domain.agents)
+			for (ConjunctiveClause goal : AgentGoal.get(space.domain, agent).toDNF().arguments)
+				combination.addAll(getGoalLiterals(space.graph, goal.arguments));
+		
 		return combination;
 	}
 }
