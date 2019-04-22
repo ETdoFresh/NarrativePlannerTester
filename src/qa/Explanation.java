@@ -1,5 +1,6 @@
 package qa;
 
+import java.io.Serializable;
 import java.util.Stack;
 
 import sabre.Agent;
@@ -9,7 +10,7 @@ import sabre.logic.ConjunctiveClause;
 import sabre.logic.Expression;
 import sabre.logic.Literal;
 
-public class Explanation {
+public class Explanation implements Serializable {
 	public Agent agent;
 	public Expression goals;
 	public CausalChainSet causalChainSet;

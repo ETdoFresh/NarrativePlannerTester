@@ -1,10 +1,11 @@
 package qa;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
 import sabre.logic.Literal;
 
-public class CausalChain {
+public class CausalChain implements Serializable {
 	public ArrayList<Literal> history = new ArrayList<>();
 
 	public CausalChain(Literal goalLiteral) {

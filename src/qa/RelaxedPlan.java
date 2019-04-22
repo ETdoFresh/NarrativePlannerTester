@@ -1,5 +1,6 @@
 package qa;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -13,7 +14,7 @@ import sabre.logic.Literal;
 import sabre.space.SearchSpace;
 import sabre.state.MutableArrayState;
 
-public class RelaxedPlan implements Iterable<RelaxedNode> {
+public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 	private ArrayList<RelaxedNode> nodes = new ArrayList<>();
 	public ArrayList<Explanation> explanations = new ArrayList<>();
 	public int clusterAssignment = -1;

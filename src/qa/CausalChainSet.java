@@ -1,12 +1,13 @@
 package qa;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
 import sabre.Event;
 import sabre.logic.ConjunctiveClause;
 import sabre.logic.Literal;
 
-public class CausalChainSet {
+public class CausalChainSet implements Serializable {
 	ArrayList<CausalChain> causalChains = new ArrayList<>();
 
 	public CausalChainSet(ConjunctiveClause goal) {

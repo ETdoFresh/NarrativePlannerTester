@@ -11,22 +11,23 @@ import sabre.space.SearchSpace;
 public class Distance {
 
 	static float isifDistance(RelaxedPlan a, RelaxedPlan b, SearchSpace space) {
-		Set<Event> E_a = new HashSet<>();
-		Set<Event> E_b = new HashSet<>();
+		Set<Event> importantSteps_a = new HashSet<>();
+		Set<Event> importantSteps_b = new HashSet<>();
 
-		// TODO: Only add important steps
-		for(RelaxedNode step : a.getImportantSteps(space)) {
-			E_a.add(step.eventNode.event);			
-		}
-		for(RelaxedNode step : b.getImportantSteps(space)) {
-			E_b.add(step.eventNode.event);
-		}
+		for(RelaxedNode step : a.getImportantSteps(space))
+			importantSteps_a.add(step.eventNode.event);	
+		for(RelaxedNode step : b.getImportantSteps(space))
+			importantSteps_b.add(step.eventNode.event);
 
-		// TODO: Add intention frame summaries
-		Set<Object> J_a = new HashSet<>();
-		Set<Object> J_b = new HashSet<>();
+		Set<Event> ifSummaries_a = new HashSet<>();
+		Set<Event> ifSummaries_b = new HashSet<>();
+
+		for(Explanation e : a.explanations)
+			ifSummaries_a.add(e.steps.lastElement());
+		for(Explanation e : b.explanations)
+			ifSummaries_b.add(e.steps.lastElement());
 		
-		return 1 - 0.5f * (jaccard(E_a, E_b) + jaccard(J_a, J_b));
+		return 1 - 0.5f * (jaccard(importantSteps_a, importantSteps_b) + jaccard(ifSummaries_a, ifSummaries_b));
 	}
 	
 	static float actionDistance(Plan a, Plan b) {

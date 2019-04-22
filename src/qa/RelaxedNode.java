@@ -1,9 +1,10 @@
 package qa;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import sabre.graph.PlanGraphEventNode;
 
-public class RelaxedNode {
+public class RelaxedNode implements Serializable {
 	public PlanGraphEventNode eventNode;
 	public ArrayList<Explanation> explanations;
 	public int level;

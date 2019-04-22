@@ -2,7 +2,12 @@ package qa;
 
 import java.awt.Desktop;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -32,8 +37,8 @@ public class Main {
 	private static final String CREDITS = "by Edward Garcia, Rachelyn Farrell, and Stephen G. Ware";
 	private static final String TITLE = "Planning Domain Automated Tester (PDAT), " + VERSION + "\n " + CREDITS + "\n";
 	private static final String USAGE = "USAGE: java -jar pdat.jar <filename>\n";
-	//private static String filename = "rrh.txt";
-	private static String filename = "domains/camelot.domain";
+	private static String filename = "rrh.txt";
+	//private static String filename = "domains/camelot.domain";
 
 	static long lastModified = 0;
 	static boolean firstRun = true;
@@ -134,12 +139,11 @@ public class Main {
 		}
 	}
 
-	private static void clusterTest(SearchSpace space) {
+	private static void clusterTest(SearchSpace space) throws FileNotFoundException, IOException {
 		System.out.println("\nLet's try clustering...");
 		ArrayList<RelaxedPlan> relaxedPlans = getRelaxedPlans(space);
 		ArrayList<RelaxedPlan> validPlans = new ArrayList<>();
 		for (RelaxedPlan plan : relaxedPlans) {
-			System.out.println("Important: " + plan.getImportantSteps(space));
 			if (plan.isValid(space))
 				validPlans.add(plan);
 		}
@@ -202,18 +206,30 @@ public class Main {
 		for (int i = 0; i < k; i++) {
 			System.out.println(i + ": " + exemplars[i]);
 		}
-
 		// ----------------------------
-
 	}
-
-	private static ArrayList<RelaxedPlan> getRelaxedPlans(SearchSpace space) {
+	
+	/** Extract RelaxedPlans and write them to object files **/
+	private static ArrayList<RelaxedPlan> getRelaxedPlans(SearchSpace space) throws FileNotFoundException, IOException {
 		// Runs much faster, run this plan search first!
 	    ArrayList<RelaxedPlan> plans = PlanGraphExplanations.getExplainedPlans(space);
 		RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(space, plans);
 		RelaxedPlanCleaner.removeDuplicateSteps(plans);
 		RelaxedPlanCleaner.removeDuplicatePlans(plans);
 		FileIO.Write("PlanGraphExplanationsPlan.txt", plans.toString());
+		
+		/** Serialize RelaxedPlans **/
+		String dir = "PlanGraphExplanationsPlans";
+		File file = new File(dir);
+		if(!file.isDirectory())
+			file.mkdir();
+		int i=0;
+		for(RelaxedPlan p : plans) {
+			i++;
+			ObjectOutputStream objOut = new ObjectOutputStream(new FileOutputStream(dir + "/plan_" + i + ".ser"));
+			objOut.writeObject(p);
+			objOut.close();
+		}
 		
 		//ArrayList<RelaxedPlan> plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
 		plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
@@ -222,6 +238,30 @@ public class Main {
 		RelaxedPlanCleaner.removeDuplicatePlans(plans);
 		FileIO.Write("ExplanationsPlan.txt", plans.toString());
 
+		dir = "ExplanationsPlans";
+		file = new File(dir);
+		if(!file.isDirectory())
+			file.mkdir();
+		i=0;
+		for(RelaxedPlan p : plans) {
+			i++;
+			ObjectOutputStream objOut = new ObjectOutputStream(new FileOutputStream(dir + "/plan_" + i + ".ser"));
+			objOut.writeObject(p);
+			objOut.close();
+		}
+		
+		return plans;
+	}
+	
+	/** Get RelaxedPlans from files **/
+	private static ArrayList<RelaxedPlan> deserializeRelaxedPlans(String dir) throws FileNotFoundException, IOException, ClassNotFoundException{
+		ArrayList<RelaxedPlan> plans = new ArrayList<>();
+		File[] planFiles = (new File(dir)).listFiles();
+		for(int i=0; i<planFiles.length; i++) {
+			ObjectInputStream objIn = new ObjectInputStream(new FileInputStream(planFiles[i]));
+			plans.add((RelaxedPlan)objIn.readObject());
+			objIn.close();
+		}
 		return plans;
 	}
 
