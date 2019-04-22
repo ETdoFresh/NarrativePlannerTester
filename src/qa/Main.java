@@ -19,7 +19,6 @@ import sabre.graph.PlanGraph;
 import sabre.graph.PlanGraphEventNode;
 import sabre.io.DefaultParser;
 import sabre.io.Parser;
-import sabre.logic.ConjunctiveClause;
 import sabre.logic.Expression;
 import sabre.search.Result;
 import sabre.search.Search;
@@ -32,9 +31,9 @@ public class Main {
 	private static final String VERSION = "v0.01.1";
 	private static final String CREDITS = "by Edward Garcia, Rachelyn Farrell, and Stephen G. Ware";
 	private static final String TITLE = "Planning Domain Automated Tester (PDAT), " + VERSION + "\n " + CREDITS + "\n";
-	private static final String USAGE = "TODO: Write usage";
-	// private static final String FILE = "rrh.txt";
-	private static final String FILE = "domains/camelot.domain";
+	private static final String USAGE = "USAGE: java -jar pdat.jar <filename>\n";
+	//private static String filename = "rrh.txt";
+	private static String filename = "domains/camelot.domain";
 
 	static long lastModified = 0;
 	static boolean firstRun = true;
@@ -44,6 +43,11 @@ public class Main {
 	static File file;
 
 	public static void main(String[] args) throws Exception {
+		if(args.length > 0)
+			filename = args[0];
+		else 
+			System.out.println(USAGE);
+		
 		printTitle();
 		openDomainTxtFile();
 
@@ -259,7 +263,7 @@ public class Main {
 	}
 
 	private static void openDomainTxtFile() {
-		file = new File(FILE);
+		file = new File(filename);
 		Desktop desktop = Desktop.getDesktop();
 		try {
 			file.createNewFile(); // does nothing if file exists
@@ -280,12 +284,12 @@ public class Main {
 	private static void printLastModified() {
 		if (firstRun) {
 			firstRun = false;
-			System.out.println(Text.INFO + "File Opened: " + FILE + " Last Modified: "
+			System.out.println(Text.INFO + "File Opened: " + filename + " Last Modified: "
 					+ new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(lastModified));
 		} else {
 			System.out.println("----------------------------------------------------------------");
 			System.out.println();
-			System.out.println(Text.INFO + "File Modified: " + FILE + " Last Modified: "
+			System.out.println(Text.INFO + "File Modified: " + filename + " Last Modified: "
 					+ new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(lastModified));
 		}
 	}

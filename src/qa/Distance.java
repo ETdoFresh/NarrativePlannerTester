@@ -6,19 +6,19 @@ import java.util.Set;
 import sabre.Action;
 import sabre.Event;
 import sabre.Plan;
-import sabre.graph.PlanGraphEventNode;
+import sabre.space.SearchSpace;
 
 public class Distance {
 
-	static float isifDistance(RelaxedPlan a, RelaxedPlan b) {
+	static float isifDistance(RelaxedPlan a, RelaxedPlan b, SearchSpace space) {
 		Set<Event> E_a = new HashSet<>();
 		Set<Event> E_b = new HashSet<>();
 
 		// TODO: Only add important steps
-		for(RelaxedNode step : a) {
+		for(RelaxedNode step : a.getImportantSteps(space)) {
 			E_a.add(step.eventNode.event);			
 		}
-		for(RelaxedNode step : b) {
+		for(RelaxedNode step : b.getImportantSteps(space)) {
 			E_b.add(step.eventNode.event);
 		}
 
