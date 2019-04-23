@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit;
 
 import qa.Exceptions.*;
 import sabre.*;
-import sabre.graph.PlanGraph;
 import sabre.graph.PlanGraphEventNode;
 import sabre.io.DefaultParser;
 import sabre.io.Parser;
@@ -37,8 +36,8 @@ public class Main {
 	private static final String CREDITS = "by Edward Garcia, Rachelyn Farrell, and Stephen G. Ware";
 	private static final String TITLE = "Planning Domain Automated Tester (PDAT), " + VERSION + "\n " + CREDITS + "\n";
 	private static final String USAGE = "USAGE: java -jar pdat.jar <filename>\n";
-	private static String filename = "rrh.txt";
-	//private static String filename = "domains/camelot.domain";
+	//private static String filename = "rrh.txt";
+	private static String filename = "domains/camelot.domain";
 
 	static long lastModified = 0;
 	static boolean firstRun = true;
@@ -75,7 +74,7 @@ public class Main {
 			ArrayState initial = new ArrayState(space);
 			checkGoalTrueInitialState(domain, initial);
 
-			PlanGraph planGraph = createExtendedPlanGraph(space, initial);
+			extendPlanGraph(space, initial);
 
 			// Number of actions available from the initial state
 			int firstSteps = 0;
@@ -118,8 +117,7 @@ public class Main {
 			search.push(root);
 			System.out.println(Text.BLANK + "Searching for next solution...");
 			try {
-				// result = runInteruptably(() -> search.getNextSolution()); //
-				// <---------------------- search
+				result = runInteruptably(() -> search.getNextSolution()); // <----- search
 			} catch (Exception ex) {
 				System.out.println(Text.FAIL + "Exception while searching for solution: " + ex);
 				continue;
@@ -139,9 +137,10 @@ public class Main {
 		}
 	}
 
-	private static void clusterTest(SearchSpace space) throws FileNotFoundException, IOException {
+	private static void clusterTest(SearchSpace space) throws FileNotFoundException, IOException, ClassNotFoundException {
 		System.out.println("\nLet's try clustering...");
-		ArrayList<RelaxedPlan> relaxedPlans = getRelaxedPlans(space);
+		ArrayList<RelaxedPlan> relaxedPlans = getRelaxedPlans(space, false); // true=PlanGraphExpPlans, false=ExplanationPlans
+		//ArrayList<RelaxedPlan> relaxedPlans = deserializeRelaxedPlans("PlanGraphExplanationsPlans");
 		ArrayList<RelaxedPlan> validPlans = new ArrayList<>();
 		for (RelaxedPlan plan : relaxedPlans) {
 			if (plan.isValid(space))
@@ -166,7 +165,7 @@ public class Main {
 		System.out.println("Unique plans: " + uniquePlans.size());
 		System.out.println("Unique plan vectors: " + uniquePlanVecs.size());
 
-		int k = 3;
+		int k = 4;
 
 		/*
 		 * System.out.println("TEST K-MEDOIDS USING VECTORS"); Clusterer clusterer = new
@@ -204,24 +203,31 @@ public class Main {
 		RelaxedPlan[] exemplars = clusterer.getExemplars();
 		System.out.println("Exemplars:");
 		for (int i = 0; i < k; i++) {
-			System.out.println(i + ": " + exemplars[i]);
+			System.out.println("Cluster " + i + ":\n" + exemplars[i]);
 		}
 		// ----------------------------
 	}
-	
+
 	/** Extract RelaxedPlans and write them to object files **/
-	private static ArrayList<RelaxedPlan> getRelaxedPlans(SearchSpace space) throws FileNotFoundException, IOException {
-		// Runs much faster, run this plan search first!
-	    ArrayList<RelaxedPlan> plans = PlanGraphExplanations.getExplainedPlans(space);
+	private static ArrayList<RelaxedPlan> getRelaxedPlans(SearchSpace space, boolean planGraphExp) throws FileNotFoundException, IOException {
+		String dir;
+		String txtfile;
+		ArrayList<RelaxedPlan> plans;
+		if(planGraphExp) { 
+			txtfile = "PlanGraphExplanationsPlan.txt";
+			dir = "PlanGraphExplanationsPlans";
+		    plans = PlanGraphExplanations.getExplainedPlans(space); // Runs much faster!
+			for (RelaxedPlan plan : plans)
+				AgentStepDistance.getVector(space, plan);
+		} else {
+			txtfile = "ExplanationsPlan.txt";
+			dir = "ExplanationsPlans";
+			plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
+		}
 		RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(space, plans);
 		RelaxedPlanCleaner.removeDuplicateSteps(plans);
 		RelaxedPlanCleaner.removeDuplicatePlans(plans);
-		FileIO.Write("PlanGraphExplanationsPlan.txt", plans.toString());
-		for (RelaxedPlan plan : plans)
-			AgentStepDistance.getVector(space, plan);
-		
-		/** Serialize RelaxedPlans **/
-		String dir = "PlanGraphExplanationsPlans";
+		FileIO.Write(txtfile, plans.toString());
 		File file = new File(dir);
 		if(!file.isDirectory())
 			file.mkdir();
@@ -231,27 +237,7 @@ public class Main {
 			ObjectOutputStream objOut = new ObjectOutputStream(new FileOutputStream(dir + "/plan_" + i + ".ser"));
 			objOut.writeObject(p);
 			objOut.close();
-		}
-		
-		//ArrayList<RelaxedPlan> plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
-		plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
-		RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(space, plans);
-		RelaxedPlanCleaner.removeDuplicateSteps(plans);
-		RelaxedPlanCleaner.removeDuplicatePlans(plans);
-		FileIO.Write("ExplanationsPlan.txt", plans.toString());
-
-		dir = "ExplanationsPlans";
-		file = new File(dir);
-		if(!file.isDirectory())
-			file.mkdir();
-		i=0;
-//		for(RelaxedPlan p : plans) {
-//			i++;
-//			ObjectOutputStream objOut = new ObjectOutputStream(new FileOutputStream(dir + "/plan_" + i + ".ser"));
-//			objOut.writeObject(p);
-//			objOut.close();
-//		}
-		
+		}		
 		return plans;
 	}
 	
@@ -375,11 +361,10 @@ public class Main {
 		}
 	}
 
-	private static PlanGraph createExtendedPlanGraph(SearchSpace space, ArrayState initial) {
+	private static void extendPlanGraph(SearchSpace space, ArrayState initial) {
 		space.graph.initialize(initial);
 		while (!space.graph.hasLeveledOff())
-			space.graph.extend(); // Extend graph until all goals have appeared
-		return space.graph;
+			space.graph.extend(); // Extend graph until it levels off
 	}
 
 	public static <T> T runInteruptably(Callable<T> task) {

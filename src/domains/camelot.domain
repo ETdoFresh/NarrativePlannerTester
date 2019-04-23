@@ -126,7 +126,6 @@ action steal(character character*, character victim, item item, weapon weapon, p
 	);
 }
 
-
 action draw(character character*, weapon weapon){
 	precondition: (
 		location(weapon) = character &
