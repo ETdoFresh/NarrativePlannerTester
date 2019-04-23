@@ -202,7 +202,7 @@ public class Main {
 		System.out.println("---------------------------------");
 
 		RelaxedPlan[] exemplars = clusterer.getExemplars();
-		System.out.println("Exempars:");
+		System.out.println("Exemplars:");
 		for (int i = 0; i < k; i++) {
 			System.out.println(i + ": " + exemplars[i]);
 		}
@@ -217,6 +217,8 @@ public class Main {
 		RelaxedPlanCleaner.removeDuplicateSteps(plans);
 		RelaxedPlanCleaner.removeDuplicatePlans(plans);
 		FileIO.Write("PlanGraphExplanationsPlan.txt", plans.toString());
+		for (RelaxedPlan plan : plans)
+			AgentStepDistance.getVector(space, plan);
 		
 		/** Serialize RelaxedPlans **/
 		String dir = "PlanGraphExplanationsPlans";
@@ -243,12 +245,12 @@ public class Main {
 		if(!file.isDirectory())
 			file.mkdir();
 		i=0;
-		for(RelaxedPlan p : plans) {
-			i++;
-			ObjectOutputStream objOut = new ObjectOutputStream(new FileOutputStream(dir + "/plan_" + i + ".ser"));
-			objOut.writeObject(p);
-			objOut.close();
-		}
+//		for(RelaxedPlan p : plans) {
+//			i++;
+//			ObjectOutputStream objOut = new ObjectOutputStream(new FileOutputStream(dir + "/plan_" + i + ".ser"));
+//			objOut.writeObject(p);
+//			objOut.close();
+//		}
 		
 		return plans;
 	}

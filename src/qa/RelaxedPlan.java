@@ -98,9 +98,9 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 	public void push(RelaxedNode action) {
 		nodes.add(0, action);
 	}
-	
+
 	public void pushAll(Iterable<RelaxedNode> nodes) {
-		for(RelaxedNode node : nodes)
+		for (RelaxedNode node : nodes)
 			push(node);
 	}
 
@@ -156,10 +156,10 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 
 	public RelaxedPlan unionClone(RelaxedPlan other) {
 		RelaxedPlan unioned = clone();
-		
+
 		if (other == null || this == other)
 			return unioned;
-		
+
 		for (RelaxedNode node : (other).nodes)
 			if (!unioned.nodes.contains(node))
 				unioned.nodes.add(node);
@@ -170,9 +170,14 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		RelaxedPlan medoid = null;
 		float[] averageDistances = new float[plans.size()];
 		for (int i = 0; i < plans.size(); i++) {
+			SearchSpace space = plans.get(i).nodes.get(0).eventNode.graph.space;
 			float sum = 0;
 			for (RelaxedPlan other : plans) {
-				sum += plans.get(i).actionDistance(other);
+                //sum += plans.get(i).actionDistance(other);
+				int[] vectorThis = AgentStepDistance.getVector(space, plans.get(i));
+				int[] vectorOther = AgentStepDistance.getVector(space, other);
+				for (int j = 0; j < vectorThis.length; j++)
+					sum += Math.pow(vectorThis[j] - vectorOther[j], 2);
 			}
 			averageDistances[i] = sum / plans.size();
 		}
@@ -195,7 +200,7 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		RelaxedPlan otherPlan = (RelaxedPlan) other;
 		if (size() != otherPlan.size())
 			return false;
-		
+
 		for (int i = 0; i < nodes.size(); i++) {
 			if (!nodes.get(i).eventNode.event.equals(otherPlan.nodes.get(i).eventNode.event))
 				return false;
@@ -212,7 +217,7 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 	}
 
 	public void pushAll(HashSet<RelaxedNode> set) {
-		for(RelaxedNode node : set)
+		for (RelaxedNode node : set)
 			push(node);
 	}
 

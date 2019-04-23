@@ -30,6 +30,15 @@ public class Distance {
 		return 1 - 0.5f * (jaccard(importantSteps_a, importantSteps_b) + jaccard(ifSummaries_a, ifSummaries_b));
 	}
 	
+	static float agentStepDistance(RelaxedPlan a, RelaxedPlan b, SearchSpace space) {
+		int[] vectorA = AgentStepDistance.getVector(space, a);
+		int[] vectorB = AgentStepDistance.getVector(space, b);
+		float euclideanSquareDistance = 0;
+		for (int i = 0; i < vectorA.length; i++)
+			euclideanSquareDistance += (float)Math.pow(vectorA[i] - vectorB[i], 2);
+		return euclideanSquareDistance;
+	}
+	
 	static float actionDistance(Plan a, Plan b) {
 		HashSet<Action> set_a = new HashSet<>();
 		HashSet<Action> set_b = new HashSet<>();

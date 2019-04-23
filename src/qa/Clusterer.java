@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.function.Function;
 
 import sabre.space.SearchSpace;
 
@@ -135,7 +137,8 @@ public class Clusterer {
 				float minDistance = Float.MAX_VALUE;
 				int clusterToAssign = -1;
 				for(int c=0; c<k; c++) {
-					float distance = Distance.isifDistance(relaxedPlans[i], clusters[c].medoid, space);
+					//float distance = Distance.isifDistance(relaxedPlans[i], clusters[c].medoid, space);
+					float distance = Distance.agentStepDistance(relaxedPlans[i], clusters[c].medoid, space);
 					//float distance = relaxedPlans[i].actionDistance(clusters[c].medoid);
 					if(distance < minDistance) {
 						minDistance = distance;
