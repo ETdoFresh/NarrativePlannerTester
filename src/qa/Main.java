@@ -36,8 +36,8 @@ public class Main {
 	private static final String CREDITS = "by Edward Garcia, Rachelyn Farrell, and Stephen G. Ware";
 	private static final String TITLE = "Planning Domain Automated Tester (PDAT), " + VERSION + "\n " + CREDITS + "\n";
 	private static final String USAGE = "USAGE: java -jar pdat.jar <filename>\n";
-	//private static String filename = "rrh.txt";
-	private static String filename = "domains/camelot.domain";
+	private static String filename = "rrh.txt";
+	//private static String filename = "domains/camelot.domain";
 
 	static long lastModified = 0;
 	static boolean firstRun = true;
@@ -107,8 +107,54 @@ public class Main {
 				// continue;
 			}
 
-			clusterTest(space);
+			//clusterTest(space);
 
+			System.out.println("\nLet's try clustering...");
+
+			// Get RelaxedPlans (true = PGE, false = Explanations)
+			ArrayList<RelaxedPlan> relaxedPlans = getRelaxedPlans(space, true);
+			// Get RelaxedPlans from files 
+			//ArrayList<RelaxedPlan> relaxedPlans = deserializeRelaxedPlans("PlanGraphExplanationsPlans");
+
+			System.out.println("Total RelaxedPlans: " + relaxedPlans.size());
+			System.out.println("Valid RelaxedPlans: " + countValid(relaxedPlans, space));
+
+			// Remove duplicate RelaxedPlans
+			ArrayList<RelaxedPlan> uniquePlans = new ArrayList<>();
+			for (RelaxedPlan plan : relaxedPlans) {
+				if (!uniquePlans.contains(plan))
+					uniquePlans.add(plan);
+			}
+			
+			System.out.println("Unique RelaxedPlans: " + uniquePlans.size());
+			System.out.println("Unique Valid RelaxedPlans: " + countValid(uniquePlans, space));	
+			System.out.println("---------------------------------");
+
+			// Set up k-medoids with unique RelaxedPlans
+			int k = 4;
+			Clusterer clusterer = new Clusterer(uniquePlans.toArray(new RelaxedPlan[uniquePlans.size()]), 
+				k, space.actions.size(), space, DistanceMetric.ActionDistance);
+			Random random = new Random();
+			for (int i = 0; i < uniquePlans.size(); i++)
+				uniquePlans.get(i).clusterAssignment = random.nextInt(k);
+			for (int i = 0; i < k; i++)
+				System.out.println("Cluster "+i+" has "+clusterer.getAssignments(clusterer.clusters[i].id).size()+" initial assignments.");
+			System.out.println("---------------------------------");
+
+			// Run k-medoids
+			clusterer.kmedoids();
+			System.out.println("---------------------------------");
+			System.out.println("Final medoids:");
+			for (int i=0; i<k; i++)
+				System.out.println("Cluster "+i+" ("+clusterer.getAssignments(i).size()+" assignments):\n"+clusterer.clusters[i].medoid);
+			System.out.println("---------------------------------");
+
+			// Get valid example plans based on cluster medoids
+			RelaxedPlan[] exemplars = clusterer.getExemplars();
+			System.out.println("Exemplars:");
+			for (int i=0; i<k; i++)
+				System.out.println("Cluster "+i+":\n"+exemplars[i]);
+			
 			// Check if a solution exists
 			Planner planner = new Planner();
 			planner.setSearchSpace(space);
@@ -117,7 +163,7 @@ public class Main {
 			search.push(root);
 			System.out.println(Text.BLANK + "Searching for next solution...");
 			try {
-				result = runInteruptably(() -> search.getNextSolution()); // <----- search
+				result = runInteruptably(() -> search.getNextSolution()); // <---------------------------------------- search
 			} catch (Exception ex) {
 				System.out.println(Text.FAIL + "Exception while searching for solution: " + ex);
 				continue;
@@ -137,78 +183,16 @@ public class Main {
 		}
 	}
 
-	private static void clusterTest(SearchSpace space) throws FileNotFoundException, IOException, ClassNotFoundException {
-		System.out.println("\nLet's try clustering...");
-		ArrayList<RelaxedPlan> relaxedPlans = getRelaxedPlans(space, false); // true=PlanGraphExpPlans, false=ExplanationPlans
-		//ArrayList<RelaxedPlan> relaxedPlans = deserializeRelaxedPlans("PlanGraphExplanationsPlans");
-		ArrayList<RelaxedPlan> validPlans = new ArrayList<>();
-		for (RelaxedPlan plan : relaxedPlans) {
+	private static int countValid(ArrayList<RelaxedPlan> plans, SearchSpace space) {
+		int count = 0;
+		for (RelaxedPlan plan : plans) {
 			if (plan.isValid(space))
-				validPlans.add(plan);
+				count++;
 		}
-
-		RelaxedPlanVector[] planVecs = new RelaxedPlanVector[relaxedPlans.size()];
-		for (int i = 0; i < planVecs.length; i++)
-			planVecs[i] = new RelaxedPlanVector(space, relaxedPlans.get(i));
-		ArrayList<RelaxedPlanVector> uniquePlanVecs = new ArrayList<>();
-		for (RelaxedPlanVector vec : planVecs) {
-			if (!uniquePlanVecs.contains(vec))
-				uniquePlanVecs.add(vec);
-		}
-		ArrayList<RelaxedPlan> uniquePlans = new ArrayList<>();
-		for (RelaxedPlan plan : relaxedPlans) {
-			if (!uniquePlans.contains(plan))
-				uniquePlans.add(plan);
-		}
-		System.out.println("Total plans: " + relaxedPlans.size());
-		System.out.println("Valid plans: " + validPlans.size());
-		System.out.println("Unique plans: " + uniquePlans.size());
-		System.out.println("Unique plan vectors: " + uniquePlanVecs.size());
-
-		int k = 4;
-
-		/*
-		 * System.out.println("TEST K-MEDOIDS USING VECTORS"); Clusterer clusterer = new
-		 * Clusterer(uniquePlanVecs.toArray(new
-		 * RelaxedPlanVector[uniquePlanVecs.size()]), k, space.actions.size()); Random
-		 * random = new Random(); for(int i=0; i<uniquePlanVecs.size(); i++)
-		 * uniquePlanVecs.get(i).clusterAssignment = random.nextInt(k); for(int i=0;
-		 * i<k; i++) System.out.println("Cluster "+i+ " has " +
-		 * clusterer.getVectorAssignments(clusterer.clusters[i].id).size() +
-		 * " initial assignments."); clusterer.kmedoids();
-		 * System.out.println("---------------------------------");
-		 * System.out.println("Final centroids:"); for(int i=0; i<k; i++)
-		 * System.out.println(i + ": " + clusterer.clusters[i].centroid +
-		 * "\nAssignments: " + clusterer.getVectorAssignments(i).size());
-		 * System.out.println("---------------------------------");
-		 */
-		// Test k-medoids without vectors
-		System.out.println("\nTEST K-MEDOIDS (WITHOUT VECTORS)\n");
-		Clusterer clusterer = new Clusterer(uniquePlans.toArray(new RelaxedPlan[uniquePlans.size()]), k,
-				space.actions.size(), space);
-		Random random = new Random();
-		for (int i = 0; i < uniquePlans.size(); i++)
-			uniquePlans.get(i).clusterAssignment = random.nextInt(k);
-		for (int i = 0; i < k; i++)
-			System.out.println("Cluster " + i + " has " + clusterer.getPlanAssignments(clusterer.clusters[i].id).size()
-					+ " initial assignments.");
-		clusterer.kmedoids(false);
-		System.out.println("---------------------------------");
-		System.out.println("Final medoids:");
-		for (int i = 0; i < k; i++)
-			System.out.println("Cluster " + i + " (" + clusterer.getPlanAssignments(i).size() + " assignments):\n"
-					+ clusterer.clusters[i].medoid);
-		System.out.println("---------------------------------");
-
-		RelaxedPlan[] exemplars = clusterer.getExemplars();
-		System.out.println("Exemplars:");
-		for (int i = 0; i < k; i++) {
-			System.out.println("Cluster " + i + ":\n" + exemplars[i]);
-		}
-		// ----------------------------
+		return count;
 	}
 
-	/** Extract RelaxedPlans and write them to object files **/
+	/** Get RelaxedPlans; also write them to object files **/
 	private static ArrayList<RelaxedPlan> getRelaxedPlans(SearchSpace space, boolean planGraphExp) throws FileNotFoundException, IOException {
 		String dir;
 		String txtfile;
@@ -269,7 +253,7 @@ public class Main {
 				System.out.println(Text.BLANK + "Cutting off after 2 solutions");
 				result = null;
 			} else {
-				System.out.println(Text.BLANK + "Searching for next solution...");
+				//System.out.println(Text.BLANK + "Searching for next solution...");
 				result = runInteruptably(() -> search.getNextSolution());
 			}
 

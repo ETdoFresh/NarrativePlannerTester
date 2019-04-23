@@ -8,9 +8,33 @@ import sabre.Event;
 import sabre.Plan;
 import sabre.space.SearchSpace;
 
-public class Distance {
+enum DistanceMetric { ISIF, AgentStep, ActionDistance };
 
-	static float isifDistance(RelaxedPlan a, RelaxedPlan b, SearchSpace space) {
+public class Distance {
+		
+	private DistanceMetric distanceMetric;
+	private SearchSpace space;
+
+	public Distance(DistanceMetric metric, SearchSpace space) {
+		this.distanceMetric = metric;
+		this.space = space;
+	}
+	
+	public float getDistance(RelaxedPlan a, RelaxedPlan b) {
+		switch(distanceMetric) {
+			case ISIF: 
+				return isifDistance(a, b);
+			case AgentStep:
+				return agentStepDistance(a, b);
+			case ActionDistance:
+				return actionDistance(a, b);
+		}
+		System.out.println("?! What distance metric is this? " + distanceMetric);
+		System.exit(1);
+		return 0;
+	}
+	
+	private float isifDistance(RelaxedPlan a, RelaxedPlan b) {
 		Set<Event> importantSteps_a = new HashSet<>();
 		Set<Event> importantSteps_b = new HashSet<>();
 
@@ -18,7 +42,7 @@ public class Distance {
 			importantSteps_a.add(step.eventNode.event);	
 		for(RelaxedNode step : b.getImportantSteps(space))
 			importantSteps_b.add(step.eventNode.event);
-
+		
 		Set<Event> ifSummaries_a = new HashSet<>();
 		Set<Event> ifSummaries_b = new HashSet<>();
 
@@ -30,7 +54,7 @@ public class Distance {
 		return 1 - 0.5f * (jaccard(importantSteps_a, importantSteps_b) + jaccard(ifSummaries_a, ifSummaries_b));
 	}
 	
-	static float agentStepDistance(RelaxedPlan a, RelaxedPlan b, SearchSpace space) {
+	private float agentStepDistance(RelaxedPlan a, RelaxedPlan b) {
 		int[] vectorA = AgentStepDistance.getVector(space, a);
 		int[] vectorB = AgentStepDistance.getVector(space, b);
 		float euclideanSquareDistance = 0;
@@ -39,20 +63,27 @@ public class Distance {
 		return euclideanSquareDistance;
 	}
 	
-	static float actionDistance(Plan a, Plan b) {
-		HashSet<Action> set_a = new HashSet<>();
-		HashSet<Action> set_b = new HashSet<>();
-	
-		for (Action action : a)
-			set_a.add(action);
-	
-		for (Action action : b)
-			set_b.add(action);
-	
+	private float actionDistance(RelaxedPlan a, RelaxedPlan b) {
+		HashSet<Event> set_a = new HashSet<>();
+		HashSet<Event> set_b = new HashSet<>();	
+		for (RelaxedNode action : a)
+			set_a.add(action.eventNode.event);
+		for (RelaxedNode action : b)
+			set_b.add(action.eventNode.event);
 		return jaccard(set_a, set_b);
 	}
 
-	static <E> float jaccard(Set<E> a, Set<E> b) {
+	private float actionDistance(Plan a, Plan b) {
+		HashSet<Action> set_a = new HashSet<>();
+		HashSet<Action> set_b = new HashSet<>();
+		for (Action action : a)
+			set_a.add(action);
+		for (Action action : b)
+			set_b.add(action);
+		return jaccard(set_a, set_b);
+	}
+
+	private <E> float jaccard(Set<E> a, Set<E> b) {
 		HashSet<E> intersection = new HashSet<>();
 		HashSet<E> union = new HashSet<>();
 		union.addAll(a);

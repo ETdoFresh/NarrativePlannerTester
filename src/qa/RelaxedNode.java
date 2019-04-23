@@ -5,8 +5,10 @@ import java.util.ArrayList;
 import sabre.graph.PlanGraphEventNode;
 
 public class RelaxedNode implements Serializable {
+	private static final long serialVersionUID = 1L;
+	
 	public PlanGraphEventNode eventNode;
-	public ArrayList<Explanation> explanations;
+	public ArrayList<Explanation> explanations = new ArrayList<>();
 	public int level;
 		
 	public RelaxedNode(PlanGraphEventNode eventNode, ArrayList<Explanation> explanations, int level) {
@@ -17,12 +19,15 @@ public class RelaxedNode implements Serializable {
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if(obj instanceof RelaxedNode) {
-			RelaxedNode other = (RelaxedNode)obj;
-			return eventNode.equals(other.eventNode) 
-					&& explanations.equals(other.explanations) 
-					&& level == other.level;
+	public boolean equals(Object other) {
+		if(other instanceof RelaxedNode) {
+			RelaxedNode otherNode = (RelaxedNode)other;
+			if(explanations==null && otherNode.explanations==null)
+				return eventNode.equals(otherNode.eventNode) && level == otherNode.level;
+			else if(explanations != null && otherNode.explanations != null)
+				return eventNode.equals(otherNode.eventNode) 
+					&& level == otherNode.level
+					&& explanations.equals(otherNode.explanations);
 		}
 		return false;
 	}

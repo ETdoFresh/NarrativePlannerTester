@@ -10,11 +10,13 @@ import sabre.Event;
 import sabre.graph.PlanGraphAxiomNode;
 import sabre.graph.PlanGraphEventNode;
 import sabre.logic.ConjunctiveClause;
+import sabre.logic.Expression;
 import sabre.logic.Literal;
 import sabre.space.SearchSpace;
 import sabre.state.MutableArrayState;
 
 public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
+	private static final long serialVersionUID = 1L;
 	private ArrayList<RelaxedNode> nodes = new ArrayList<>();
 	public ArrayList<Explanation> explanations = new ArrayList<>();
 	public int clusterAssignment = -1;
@@ -24,68 +26,6 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		clone.nodes.addAll(nodes);
 		clone.explanations.addAll(explanations);
 		return clone;
-	}
-
-	public int getCausalDegree(RelaxedNode node, SearchSpace space) {
-		int degree = 0;
-		if (node.eventNode instanceof PlanGraphAxiomNode)
-			return degree;
-		// for each action prior to this one
-		for (int i = 0; i < nodes.indexOf(node); i++)
-			// degree++ for each effect that matches a precondition of this action
-			for (ConjunctiveClause effect : nodes.get(i).eventNode.event.effect.toDNF().arguments)
-				for (Literal e_literal : effect.arguments)
-					for (ConjunctiveClause precondition : node.eventNode.event.precondition.toDNF().arguments)
-						for (Literal p_literal : precondition.arguments)
-							if (CheckEquals.Literal(e_literal, p_literal))
-								degree++;
-		// for each action after this one
-		for (int i = nodes.indexOf(node); i < nodes.size(); i++)
-			// degree++ for each precondition that matches an effect of this action
-			for (ConjunctiveClause precondition : nodes.get(i).eventNode.event.precondition.toDNF().arguments)
-				for (Literal p_literal : precondition.arguments)
-					for (ConjunctiveClause effect : node.eventNode.event.effect.toDNF().arguments)
-						for (Literal e_literal : effect.arguments)
-							if (CheckEquals.Literal(p_literal, e_literal))
-								degree++;
-		// also +1 for each goal achieved by this action's effects
-		for (ConjunctiveClause goal : space.goal.toDNF().arguments)
-			for (Literal g_literal : goal.arguments)
-				for (ConjunctiveClause effect : node.eventNode.event.effect.toDNF().arguments)
-					for (Literal e_literal : effect.arguments)
-						if (CheckEquals.Literal(e_literal, g_literal))
-							degree++;
-		return degree;
-	}
-
-	public ArrayList<RelaxedNode> getImportantSteps(SearchSpace space) {
-		ArrayList<RelaxedNode> importantSteps = new ArrayList<>();
-		int[] causalDegrees = new int[nodes.size()];
-		for (int i = 0; i < nodes.size(); i++)
-			causalDegrees[i] = getCausalDegree(nodes.get(i), space);
-		int maxCausalDegree = 0;
-		for (int i = 0; i < nodes.size(); i++)
-			if (causalDegrees[i] > maxCausalDegree)
-				maxCausalDegree = causalDegrees[i];
-		for (int i = 0; i < nodes.size(); i++)
-			if (causalDegrees[i] == maxCausalDegree)
-				importantSteps.add(nodes.get(i));
-		return importantSteps;
-	}
-
-	public boolean isValid(SearchSpace space) {
-		boolean invalid = false;
-		MutableArrayState state = new MutableArrayState(space);
-		for (int i = 0; i < nodes.size(); i++) {
-			Event event = nodes.get(i).eventNode.event;
-			if (event.precondition.test(state))
-				event.effect.impose(state, state); // really?
-			else {
-				invalid = true;
-				break;
-			}
-		}
-		return !invalid && space.goal.test(state);
 	}
 
 	public RelaxedNode last() {
@@ -127,9 +67,20 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 	public Iterator<RelaxedNode> iterator() {
 		return nodes.iterator();
 	}
-
-	public float actionDistance(RelaxedPlan other) {
-		return 1f - this.intersection(other) / this.union(other);
+	
+	public boolean isValid(SearchSpace space) {
+		boolean invalid = false;
+		MutableArrayState state = new MutableArrayState(space);
+		for (int i = 0; i < nodes.size(); i++) {
+			Event event = nodes.get(i).eventNode.event;
+			if (event.precondition.test(state))
+				event.effect.impose(state, state); // really?
+			else {
+				invalid = true;
+				break;
+			}
+		}
+		return !invalid && space.goal.test(state);
 	}
 
 	public float intersection(RelaxedPlan other) {
@@ -154,30 +105,30 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		return (float) union.size();
 	}
 
-	public RelaxedPlan unionClone(RelaxedPlan other) {
+	/*public RelaxedPlan unionClone(RelaxedPlan other) {
 		RelaxedPlan unioned = clone();
-
 		if (other == null || this == other)
 			return unioned;
-
 		for (RelaxedNode node : (other).nodes)
 			if (!unioned.nodes.contains(node))
 				unioned.nodes.add(node);
 		return unioned;
-	}
+	}*/
 
-	public static RelaxedPlan medoid(ArrayList<RelaxedPlan> plans) {
+	public static RelaxedPlan medoid(ArrayList<RelaxedPlan> plans, Distance distance) {
 		RelaxedPlan medoid = null;
 		float[] averageDistances = new float[plans.size()];
+		SearchSpace space = null; 
 		for (int i = 0; i < plans.size(); i++) {
-			SearchSpace space = plans.get(i).nodes.get(0).eventNode.graph.space;
 			float sum = 0;
+			if(space == null)
+				space = plans.get(i).nodes.get(0).eventNode.graph.space;
 			for (RelaxedPlan other : plans) {
-                //sum += plans.get(i).actionDistance(other);
-				int[] vectorThis = AgentStepDistance.getVector(space, plans.get(i));
-				int[] vectorOther = AgentStepDistance.getVector(space, other);
-				for (int j = 0; j < vectorThis.length; j++)
-					sum += Math.pow(vectorThis[j] - vectorOther[j], 2);
+                sum += distance.getDistance(plans.get(i), other);
+				//int[] vectorThis = AgentStepDistance.getVector(space, plans.get(i));
+				//int[] vectorOther = AgentStepDistance.getVector(space, other);
+				//for (int j = 0; j < vectorThis.length; j++)
+				//	sum += Math.pow(vectorThis[j] - vectorOther[j], 2);
 			}
 			averageDistances[i] = sum / plans.size();
 		}
@@ -192,6 +143,59 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 			return new RelaxedPlan();
 		return medoid;
 	}
+	
+	public ArrayList<RelaxedNode> getImportantSteps(SearchSpace space) {
+		ArrayList<RelaxedNode> importantSteps = new ArrayList<>();
+		int[] causalDegrees = new int[nodes.size()];
+		for (int i = 0; i < nodes.size(); i++)
+			causalDegrees[i] = getCausalDegree(nodes.get(i), space.goal);
+		int maxCausalDegree = 0;
+		for (int i = 0; i < nodes.size(); i++)
+			if (causalDegrees[i] > maxCausalDegree)
+				maxCausalDegree = causalDegrees[i];
+		for (int i = 0; i < nodes.size(); i++)
+			if (causalDegrees[i] == maxCausalDegree)
+				importantSteps.add(nodes.get(i));
+		return importantSteps;
+	}
+
+	/** Get the causal degree of a step in this RelaxedPlan, where:
+	 * 	 causal degree = +1 for each effect of a previous action that this step "uses" in its preconditions
+	 * 					 +1 for each precondition of a later action that this step achieves
+	 * 					 +1 for each literal of the problem goal that this step achieves
+	 * @param node - the step 
+	 * @param goal - the problem goal
+	 * @return degree
+	 */
+	public int getCausalDegree(RelaxedNode node, Expression goal) {
+		int degree = 0;
+		if (node.eventNode instanceof PlanGraphAxiomNode)
+			return degree;
+		int index = nodes.indexOf(node);
+		for (int i=0; i<index; i++)
+			for (ConjunctiveClause effect : nodes.get(i).eventNode.event.effect.toDNF().arguments)
+				for (Literal e_literal : effect.arguments)
+					for (ConjunctiveClause precondition : node.eventNode.event.precondition.toDNF().arguments)
+						for (Literal p_literal : precondition.arguments)
+							if (CheckEquals.Literal(e_literal, p_literal))
+								degree++;
+		for (int i=index; i<nodes.size(); i++)
+			for (ConjunctiveClause precondition : nodes.get(i).eventNode.event.precondition.toDNF().arguments)
+				for (Literal p_literal : precondition.arguments)
+					for (ConjunctiveClause effect : node.eventNode.event.effect.toDNF().arguments)
+						for (Literal e_literal : effect.arguments)
+							if (CheckEquals.Literal(p_literal, e_literal))
+								degree++;
+		for (ConjunctiveClause conjunct : goal.toDNF().arguments)
+			for (Literal g_literal : conjunct.arguments)
+				for (ConjunctiveClause effect : node.eventNode.event.effect.toDNF().arguments)
+					for (Literal e_literal : effect.arguments)
+						if (CheckEquals.Literal(e_literal, g_literal))
+							degree++;
+		return degree;
+	}
+
+
 
 	@Override
 	public boolean equals(Object other) {
