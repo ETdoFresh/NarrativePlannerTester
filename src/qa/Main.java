@@ -133,7 +133,7 @@ public class Main {
 			// Set up k-medoids with unique RelaxedPlans
 			int k = 4;
 			Clusterer clusterer = new Clusterer(uniquePlans.toArray(new RelaxedPlan[uniquePlans.size()]), 
-				k, space.actions.size(), space, DistanceMetric.AgentActionSchemaCouple);
+				k, space.actions.size(), space, DistanceMetric.AGENT_SCHEMA);
 			Random random = new Random();
 			for (int i = 0; i < uniquePlans.size(); i++)
 				uniquePlans.get(i).clusterAssignment = random.nextInt(k);
@@ -213,8 +213,8 @@ public class Main {
 		File file = new File(dir);
 		if(!file.isDirectory())
 			file.mkdir();
-		int i=0;
 		// Commenting for now to speed up computations... will put in back once we ready to serialize
+//		int i=0;
 //		for(RelaxedPlan p : plans) {
 //			i++;
 //			ObjectOutputStream objOut = new ObjectOutputStream(new FileOutputStream(dir + "/plan_" + i + ".ser"));

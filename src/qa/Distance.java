@@ -8,7 +8,7 @@ import sabre.Event;
 import sabre.Plan;
 import sabre.space.SearchSpace;
 
-enum DistanceMetric { ISIF, AgentStep, ActionDistance, ActionSchema, AgentActionSchemaCouple };
+enum DistanceMetric { ACTION, ISIF, AGENT_STEP, SCHEMA, AGENT_SCHEMA };
 
 public class Distance {
 		
@@ -21,23 +21,33 @@ public class Distance {
 	}
 	
 	public float getDistance(RelaxedPlan a, RelaxedPlan b) {
+		float dist = -1;
 		switch(distanceMetric) {
+			case ACTION:
+				dist = actionDistance(a, b);
+				break;
 			case ISIF: 
-				return isifDistance(a, b);
-			case AgentStep:
-				return agentStepDistance(a, b);
-			case ActionDistance:
-				return actionDistance(a, b);
-			case ActionSchema:
-				return actionSchemaDistance(a, b);
-			case AgentActionSchemaCouple:
-				return agentActionSchemaCoupleDistance(a, b);
+				dist = isifDistance(a, b);
+				break;
+			case AGENT_STEP:
+				dist = agentStepDistance(a, b);
+				break;
+			case SCHEMA:
+				dist = schemaDistance(a, b);
+				break;
+			case AGENT_SCHEMA:
+				dist = agentSchemaDistance(a, b);
+				break;
+			default:
+				System.out.println("?! What distance metric is this? " + distanceMetric);
+				System.exit(1);
 		}
-		System.out.println("?! What distance metric is this? " + distanceMetric);
-		System.exit(1);
-		return 0;
+		if(dist == 0)
+			return 0.00000001f;
+		return dist;
 	}
 	
+	/** ISIF distance between two plans: Weighted Jaccards of the sets of important steps and explanation summaries */
 	private float isifDistance(RelaxedPlan a, RelaxedPlan b) {
 		Set<Event> importantSteps_a = new HashSet<>();
 		Set<Event> importantSteps_b = new HashSet<>();
@@ -47,44 +57,48 @@ public class Distance {
 		for(RelaxedNode step : b.getImportantSteps(space))
 			importantSteps_b.add(step.eventNode.event);
 		
-		Set<Event> ifSummaries_a = new HashSet<>();
-		Set<Event> ifSummaries_b = new HashSet<>();
+		Set<Event> explSummaries_a = new HashSet<>();
+		Set<Event> explSummaries_b = new HashSet<>();
 
 		for(Explanation e : a.explanations)
-			ifSummaries_a.add(e.steps.lastElement());
+			explSummaries_a.add(e.steps.lastElement());
 		for(Explanation e : b.explanations)
-			ifSummaries_b.add(e.steps.lastElement());
+			explSummaries_b.add(e.steps.lastElement());
 		
-		return 1 - 0.5f * (jaccard(importantSteps_a, importantSteps_b) + jaccard(ifSummaries_a, ifSummaries_b));
+		return 1 - 0.5f * (jaccard(importantSteps_a, importantSteps_b) + jaccard(explSummaries_a, explSummaries_b));
 	}
-	
+
+	/** Agent step distance between two plans: Euclidean square of the agent step vectors */
 	private float agentStepDistance(RelaxedPlan a, RelaxedPlan b) {
-		int[] vectorA = Vector.getAgentStep(space, a);
-		int[] vectorB = Vector.getAgentStep(space, b);
+		int[] vectorA = Vector.getAgentStepVector(space, a);
+		int[] vectorB = Vector.getAgentStepVector(space, b);
+		float euclideanSquareDistance = 0;
+		for (int i = 0; i < vectorA.length; i++)
+			euclideanSquareDistance += (float)Math.pow(vectorA[i] - vectorB[i], 2);
+		return euclideanSquareDistance;
+	}
+
+	/** Schema distance between two plans: Euclidean square of the schema vectors */
+	private float schemaDistance(RelaxedPlan a, RelaxedPlan b) {
+		int[] vectorA = Vector.getSchemaVector(space, a);
+		int[] vectorB = Vector.getSchemaVector(space, b);
 		float euclideanSquareDistance = 0;
 		for (int i = 0; i < vectorA.length; i++)
 			euclideanSquareDistance += (float)Math.pow(vectorA[i] - vectorB[i], 2);
 		return euclideanSquareDistance;
 	}
 	
-	private float actionSchemaDistance(RelaxedPlan a, RelaxedPlan b) {
-		int[] vectorA = Vector.getActionSchema(space, a);
-		int[] vectorB = Vector.getActionSchema(space, b);
+	/** Agent schema distance bewteen two plans: Euclidean square of the agent schema vectors */
+	private float agentSchemaDistance(RelaxedPlan a, RelaxedPlan b) {
+		int[] vectorA = Vector.getAgentSchemaVector(space, a);
+		int[] vectorB = Vector.getAgentSchemaVector(space, b);
 		float euclideanSquareDistance = 0;
 		for (int i = 0; i < vectorA.length; i++)
 			euclideanSquareDistance += (float)Math.pow(vectorA[i] - vectorB[i], 2);
 		return euclideanSquareDistance;
 	}
-	
-	private float agentActionSchemaCoupleDistance(RelaxedPlan a, RelaxedPlan b) {
-		int[] vectorA = Vector.getAgentActionSchemaCouple(space, a);
-		int[] vectorB = Vector.getAgentActionSchemaCouple(space, b);
-		float euclideanSquareDistance = 0;
-		for (int i = 0; i < vectorA.length; i++)
-			euclideanSquareDistance += (float)Math.pow(vectorA[i] - vectorB[i], 2);
-		return euclideanSquareDistance;
-	}
-	
+		
+	/** Action distance between two plans: Jaccard of the sets of actions in each plan */
 	private float actionDistance(RelaxedPlan a, RelaxedPlan b) {
 		HashSet<Event> set_a = new HashSet<>();
 		HashSet<Event> set_b = new HashSet<>();	
@@ -105,6 +119,7 @@ public class Distance {
 		return jaccard(set_a, set_b);
 	}
 
+	/** Jaccard distance between two sets: intersection over union **/
 	private <E> float jaccard(Set<E> a, Set<E> b) {
 		HashSet<E> intersection = new HashSet<>();
 		HashSet<E> union = new HashSet<>();

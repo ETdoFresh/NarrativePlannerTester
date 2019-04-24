@@ -8,7 +8,9 @@ import sabre.space.SearchSpace;
 import sabre.util.ImmutableSet;
 
 public class Vector {
-	public static int[] getAgentStep(SearchSpace space, RelaxedPlan plan) {
+
+	/** The number of steps taken by each agent */
+	public static int[] getAgentStepVector(SearchSpace space, RelaxedPlan plan) {
 		int[] vector = new int[space.domain.agents.size()];
 		for (int i = 0; i < space.domain.agents.size(); i++) {
 			Agent agent = space.domain.agents.get(i);
@@ -23,7 +25,8 @@ public class Vector {
 		return vector;
 	}
 
-	public static int[] getActionSchema(SearchSpace space, RelaxedPlan plan) {
+	/** The number of times each type of action appears in the plan */
+	public static int[] getSchemaVector(SearchSpace space, RelaxedPlan plan) {
 		ArrayList<String> actionNames = new ArrayList<>();
 		for (Action action : space.domain.actions)
 			if (!actionNames.contains(action.name))
@@ -39,7 +42,8 @@ public class Vector {
 		return vector;
 	}
 
-	public static int[] getAgentActionSchemaCouple(SearchSpace space, RelaxedPlan plan) {
+	/** The number of times each agent takes an action of each type */
+	public static int[] getAgentSchemaVector(SearchSpace space, RelaxedPlan plan) {
 		ArrayList<String> actionNames = new ArrayList<>();
 		for (Action action : space.domain.actions)
 			if (!actionNames.contains(action.name))
@@ -60,5 +64,4 @@ public class Vector {
 						}
 		return vector;
 	}
-
 }
