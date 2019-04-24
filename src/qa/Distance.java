@@ -8,7 +8,7 @@ import sabre.Event;
 import sabre.Plan;
 import sabre.space.SearchSpace;
 
-enum DistanceMetric { ISIF, AgentStep, ActionDistance, ActionSchema };
+enum DistanceMetric { ISIF, AgentStep, ActionDistance, ActionSchema, AgentActionSchemaCouple };
 
 public class Distance {
 		
@@ -30,6 +30,8 @@ public class Distance {
 				return actionDistance(a, b);
 			case ActionSchema:
 				return actionSchemaDistance(a, b);
+			case AgentActionSchemaCouple:
+				return agentActionSchemaCoupleDistance(a, b);
 		}
 		System.out.println("?! What distance metric is this? " + distanceMetric);
 		System.exit(1);
@@ -68,6 +70,15 @@ public class Distance {
 	private float actionSchemaDistance(RelaxedPlan a, RelaxedPlan b) {
 		int[] vectorA = Vector.getActionSchema(space, a);
 		int[] vectorB = Vector.getActionSchema(space, b);
+		float euclideanSquareDistance = 0;
+		for (int i = 0; i < vectorA.length; i++)
+			euclideanSquareDistance += (float)Math.pow(vectorA[i] - vectorB[i], 2);
+		return euclideanSquareDistance;
+	}
+	
+	private float agentActionSchemaCoupleDistance(RelaxedPlan a, RelaxedPlan b) {
+		int[] vectorA = Vector.getAgentActionSchemaCouple(space, a);
+		int[] vectorB = Vector.getAgentActionSchemaCouple(space, b);
 		float euclideanSquareDistance = 0;
 		for (int i = 0; i < vectorA.length; i++)
 			euclideanSquareDistance += (float)Math.pow(vectorA[i] - vectorB[i], 2);

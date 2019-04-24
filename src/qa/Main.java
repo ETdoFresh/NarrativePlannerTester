@@ -36,8 +36,8 @@ public class Main {
 	private static final String CREDITS = "by Edward Garcia, Rachelyn Farrell, and Stephen G. Ware";
 	private static final String TITLE = "Planning Domain Automated Tester (PDAT), " + VERSION + "\n " + CREDITS + "\n";
 	private static final String USAGE = "USAGE: java -jar pdat.jar <filename>\n";
-	private static String filename = "rrh.txt";
-	//private static String filename = "domains/camelot.domain";
+	//private static String filename = "rrh.txt";
+	private static String filename = "domains/camelot.domain";
 
 	static long lastModified = 0;
 	static boolean firstRun = true;
@@ -133,7 +133,7 @@ public class Main {
 			// Set up k-medoids with unique RelaxedPlans
 			int k = 4;
 			Clusterer clusterer = new Clusterer(uniquePlans.toArray(new RelaxedPlan[uniquePlans.size()]), 
-				k, space.actions.size(), space, DistanceMetric.ActionDistance);
+				k, space.actions.size(), space, DistanceMetric.AgentActionSchemaCouple);
 			Random random = new Random();
 			for (int i = 0; i < uniquePlans.size(); i++)
 				uniquePlans.get(i).clusterAssignment = random.nextInt(k);
@@ -214,12 +214,13 @@ public class Main {
 		if(!file.isDirectory())
 			file.mkdir();
 		int i=0;
-		for(RelaxedPlan p : plans) {
-			i++;
-			ObjectOutputStream objOut = new ObjectOutputStream(new FileOutputStream(dir + "/plan_" + i + ".ser"));
-			objOut.writeObject(p);
-			objOut.close();
-		}		
+		// Commenting for now to speed up computations... will put in back once we ready to serialize
+//		for(RelaxedPlan p : plans) {
+//			i++;
+//			ObjectOutputStream objOut = new ObjectOutputStream(new FileOutputStream(dir + "/plan_" + i + ".ser"));
+//			objOut.writeObject(p);
+//			objOut.close();
+//		}		
 		return plans;
 	}
 	
