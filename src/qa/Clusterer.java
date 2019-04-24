@@ -14,7 +14,7 @@ public class Clusterer {
 	
 	public RelaxedPlanCluster[] clusters; // array of clusters. Size = k
 	public RelaxedPlanVector[] planVecs; // array of vectors representing relaxed plans. Size = n
-	public RelaxedPlan[] relaxedPlans;
+	public ArrayList<RelaxedPlan> relaxedPlans;
 	private Distance distance;
 	
 	private final int k;
@@ -24,7 +24,7 @@ public class Clusterer {
 	private SearchSpace space;
 	
 	/** Cluster RelaxedPlans **/
-	public Clusterer(RelaxedPlan[] relaxedPlans, int k, int n, SearchSpace space, DistanceMetric metric) {
+	public Clusterer(ArrayList<RelaxedPlan> relaxedPlans, int k, int n, SearchSpace space, DistanceMetric metric) {
 		this.space = space;
 		this.relaxedPlans = relaxedPlans;
 		this.k = k;
@@ -33,6 +33,26 @@ public class Clusterer {
 		for(int i=0; i<k; i++)
 			clusters[i] = new RelaxedPlanCluster(i, n);
 		this.distance = new Distance(metric, space);
+		deDupePlans();
+	}
+	
+	/** Remove duplicate RelaxedPlans according to current distance metric */
+	private void deDupePlans() {
+		int previous = relaxedPlans.size();
+		ArrayList<RelaxedPlan> uniquePlans = new ArrayList<>();
+		for(RelaxedPlan plan : relaxedPlans) {
+			boolean duplicate = false;
+			for(RelaxedPlan existingPlan : uniquePlans) {
+				if(distance.getDistance(plan, existingPlan) == 0) {
+					duplicate = true;
+					break;
+				}
+			}
+			if(!duplicate)
+				uniquePlans.add(plan);
+		}
+		this.relaxedPlans = uniquePlans;
+		System.out.println("Deduping: Had " + previous +" plans, now have " + relaxedPlans.size());
 	}
 
 	/** Cluster vectors **/
@@ -49,9 +69,9 @@ public class Clusterer {
 	/** Get all RelaxedPlans that are assigned to a cluster */
 	protected ArrayList<RelaxedPlan> getAssignments(int clusterID){
 		ArrayList<RelaxedPlan> assigned = new ArrayList<>();
-		for(int i=0; i<relaxedPlans.length; i++) {
-			if(relaxedPlans[i].clusterAssignment == clusterID)
-				assigned.add(relaxedPlans[i]);
+		for(int i=0; i<relaxedPlans.size(); i++) {
+			if(relaxedPlans.get(i).clusterAssignment == clusterID)
+				assigned.add(relaxedPlans.get(i));
 		}
 		return assigned;
 	}
@@ -97,18 +117,18 @@ public class Clusterer {
 			for(RelaxedPlanCluster cluster : clusters)
 				cluster.medoid = RelaxedPlan.medoid(getAssignments(cluster.id), distance);
 			// Update assignments
-			for(int i=0; i<relaxedPlans.length; i++) {
+			for(int i=0; i<relaxedPlans.size(); i++) {
 				float minDistance = Float.MAX_VALUE;
 				int clusterToAssign = -1;
 				for(int c=0; c<k; c++) {
-					float dist = distance.getDistance(relaxedPlans[i], clusters[c].medoid);
+					float dist = distance.getDistance(relaxedPlans.get(i), clusters[c].medoid);
 					if(dist < minDistance) {
 						minDistance = dist;
 						clusterToAssign = c;
 					}
 				}
-				if(relaxedPlans[i].clusterAssignment != clusterToAssign) {
-					relaxedPlans[i].clusterAssignment = clusterToAssign;
+				if(relaxedPlans.get(i).clusterAssignment != clusterToAssign) {
+					relaxedPlans.get(i).clusterAssignment = clusterToAssign;
 					assignmentsChanged++;
 				}
 			}

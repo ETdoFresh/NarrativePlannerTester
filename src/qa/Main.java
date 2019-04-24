@@ -132,8 +132,7 @@ public class Main {
 
 			// Set up k-medoids with unique RelaxedPlans
 			int k = 4;
-			Clusterer clusterer = new Clusterer(uniquePlans.toArray(new RelaxedPlan[uniquePlans.size()]), 
-				k, space.actions.size(), space, DistanceMetric.AGENT_SCHEMA);
+			Clusterer clusterer = new Clusterer(uniquePlans, k, space.actions.size(), space, DistanceMetric.AGENT_SCHEMA);
 			Random random = new Random();
 			for (int i = 0; i < uniquePlans.size(); i++)
 				uniquePlans.get(i).clusterAssignment = random.nextInt(k);
