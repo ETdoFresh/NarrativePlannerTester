@@ -8,7 +8,7 @@ import sabre.Event;
 import sabre.Plan;
 import sabre.space.SearchSpace;
 
-enum DistanceMetric { ACTION, ISIF, AGENT_STEP, SCHEMA, AGENT_SCHEMA };
+enum DistanceMetric { ACTION, ISIF, AGENT_STEP, SCHEMA, AGENT_SCHEMA, GOAL, AGENT_GOAL, AGENT_SCHEMA_GOAL };
 
 public class Distance {
 		
@@ -38,15 +38,37 @@ public class Distance {
 			case AGENT_SCHEMA:
 				dist = agentSchemaDistance(a, b);
 				break;
+			case GOAL:
+				dist = goalDistance(a, b);
+				break;
+			case AGENT_GOAL:
+				dist = agentGoalDistance(a, b);
+				break;
+			case AGENT_SCHEMA_GOAL:
+				dist = agentSchemaGoalDistance(a, b);
+				break;
 			default:
 				System.out.println("?! What distance metric is this? " + distanceMetric);
 				System.exit(1);
 		}
-		if(dist == 0)
-			return 0.00000001f;
 		return dist;
 	}
 	
+	private float agentSchemaGoalDistance(RelaxedPlan a, RelaxedPlan b) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	private float agentGoalDistance(RelaxedPlan a, RelaxedPlan b) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	private float goalDistance(RelaxedPlan a, RelaxedPlan b) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
 	/** ISIF distance between two plans: Weighted Jaccards of the sets of important steps and explanation summaries */
 	private float isifDistance(RelaxedPlan a, RelaxedPlan b) {
 		Set<Event> importantSteps_a = new HashSet<>();
