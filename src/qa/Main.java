@@ -201,8 +201,6 @@ public class Main {
 			txtfile = "PlanGraphExplanationsPlan.txt";
 			dir = "PlanGraphExplanationsPlans";
 		    plans = PlanGraphExplanations.getExplainedPlans(space); // Runs much faster!
-			for (RelaxedPlan plan : plans)
-				AgentStepDistance.getVector(space, plan);
 		} else {
 			txtfile = "ExplanationsPlan.txt";
 			dir = "ExplanationsPlans";

@@ -6,8 +6,8 @@ import sabre.Action;
 import sabre.Agent;
 import sabre.space.SearchSpace;
 
-public class AgentStepDistance {
-	public static int[] getVector(SearchSpace space, RelaxedPlan plan) {
+public class Vector {
+	public static int[] getAgentStep(SearchSpace space, RelaxedPlan plan) {
 		int[] vector = new int[space.domain.agents.size()];
 		for (int i = 0; i < space.domain.agents.size(); i++) {
 			Agent agent = space.domain.agents.get(i);
@@ -22,7 +22,7 @@ public class AgentStepDistance {
 		return vector;
 	}
 
-	public static int[] GetActionSchemaVector(SearchSpace space, RelaxedPlan plan) {
+	public static int[] getActionSchema(SearchSpace space, RelaxedPlan plan) {
 		ArrayList<String> actionNames = new ArrayList<>();
 		for (Action action : space.domain.actions)
 			if (!actionNames.contains(action.name))

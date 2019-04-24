@@ -105,16 +105,6 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		return (float) union.size();
 	}
 
-	/*public RelaxedPlan unionClone(RelaxedPlan other) {
-		RelaxedPlan unioned = clone();
-		if (other == null || this == other)
-			return unioned;
-		for (RelaxedNode node : (other).nodes)
-			if (!unioned.nodes.contains(node))
-				unioned.nodes.add(node);
-		return unioned;
-	}*/
-
 	public static RelaxedPlan medoid(ArrayList<RelaxedPlan> plans, Distance distance) {
 		RelaxedPlan medoid = null;
 		float[] averageDistances = new float[plans.size()];
@@ -123,13 +113,8 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 			float sum = 0;
 			if(space == null)
 				space = plans.get(i).nodes.get(0).eventNode.graph.space;
-			for (RelaxedPlan other : plans) {
+			for (RelaxedPlan other : plans)
                 sum += distance.getDistance(plans.get(i), other);
-				//int[] vectorThis = AgentStepDistance.getVector(space, plans.get(i));
-				//int[] vectorOther = AgentStepDistance.getVector(space, other);
-				//for (int j = 0; j < vectorThis.length; j++)
-				//	sum += Math.pow(vectorThis[j] - vectorOther[j], 2);
-			}
 			averageDistances[i] = sum / plans.size();
 		}
 		float minDistance = Float.MAX_VALUE;
