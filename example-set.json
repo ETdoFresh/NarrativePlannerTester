@@ -1,7 +1,7 @@
 {
 	"Set" : "1",
 	"Story" :
-		[
+		[[
 			"Peter walks from Home to Town.",
 			"Peter enters the Market.",
 			"Peter buys Medicine from the Merchant.",
@@ -31,5 +31,5 @@
 			"Peter walks from Home to Town.",
 			"Bandit walks from Camp to Town.",
 			"Bandit attacks Peter."
-		]
+		]]
 }
