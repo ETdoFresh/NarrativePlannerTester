@@ -1,0 +1,82 @@
+<html>
+<head>
+<title>Hello there!</title>
+</head>
+<body>
+
+<div style="text-align:center">
+	<input type="button" id="prev" value="Previous Pair" disabled="true">
+	<span id="current"></span>
+	<input type="button" id="next" value="Next Pair" disabled="true">
+</div>
+
+<h2>Story Pair</h2>
+<div id="allStories" style="overflow:auto;">
+	<div id="leftStory" style="float:left; width:50%; white-space: pre-wrap;">Left Story</div>
+	<div id="rightStory" style="float:left; width:50%; white-space: pre-wrap;">Right Story</div>
+</div>
+
+<h2>Stats</h2>
+<div id="stats" style="white-space: pre-wrap;">Your Stats goes here!</div>
+</body>
+
+<script>
+var current = document.getElementById("current");
+var leftStory = document.getElementById("leftStory");
+var rightStory = document.getElementById("rightStory");
+var stats = document.getElementById("stats");
+var nextButton = document.getElementById("next");
+var prevButton = document.getElementById("prev");
+var data = null;
+
+function readTextFile(file, callback) {
+    var rawFile = new XMLHttpRequest();
+    rawFile.overrideMimeType("application/json");
+    rawFile.open("GET", file, true);
+    rawFile.onreadystatechange = function() {
+        if (rawFile.readyState === 4 && rawFile.status === 200) {
+            callback(rawFile.responseText);
+        }
+    }
+    rawFile.send(null);
+}
+
+function getSet(i) {
+	console.log("getSet " + i);
+	current.innerHTML = i;
+	leftStory.innerHTML = data[i].LeftStory;
+	rightStory.innerHTML = data[i].RightStory;
+	stats.innerHTML = data[i].Stats;
+	
+	if (i == 0) {
+		prevButton.disabled = true;
+		if (data.length > 1)
+			nextButton.disabled = false;
+	} 
+	if (i == data.length - 1) {
+		nextButton.disabled = true;
+		if (data.length > 1)
+			prevButton.disabled = false;
+	}
+}
+
+function onNextButton() { getSet(parseInt(current.innerHTML) + 1); }
+function onPreviousButton() { getSet(parseInt(current.innerHTML) - 1); }
+
+//usage:
+readTextFile("http://cdn.jsdelivr.net/gh/ETdoFresh/NarrativePlannerTester/src/Comparisons.json", function(text){
+    data = JSON.parse(text);
+	console.log(data);
+	if (data.length > 0) {
+		getSet(0);
+	} else {
+		leftStory.innerHTML = "None";
+		rightStory.innerHTML = "None";
+		stats.innerHTML = "None";
+	}
+});
+nextButton.onclick = onNextButton;
+prevButton.onclick = onPreviousButton;
+</script>
+
+</html>
