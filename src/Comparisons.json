@@ -1,0 +1,62 @@
+[
+{
+"LeftStory":"Peter walks from Home to Town.
+Peter enters the Market.
+Peter buys Medicine from the Merchant.
+Peter leaves the Market.
+Peter walks from Town to Home.",
+"RightStory":"Peter walks from Home to Town.
+Bandit walks from Camp to Town.
+Bandit steals the Coin from Peter.
+Bandit walks from Town to Camp.
+Peter enters the Market.
+Peter reports the Bandit to the Guard.
+Guard leaves the Market.
+Guard walks from Town to Camp.
+Guard attacks Bandit.
+Peter leaves the Market.
+Peter walks from Town to Camp.
+Peter loots Coin from Bandit.
+Peter walks from Camp to Town.
+Peter enters the Market.
+Peter buys Medicine from the Merchant.
+Peter leaves the Market.
+Peter walks from Town to Home.",
+	"Stats":"Action Distance
+A:[1,2,3]
+B:[1,2,3]
+Distance: 0
+
+And more stuff!"
+}
+,{
+"RightStory":"Peter walks from Home to Town.
+Peter enters the Market.
+Peter buys Medicine from the Merchant.
+Peter leaves the Market.
+Peter walks from Town to Home.",
+"LeftStory":"Peter walks from Home to Town.
+Bandit walks from Camp to Town.
+Bandit steals the Coin from Peter.
+Bandit walks from Town to Camp.
+Peter enters the Market.
+Peter reports the Bandit to the Guard.
+Guard leaves the Market.
+Guard walks from Town to Camp.
+Guard attacks Bandit.
+Peter leaves the Market.
+Peter walks from Town to Camp.
+Peter loots Coin from Bandit.
+Peter walks from Camp to Town.
+Peter enters the Market.
+Peter buys Medicine from the Merchant.
+Peter leaves the Market.
+Peter walks from Town to Home.",
+"Stats":"Action Distance
+A:[1,2,3]
+B:[1,2,3]
+Distance: 0
+
+And morrrrrrrrreeeeeeeeeeeeeeeeee stuff!"
+}
+]
