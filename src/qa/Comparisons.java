@@ -142,10 +142,10 @@ public class Comparisons {
 			json += "\"LeftStory\":\"";
 			for (int i = 0; i < left.size(); i++)
 				json += i == 0 ? left.get(i) : "\\n" + left.get(i);
-			json += "\"\n\"RightStory\":\"";
+			json += "\",\n\"RightStory\":\"";
 			for (int i = 0; i < right.size(); i++)
 				json += i == 0 ? right.get(i) : "\\n" + right.get(i);
-			json += "\"\n\"Stats\":\"";
+			json += "\",\n\"Stats\":\"";
 			for (int i = 0; i < measures.size(); i++)
 				json += measures.get(i) + "\\n";
 			json += "\"\n}\n";
