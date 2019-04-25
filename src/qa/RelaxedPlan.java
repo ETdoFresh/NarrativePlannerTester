@@ -114,7 +114,7 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 			if(space == null)
 				space = plans.get(i).nodes.get(0).eventNode.graph.space;
 			for (RelaxedPlan other : plans)
-                sum += distance.getDistance(plans.get(i), other);
+                sum += distance.getDistance(plans.get(i), other, plans);
 			averageDistances[i] = sum / plans.size();
 		}
 		float minDistance = Float.MAX_VALUE;

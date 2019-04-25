@@ -43,7 +43,7 @@ public class Clusterer {
 		for(RelaxedPlan plan : relaxedPlans) {
 			boolean duplicate = false;
 			for(RelaxedPlan existingPlan : uniquePlans) {
-				if(distance.getDistance(plan, existingPlan) == 0) {
+				if(distance.getDistance(plan, existingPlan, uniquePlans) == 0) {
 					duplicate = true;
 					break;
 				}
@@ -121,7 +121,7 @@ public class Clusterer {
 				float minDistance = Float.MAX_VALUE;
 				int clusterToAssign = -1;
 				for(int c=0; c<k; c++) {
-					float dist = distance.getDistance(relaxedPlans.get(i), clusters[c].medoid);
+					float dist = distance.getDistance(relaxedPlans.get(i), clusters[c].medoid, relaxedPlans);
 					if(dist < minDistance) {
 						minDistance = dist;
 						clusterToAssign = c;
