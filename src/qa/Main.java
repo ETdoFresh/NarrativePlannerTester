@@ -113,6 +113,12 @@ public class Main {
 
 			// Get RelaxedPlans (true = PGE, false = Explanations)
 			ArrayList<RelaxedPlan> relaxedPlans = getRelaxedPlans(space, true);
+			
+			// Uncomment this to generate new comparisons.
+			//Comparisons comparisons = Comparisons.compute(space, relaxedPlans);
+			//comparisons.keepRandomSet(100);
+			//FileIO.Write("Comparisons.json", comparisons.toString());
+			
 			// Get RelaxedPlans from files 
 			//ArrayList<RelaxedPlan> relaxedPlans = deserializeRelaxedPlans("PlanGraphExplanationsPlans");
 
