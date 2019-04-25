@@ -114,10 +114,10 @@ public class Main {
 			// Get RelaxedPlans (true = PGE, false = Explanations)
 			ArrayList<RelaxedPlan> relaxedPlans = getRelaxedPlans(space, true);
 
-			// Uncomment this to generate new comparisons.
-			// Comparisons comparisons = Comparisons.compute(space, relaxedPlans);
-			// comparisons.keepRandomSet(100);
-			// FileIO.Write("Comparisons.json", comparisons.toString());
+//			// Uncomment this to generate new comparisons.
+//			Comparisons comparisons = Comparisons.compute(space, relaxedPlans);
+//			comparisons.keepRandomSet(100);
+//			FileIO.Write("Comparisons.json", comparisons.toString());
 
 			// Get RelaxedPlans from files
 			// ArrayList<RelaxedPlan> relaxedPlans =
@@ -140,7 +140,7 @@ public class Main {
 			// Set up k-medoids with unique RelaxedPlans
 			int k = 4;
 			Clusterer clusterer = new Clusterer(uniquePlans, k, space.actions.size(), space,
-					DistanceMetric.AGENT_SCHEMA);
+					DistanceMetric.GOAL);
 			Random random = new Random();
 
 			// Run clusterer X times

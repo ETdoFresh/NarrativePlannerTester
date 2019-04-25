@@ -76,6 +76,12 @@ public class Comparisons {
 				measures.add(
 						new DistanceMeasure(name, vectorA, vectorB, Vector.distance(vectorA, vectorB)));
 				
+				name = "Goal distance"; //-----------------------------------
+				vectorA = Vector.getGoalVector(space, a);
+				vectorB = Vector.getGoalVector(space, b);
+				measures.add(
+						new DistanceMeasure(name, vectorA, vectorB, Vector.distance(vectorA, vectorB)));
+				
 				comparisons.add(new Comparison(a, b, measures));
 			}
 	}

@@ -95,8 +95,9 @@ public class Distance {
 	}
 
 	private float goalDistance(RelaxedPlan a, RelaxedPlan b) {
-		// TODO Auto-generated method stub
-		return 0;
+		float[] vectorA = Vector.getGoalVector(space, a);
+		float[] vectorB = Vector.getGoalVector(space, b);
+		return Vector.distance(vectorA, vectorB);
 	}
 
 	/**
