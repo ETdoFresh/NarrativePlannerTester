@@ -41,7 +41,7 @@ public class Distance {
 			break;
 		case AGENT_SCHEMA:
 			if (max == null)
-				max = getAgentSchemaMaxVector(a, plans);
+				max = getAgentSchemaMaxVector(plans);
 			dist = agentSchemaDistance(a, b, max);
 			break;
 		case GOAL:
@@ -60,8 +60,15 @@ public class Distance {
 		return dist;
 	}
 
-	private float[] getAgentSchemaMaxVector(RelaxedPlan a, ArrayList<RelaxedPlan> plans) {
-		float[] max = Vector.getAgentSchemaVector(space, a);
+	
+	/**
+	 * @param plans - All Relaxed Plans
+	 * @return AgentSchema Vector where each dimension = MAX_OCCURENCES of dimension
+	 */
+	private float[] getAgentSchemaMaxVector(ArrayList<RelaxedPlan> plans) {
+		float[] max = new float[0]; 
+		if (plans.size() > 0)
+			max = Vector.getAgentSchemaVector(space, plans.get(0));
 
 		// Prevent Divide by 0
 		for (int i = 0; i < max.length; i++)

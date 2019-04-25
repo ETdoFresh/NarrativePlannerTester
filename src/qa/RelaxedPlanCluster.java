@@ -11,8 +11,14 @@ public class RelaxedPlanCluster {
 		this.centroid = new RelaxedPlanVector(n, 0);
 	}
 	
+	public RelaxedPlanCluster clone() {
+		RelaxedPlanCluster clone = new RelaxedPlanCluster(id, 0);
+		clone.medoid = medoid;
+		return clone;
+	}
+	
 	@Override
 	public String toString() {
-		return "Cluster " + id + ": Centroid: " + centroid.toString();
+		return "Cluster " + id + ": Medoid: " + medoid.toString();
 	}
 }

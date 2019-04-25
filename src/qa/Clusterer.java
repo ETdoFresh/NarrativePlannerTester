@@ -15,7 +15,7 @@ public class Clusterer {
 	public RelaxedPlanCluster[] clusters; // array of clusters. Size = k
 	public RelaxedPlanVector[] planVecs; // array of vectors representing relaxed plans. Size = n
 	public ArrayList<RelaxedPlan> relaxedPlans;
-	private Distance distance;
+	public Distance distance;
 	
 	private final int k;
 
@@ -36,6 +36,14 @@ public class Clusterer {
 		deDupePlans();
 	}
 	
+	public Clusterer clone() {
+		Clusterer clone = new Clusterer(relaxedPlans, k, n, space, DistanceMetric.ACTION); // Not Really ACTION
+		clone.distance = distance;
+		for(int i = 0; i < clusters.length; i++)
+			clone.clusters[i] = clusters[i].clone();
+		return clone;
+	}
+	
 	/** Remove duplicate RelaxedPlans according to current distance metric */
 	private void deDupePlans() {
 		int previous = relaxedPlans.size();
@@ -43,7 +51,7 @@ public class Clusterer {
 		for(RelaxedPlan plan : relaxedPlans) {
 			boolean duplicate = false;
 			for(RelaxedPlan existingPlan : uniquePlans) {
-				if(distance.getDistance(plan, existingPlan, uniquePlans) == 0) {
+				if(distance.getDistance(plan, existingPlan, relaxedPlans) == 0) {
 					duplicate = true;
 					break;
 				}
