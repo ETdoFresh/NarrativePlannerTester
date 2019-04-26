@@ -1,12 +1,6 @@
 package qa;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.concurrent.Callable;
-import java.util.function.Function;
 
 import sabre.space.SearchSpace;
 
@@ -23,7 +17,6 @@ public class Clusterer {
 	
 	private SearchSpace space;
 	
-	/** Cluster RelaxedPlans **/
 	public Clusterer(ArrayList<RelaxedPlan> relaxedPlans, int k, int n, SearchSpace space, DistanceMetric metric) {
 		this.space = space;
 		this.relaxedPlans = relaxedPlans;
@@ -36,10 +29,18 @@ public class Clusterer {
 		deDupePlans();
 	}
 	
+	private Clusterer(ArrayList<RelaxedPlan> relaxedPlans, int k, int n, SearchSpace space, Distance distance) {
+		this.space = space;
+		this.relaxedPlans = relaxedPlans;
+		this.k = k;
+		this.n = n;
+		this.clusters = new RelaxedPlanCluster[k];
+		this.distance = distance;
+	}
+	
 	public Clusterer clone() {
-		Clusterer clone = new Clusterer(relaxedPlans, k, n, space, DistanceMetric.ACTION); // Not Really ACTION
-		clone.distance = distance;
-		for(int i = 0; i < clusters.length; i++)
+		Clusterer clone = new Clusterer(relaxedPlans, k, n, space, distance); 
+		for(int i=0; i<k; i++)
 			clone.clusters[i] = clusters[i].clone();
 		return clone;
 	}
@@ -59,8 +60,12 @@ public class Clusterer {
 			if(!duplicate)
 				uniquePlans.add(plan);
 		}
-		this.relaxedPlans = uniquePlans;
-		System.out.println("Deduping: Had " + previous +" plans, now have " + relaxedPlans.size());
+		relaxedPlans = uniquePlans;
+		if(relaxedPlans.size() < 10) {
+			System.out.println("PROBLEM: Only " + relaxedPlans.size() + " unique plans using " + distance.distanceMetric + " distance");
+			System.exit(1);
+		}
+		System.out.println("Deduped with " + distance.distanceMetric + " distance: " + relaxedPlans.size() + " unique plans out of " + previous + ".");
 	}
 
 	/** Cluster vectors **/
@@ -214,5 +219,14 @@ public class Clusterer {
 			iteration++;
 		} while (assignmentsChanged > 0);
 	}	
+	
+	@Override
+	public String toString() {
+		String s = "";
+		for (int i = 0; i < k; i++)
+			s += "Cluster " + i + " (" + getAssignments(i).size() + " assignments):\n" 
+					+ clusters[i].medoid + "\n";
+		return s;
+	}
 }
 

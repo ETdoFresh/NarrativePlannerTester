@@ -11,6 +11,7 @@ import sabre.logic.Expression;
 import sabre.logic.Literal;
 
 public class Explanation implements Serializable {
+	private static final long serialVersionUID = 1L;
 	public Agent agent;
 	public Expression goals;
 	public CausalChainSet causalChainSet;
@@ -89,7 +90,6 @@ public class Explanation implements Serializable {
 	public Explanation add(PlanGraphActionNode actionNode) {
 		if (!containsEffect(actionNode.event))
 			return null;
-		
 		Explanation newExplanation = clone();
 		newExplanation.applyEvent(actionNode.event);
 		return newExplanation;

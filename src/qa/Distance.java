@@ -15,7 +15,7 @@ enum DistanceMetric {
 
 public class Distance {
 
-	private DistanceMetric distanceMetric;
+	protected DistanceMetric distanceMetric;
 	private SearchSpace space;
 	private float[] max;
 

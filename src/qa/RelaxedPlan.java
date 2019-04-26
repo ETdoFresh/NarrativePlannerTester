@@ -7,6 +7,7 @@ import java.util.Iterator;
 
 import sabre.Action;
 import sabre.Event;
+import sabre.graph.PlanGraphActionNode;
 import sabre.graph.PlanGraphAxiomNode;
 import sabre.graph.PlanGraphEventNode;
 import sabre.logic.ConjunctiveClause;
@@ -66,6 +67,12 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 
 	public Iterator<RelaxedNode> iterator() {
 		return nodes.iterator();
+	}
+	
+	public void updateExplanations() {
+		for(RelaxedNode node : nodes) {
+			this.explanations.addAll(node.explanations);
+		}
 	}
 	
 	public boolean isValid(SearchSpace space) {

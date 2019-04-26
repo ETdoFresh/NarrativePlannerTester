@@ -7,8 +7,9 @@ type place extends location;
 type container extends location;
 type character extends location, agent;
 type item;
-type weapon extends item;
 type coin extends item;
+type merchandise extends item;
+type weapon extends item, merchandise;
 
 // Entities
 character : Peter;
@@ -21,7 +22,7 @@ place :	Market;
 place :	Camp;
 coin : PeterCoin;
 coin : BanditCoin;
-item : Medicine;
+merchandise : Medicine;
 weapon : MerchantSword;
 weapon : GuardSword;
 weapon : BanditSword;
@@ -37,7 +38,6 @@ boolean :	criminal(character);
 boolean :   knowsCriminal(character, character);
 boolean :	attacked(character);
 weapon :	wielding(character);
-boolean :	merchandise(item);
 
 // Intentions
 intends(Peter, alive(Peter));
@@ -67,9 +67,6 @@ path(Town, Camp);
 path(Camp, Town);
 path(Market, Town);
 path(Town, Home);
-merchandise(MerchantSword);
-merchandise(Medicine);
-
 
 // Actions
 action walk(character character*, place from, place to){
@@ -84,12 +81,12 @@ action walk(character character*, place from, place to){
 }
 
 
-action buy(character character*, item item, coin coin){
+action buy(character character*, merchandise item, coin coin){
 	precondition: (
 		location(item) = Merchant &
+		location(coin) = character &
 		location(character) = Market &
 		location(Merchant) = Market &
-		location(coin) = character &
 		criminal(character) = False
 	);
 	effect: (
@@ -100,6 +97,7 @@ action buy(character character*, item item, coin coin){
 
 action reportCriminal(character character*, character criminal, place place){
 	precondition: (
+		criminal != character &
 		knowsCriminal(character, criminal) &
 		location(character) = place &
 		location(Guard) = place
@@ -112,6 +110,8 @@ action reportCriminal(character character*, character criminal, place place){
 
 action steal(character character*, character victim, item item, weapon weapon, place place){
 	precondition: (
+		victim != character &
+		item != weapon &
 		alive(character) &
 		alive(victim) &
 		location(character) = place &
@@ -149,8 +149,10 @@ action sheathe(character character*, weapon weapon){
 
 action attack(character attacker*, character target, weapon weapon, place place){
 	precondition: (
+		target != attacker &
 		location(attacker) = place &
 		location(target) = place &
+		location(weapon) = attacker &
 		wielding(attacker) = weapon &
 		wielding(target) = Null &
 		alive(attacker) &

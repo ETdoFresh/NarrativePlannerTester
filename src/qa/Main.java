@@ -36,9 +36,12 @@ public class Main {
 	private static final String CREDITS = "by Edward Garcia, Rachelyn Farrell, and Stephen G. Ware";
 	private static final String TITLE = "Planning Domain Automated Tester (PDAT), " + VERSION + "\n " + CREDITS + "\n";
 	private static final String USAGE = "USAGE: java -jar pdat.jar <filename>\n";
+	private static final String DASHLINE = "---------------------------------";
 	//private static String filename = "rrh.txt";
 	private static String filename = "domains/camelot.domain";
 
+	private static final DistanceMetric metric = DistanceMetric.AGENT_STEP;
+	
 	static long lastModified = 0;
 	static boolean firstRun = true;
 	static Result result = null;
@@ -112,7 +115,7 @@ public class Main {
 			System.out.println("\nLet's try clustering...");
 
 			// Get RelaxedPlans (true = PGE, false = Explanations)
-			ArrayList<RelaxedPlan> relaxedPlans = getRelaxedPlans(space, true);
+			ArrayList<RelaxedPlan> relaxedPlans = getRelaxedPlans(space, false);
 
 //			// Uncomment this to generate new comparisons.
 //			Comparisons comparisons = Comparisons.compute(space, relaxedPlans);
@@ -135,12 +138,12 @@ public class Main {
 
 			System.out.println("Unique RelaxedPlans: " + uniquePlans.size());
 			System.out.println("Unique Valid RelaxedPlans: " + countValid(uniquePlans, space));
-			System.out.println("---------------------------------");
+			System.out.println(DASHLINE);
 
 			// Set up k-medoids with unique RelaxedPlans
 			int k = 4;
-			Clusterer clusterer = new Clusterer(uniquePlans, k, space.actions.size(), space,
-					DistanceMetric.GOAL);
+			Clusterer clusterer = new Clusterer(uniquePlans, k, space.actions.size(), space, metric);
+			System.out.println(DASHLINE);
 			Random random = new Random();
 
 			// Run clusterer X times
@@ -156,7 +159,7 @@ public class Main {
 				// Print cluster assignment counts
 				for (int i = 0; i < k; i++)
 					System.out.println("Cluster " + i + " has "
-							+ clusterer.getAssignments(clusterer.clusters[i].id).size() + " initial assignments.");
+						+ clusterer.getAssignments(clusterer.clusters[i].id).size() + " initial assignments.");
 
 				// Run k-medoids
 				clusterer.kmedoids();
@@ -201,20 +204,18 @@ public class Main {
 
 					System.out.println("New Minimum Distance Found: " + minTotalClusterDistance);
 				}
-				System.out.println("---------------------------------");
+				System.out.println(DASHLINE);
 			}
 			// Assign best assignments to plans
 			clusterer = bestClusterer;
 			for (int i = 0; i < uniquePlans.size(); i++)
 				uniquePlans.get(i).clusterAssignment = assignments[i];
 
-			System.out.println("---------------------------------");
-			System.out.println("Final medoids:");
-			for (int i = 0; i < k; i++)
-				System.out.println("Cluster " + i + " (" + clusterer.getAssignments(i).size() + " assignments):\n"
-						+ clusterer.clusters[i].medoid);
+			System.out.println(DASHLINE);
+			//System.out.println("Final medoids: " + clusterer.toString());
 			System.out.println("Minimum Distance Found: " + minTotalClusterDistance);
-			System.out.println("---------------------------------");
+			System.out.println("Best clusters:\n" + bestClusterer.toString());
+			System.out.println(DASHLINE);
 
 			// Get valid example plans based on cluster medoids
 			RelaxedPlan[] exemplars = clusterer.getExemplars();
@@ -230,8 +231,7 @@ public class Main {
 			search.push(root);
 			System.out.println(Text.BLANK + "Searching for next solution...");
 			try {
-				result = runInteruptably(() -> search.getNextSolution()); // <----------------------------------------
-																			// search
+				result = runInteruptably(() -> search.getNextSolution()); // <----------------------- search
 			} catch (Exception ex) {
 				System.out.println(Text.FAIL + "Exception while searching for solution: " + ex);
 				continue;
@@ -337,7 +337,7 @@ public class Main {
 			}
 		}
 	}
-
+	
 	private static void printTitle() {
 		// Clear/Reset Screen
 		System.out.flush();
@@ -369,8 +369,7 @@ public class Main {
 			System.out.println(Text.INFO + "File Opened: " + filename + " Last Modified: "
 					+ new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(lastModified));
 		} else {
-			System.out.println("----------------------------------------------------------------");
-			System.out.println();
+			System.out.println(DASHLINE + "\n");
 			System.out.println(Text.INFO + "File Modified: " + filename + " Last Modified: "
 					+ new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(lastModified));
 		}
