@@ -20,6 +20,7 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 	private static final long serialVersionUID = 1L;
 	private ArrayList<RelaxedNode> nodes = new ArrayList<>();
 	public ArrayList<Explanation> explanations = new ArrayList<>();
+	public ArrayList<RelaxedNode> importantSteps = new ArrayList<>();
 	public int clusterAssignment = -1;
 
 	public RelaxedPlan clone() {
@@ -67,12 +68,6 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 
 	public Iterator<RelaxedNode> iterator() {
 		return nodes.iterator();
-	}
-	
-	public void updateExplanations() {
-		for(RelaxedNode node : nodes) {
-			this.explanations.addAll(node.explanations);
-		}
 	}
 	
 	public boolean isValid(SearchSpace space) {
@@ -136,8 +131,13 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		return medoid;
 	}
 	
-	public ArrayList<RelaxedNode> getImportantSteps(SearchSpace space) {
-		ArrayList<RelaxedNode> importantSteps = new ArrayList<>();
+	public void updateExplanations() {
+		for(RelaxedNode node : nodes) {
+			this.explanations.addAll(node.explanations);
+		}
+	}
+
+	public void updateImportantSteps(SearchSpace space) {
 		int[] causalDegrees = new int[nodes.size()];
 		for (int i = 0; i < nodes.size(); i++)
 			causalDegrees[i] = getCausalDegree(nodes.get(i), space.goal);
@@ -148,7 +148,6 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		for (int i = 0; i < nodes.size(); i++)
 			if (causalDegrees[i] == maxCausalDegree)
 				importantSteps.add(nodes.get(i));
-		return importantSteps;
 	}
 
 	/** Get the causal degree of a step in this RelaxedPlan, where:

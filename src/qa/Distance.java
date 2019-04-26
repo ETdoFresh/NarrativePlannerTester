@@ -108,20 +108,23 @@ public class Distance {
 		Set<Event> importantSteps_a = new HashSet<>();
 		Set<Event> importantSteps_b = new HashSet<>();
 
-		for (RelaxedNode step : a.getImportantSteps(space))
+		for (RelaxedNode step : a.importantSteps)
 			importantSteps_a.add(step.eventNode.event);
-		for (RelaxedNode step : b.getImportantSteps(space))
+		for (RelaxedNode step : b.importantSteps)
 			importantSteps_b.add(step.eventNode.event);
 
-		Set<Event> explSummaries_a = new HashSet<>();
-		Set<Event> explSummaries_b = new HashSet<>();
-
-		for (Explanation e : a.explanations)
-			explSummaries_a.add(e.steps.lastElement());
-		for (Explanation e : b.explanations)
-			explSummaries_b.add(e.steps.lastElement());
-
-		return 1 - 0.5f * (jaccard(importantSteps_a, importantSteps_b) + jaccard(explSummaries_a, explSummaries_b));
+		Set<Event> explSummaries_a = getExplSummaries(a.explanations);
+		Set<Event> explSummaries_b = getExplSummaries(b.explanations);
+		//System.out.println("Jaccard of IF summaries: " + jaccard(explSummaries_a, explSummaries_b)+"\n");
+		float returnVal = 1 - (0.5f * (jaccard(importantSteps_a, importantSteps_b) + jaccard(explSummaries_a, explSummaries_b)));
+		return returnVal;
+	}
+	
+	private HashSet<Event> getExplSummaries(ArrayList<Explanation> explanations){
+		HashSet<Event> summaries = new HashSet<>();
+		for(Explanation e : explanations)
+			summaries.addAll(e.getSatisfyingSteps());
+		return summaries;
 	}
 
 	/**
@@ -200,6 +203,8 @@ public class Distance {
 		for (E item : a)
 			if (b.contains(item))
 				intersection.add(item);
+		if(union.isEmpty())
+			return 0f;
 		return 1 - (float) intersection.size() / union.size();
 	}
 

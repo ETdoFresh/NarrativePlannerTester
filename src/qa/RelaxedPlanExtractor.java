@@ -29,12 +29,12 @@ public class RelaxedPlanExtractor {
 		ArrayList<Explanation> explanations = getExplanations(space.domain);
 		GetAllPossiblePlans(goalLiterals, initialState, space.graph.size() - 1, explanations, new RelaxedPlan(), plans);
 
-		for (ConjunctiveClause goal : goals.toDNF().arguments) {
-			goalLiterals = new HashSet<>(getGoalLiterals(space.graph, goal.arguments));
-			GetAllPossiblePlans(goalLiterals, initialState, space.graph.size() - 1, explanations, new RelaxedPlan(),
-					plans);
-		}
-
+		//for (ConjunctiveClause goal : goals.toDNF().arguments) {
+		//	goalLiterals = new HashSet<>(getGoalLiterals(space.graph, goal.arguments));
+		//	GetAllPossiblePlans(goalLiterals, initialState, space.graph.size() - 1, explanations, new RelaxedPlan(),
+		//			plans);
+		//}
+		
 		return plans;
 	}
 

@@ -1,6 +1,7 @@
 package qa;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Stack;
 
 import sabre.Agent;
@@ -30,16 +31,41 @@ public class Explanation implements Serializable {
 		this.agent = agent;
 		this.goals = goals;
 		this.causalChainSet = causalChainSet.clone();
-		this.steps = steps;
+		this.steps = (Stack<Event>)steps.clone();
 	}
 
 	public Explanation clone() {
-		return new Explanation(agent, goals, causalChainSet, steps);
+		return new Explanation(agent, goals, causalChainSet, (Stack<Event>)steps.clone());
 	}
 
 	public void applyEvent(Event event) {
 		causalChainSet.extendOrRemoveChainUsing(event);
 		steps.push(event);
+	}
+
+	// Erm, check my logic? 
+	// This should return a list containing one step for each of the goal conjuncts,
+	//  that being the step which achieves that goal (or null for goals that were true in initial)
+	public ArrayList<Event> getSatisfyingSteps() {
+		ArrayList<Event> list = new ArrayList<>();
+		for(ConjunctiveClause goalClause : goals.toDNF().arguments) {
+			for(Literal goal : goalClause.arguments) {
+				boolean foundStep = false;
+				for(Event step : steps) {
+					for(ConjunctiveClause clause : step.effect.toDNF().arguments) {
+						for(Literal literal : clause.arguments) {
+							if(CheckEquals.Literal(literal, goal)) {
+								list.add(step);
+								foundStep = true;
+							}
+						}
+					}
+				}
+				if(!foundStep)
+					list.add(null);
+			}
+		}
+		return list;
 	}
 
 	public boolean containsEffect(Event event) {

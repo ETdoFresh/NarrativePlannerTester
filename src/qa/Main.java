@@ -40,7 +40,7 @@ public class Main {
 	//private static String filename = "rrh.txt";
 	private static String filename = "domains/camelot.domain";
 
-	private static final DistanceMetric metric = DistanceMetric.AGENT_STEP;
+	private static final DistanceMetric metric = DistanceMetric.ISIF;
 	
 	static long lastModified = 0;
 	static boolean firstRun = true;
@@ -64,19 +64,14 @@ public class Main {
 				resumeSearch();
 				continue;
 			}
-
 			resetLastModified();
 			printLastModified();
-
 			Domain domain = getDomain();
 			SearchSpace space = getSearchSpace(domain);
-
 			printSpaceStatistics(space);
 			checkDomainGoalEmpty(domain);
-
 			ArrayState initial = new ArrayState(space);
 			checkGoalTrueInitialState(domain, initial);
-
 			extendPlanGraph(space, initial);
 
 			// Number of actions available from the initial state
@@ -110,8 +105,6 @@ public class Main {
 				// continue;
 			}
 
-			// clusterTest(space);
-
 			System.out.println("\nLet's try clustering...");
 
 			// Get RelaxedPlans (true = PGE, false = Explanations)
@@ -126,8 +119,8 @@ public class Main {
 			// ArrayList<RelaxedPlan> relaxedPlans =
 			// deserializeRelaxedPlans("PlanGraphExplanationsPlans");
 
-			System.out.println("Total RelaxedPlans: " + relaxedPlans.size());
-			System.out.println("Valid RelaxedPlans: " + countValid(relaxedPlans, space));
+			System.out.println("  Total RelaxedPlans: " + relaxedPlans.size());
+			System.out.println("  Valid RelaxedPlans: " + countValid(relaxedPlans, space));
 
 			// Remove duplicate RelaxedPlans
 			ArrayList<RelaxedPlan> uniquePlans = new ArrayList<>();
@@ -136,8 +129,8 @@ public class Main {
 					uniquePlans.add(plan);
 			}
 
-			System.out.println("Unique RelaxedPlans: " + uniquePlans.size());
-			System.out.println("Unique Valid RelaxedPlans: " + countValid(uniquePlans, space));
+			System.out.println("  Unique RelaxedPlans: " + uniquePlans.size());
+			System.out.println("  Unique Valid RelaxedPlans: " + countValid(uniquePlans, space));
 			System.out.println(DASHLINE);
 
 			// Set up k-medoids with unique RelaxedPlans
@@ -177,7 +170,7 @@ public class Main {
 //					for (int i = 0; i < uniquePlans.size(); i++)
 //						assignments[i] = uniquePlans.get(i).clusterAssignment;
 //				}
-
+				
 				// Other Evaluation [Tightest Clusters]
 //				int totalDistanceFromEachOther = 0;
 //				for (int i = 0; i < k; i++)

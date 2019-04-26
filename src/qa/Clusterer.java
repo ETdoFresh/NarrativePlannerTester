@@ -26,9 +26,13 @@ public class Clusterer {
 		for(int i=0; i<k; i++)
 			clusters[i] = new RelaxedPlanCluster(i, n);
 		this.distance = new Distance(metric, space);
+		for(RelaxedPlan plan : relaxedPlans) {
+			plan.updateExplanations();
+			plan.updateImportantSteps(space);
+		}
 		deDupePlans();
 	}
-	
+		
 	private Clusterer(ArrayList<RelaxedPlan> relaxedPlans, int k, int n, SearchSpace space, Distance distance) {
 		this.space = space;
 		this.relaxedPlans = relaxedPlans;
@@ -52,9 +56,12 @@ public class Clusterer {
 		for(RelaxedPlan plan : relaxedPlans) {
 			boolean duplicate = false;
 			for(RelaxedPlan existingPlan : uniquePlans) {
-				if(distance.getDistance(plan, existingPlan, relaxedPlans) == 0) {
+				float dist = distance.getDistance(plan, existingPlan, relaxedPlans);
+				if(dist == 0) {
 					duplicate = true;
 					break;
+				} else {
+					//System.out.println("Distance was " + dist + " for\n" + existingPlan +"\nand\n" + plan);
 				}
 			}
 			if(!duplicate)
@@ -68,7 +75,7 @@ public class Clusterer {
 		System.out.println("Deduped with " + distance.distanceMetric + " distance: " + relaxedPlans.size() + " unique plans out of " + previous + ".");
 	}
 
-	/** Cluster vectors **/
+	/** For vectors **/
 	public Clusterer(RelaxedPlanVector[] planVecs, int k, int n, SearchSpace space, DistanceMetric metric) {
 		this.planVecs = planVecs;
 		this.k = k;
