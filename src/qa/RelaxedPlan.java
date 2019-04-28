@@ -69,7 +69,7 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 	public Iterator<RelaxedNode> iterator() {
 		return nodes.iterator();
 	}
-	
+
 	public boolean isValid(SearchSpace space) {
 		boolean invalid = false;
 		MutableArrayState state = new MutableArrayState(space);
@@ -110,13 +110,13 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 	public static RelaxedPlan medoid(ArrayList<RelaxedPlan> plans, Distance distance) {
 		RelaxedPlan medoid = null;
 		float[] averageDistances = new float[plans.size()];
-		SearchSpace space = null; 
+		SearchSpace space = null;
 		for (int i = 0; i < plans.size(); i++) {
 			float sum = 0;
-			if(space == null)
+			if (space == null)
 				space = plans.get(i).nodes.get(0).eventNode.graph.space;
 			for (RelaxedPlan other : plans)
-                sum += distance.getDistance(plans.get(i), other, plans);
+				sum += distance.getDistance(plans.get(i), other, plans);
 			averageDistances[i] = sum / plans.size();
 		}
 		float minDistance = Float.MAX_VALUE;
@@ -130,11 +130,12 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 			return new RelaxedPlan();
 		return medoid;
 	}
-	
+
 	public void updateExplanations() {
-		for(RelaxedNode node : nodes) {
-			this.explanations.addAll(node.explanations);
-		}
+		if (this.explanations != null)
+			for (RelaxedNode node : nodes)
+				if (node.explanations != null)
+					this.explanations.addAll(node.explanations);
 	}
 
 	public void updateImportantSteps(SearchSpace space) {
@@ -150,11 +151,13 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 				importantSteps.add(nodes.get(i));
 	}
 
-	/** Get the causal degree of a step in this RelaxedPlan, where:
-	 * 	 causal degree = +1 for each effect of a previous action that this step "uses" in its preconditions
-	 * 					 +1 for each precondition of a later action that this step achieves
-	 * 					 +1 for each literal of the problem goal that this step achieves
-	 * @param node - the step 
+	/**
+	 * Get the causal degree of a step in this RelaxedPlan, where: causal degree =
+	 * +1 for each effect of a previous action that this step "uses" in its
+	 * preconditions +1 for each precondition of a later action that this step
+	 * achieves +1 for each literal of the problem goal that this step achieves
+	 * 
+	 * @param node - the step
 	 * @param goal - the problem goal
 	 * @return degree
 	 */
@@ -163,14 +166,14 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		if (node.eventNode instanceof PlanGraphAxiomNode)
 			return degree;
 		int index = nodes.indexOf(node);
-		for (int i=0; i<index; i++)
+		for (int i = 0; i < index; i++)
 			for (ConjunctiveClause effect : nodes.get(i).eventNode.event.effect.toDNF().arguments)
 				for (Literal e_literal : effect.arguments)
 					for (ConjunctiveClause precondition : node.eventNode.event.precondition.toDNF().arguments)
 						for (Literal p_literal : precondition.arguments)
 							if (CheckEquals.Literal(e_literal, p_literal))
 								degree++;
-		for (int i=index; i<nodes.size(); i++)
+		for (int i = index; i < nodes.size(); i++)
 			for (ConjunctiveClause precondition : nodes.get(i).eventNode.event.precondition.toDNF().arguments)
 				for (Literal p_literal : precondition.arguments)
 					for (ConjunctiveClause effect : node.eventNode.event.effect.toDNF().arguments)
@@ -185,8 +188,6 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 							degree++;
 		return degree;
 	}
-
-
 
 	@Override
 	public boolean equals(Object other) {

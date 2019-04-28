@@ -17,7 +17,7 @@ public class Clusterer {
 	
 	private SearchSpace space;
 	
-	public Clusterer(ArrayList<RelaxedPlan> relaxedPlans, int k, int n, SearchSpace space, DistanceMetric metric) {
+	public Clusterer(ArrayList<RelaxedPlan> relaxedPlans, int k, int n, SearchSpace space, DistanceMetric metric, boolean deduplicateplans) {
 		this.space = space;
 		this.relaxedPlans = relaxedPlans;
 		this.k = k;
@@ -30,7 +30,8 @@ public class Clusterer {
 			plan.updateExplanations();
 			plan.updateImportantSteps(space);
 		}
-		deDupePlans();
+		if (deduplicateplans)
+			deDupePlans();
 	}
 		
 	private Clusterer(ArrayList<RelaxedPlan> relaxedPlans, int k, int n, SearchSpace space, Distance distance) {

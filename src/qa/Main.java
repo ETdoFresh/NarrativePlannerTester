@@ -40,7 +40,9 @@ public class Main {
 	//private static String filename = "rrh.txt";
 	private static String filename = "domains/camelot.domain";
 
-	private static final DistanceMetric metric = DistanceMetric.ISIF;
+	private static final boolean usePlanGraphExplanation = false;
+	private static final boolean deduplicatePlans = false; 
+	private static final DistanceMetric metric = DistanceMetric.GOAL;
 	
 	static long lastModified = 0;
 	static boolean firstRun = true;
@@ -108,7 +110,7 @@ public class Main {
 			System.out.println("\nLet's try clustering...");
 
 			// Get RelaxedPlans (true = PGE, false = Explanations)
-			ArrayList<RelaxedPlan> relaxedPlans = getRelaxedPlans(space, false);
+			ArrayList<RelaxedPlan> relaxedPlans = getRelaxedPlans(space, usePlanGraphExplanation);
 
 //			// Uncomment this to generate new comparisons.
 //			Comparisons comparisons = Comparisons.compute(space, relaxedPlans);
@@ -135,12 +137,11 @@ public class Main {
 
 			// Set up k-medoids with unique RelaxedPlans
 			int k = 4;
-			Clusterer clusterer = new Clusterer(uniquePlans, k, space.actions.size(), space, metric);
+			Clusterer clusterer = new Clusterer(uniquePlans, k, space.actions.size(), space, metric, deduplicatePlans);
 			System.out.println(DASHLINE);
 			Random random = new Random();
 
 			// Run clusterer X times
-			int mostEvelySpread = Integer.MIN_VALUE;
 			float minTotalClusterDistance = Float.POSITIVE_INFINITY;
 			int[] assignments = new int[uniquePlans.size()];
 			Clusterer bestClusterer = clusterer;
@@ -156,31 +157,8 @@ public class Main {
 
 				// Run k-medoids
 				clusterer.kmedoids();
-
-//				// Evaluate clusters [Most even spread]
-//				int min = Integer.MAX_VALUE;
-//				for (int i = 0; i < k; i++)
-//					if (min > clusterer.getAssignments(i).size())
-//						min = clusterer.getAssignments(i).size();
-//				
-//				// Find the most even spread and store assignments
-//				if (mostEvelySpread < min) {
-//					mostEvelySpread = min;
-//					bestClusterer = clusterer.clone();
-//					for (int i = 0; i < uniquePlans.size(); i++)
-//						assignments[i] = uniquePlans.get(i).clusterAssignment;
-//				}
-				
+			
 				// Other Evaluation [Tightest Clusters]
-//				int totalDistanceFromEachOther = 0;
-//				for (int i = 0; i < k; i++)
-//					for (int j = 0; j < uniquePlans.size(); j++)
-//						if (uniquePlans.get(j).clusterAssignment == i)
-//							for (int l = j + 1; l < uniquePlans.size(); l++)
-//								if (uniquePlans.get(l).clusterAssignment == i)
-//									totalDistanceFromEachOther += clusterer.distance.getDistance(uniquePlans.get(j),
-//											uniquePlans.get(l), uniquePlans);
-
 				float totalDistanceFromMedoid = 0;
 				for (int i = 0; i < k; i++)
 					for (int j = 0; j < uniquePlans.size(); j++)
