@@ -12,6 +12,9 @@ import sabre.logic.Literal;
 
 public class AgentGoal {
 	public static Expression get(Domain domain, Agent agent) {
+		if (agent.name.equals("Author"))
+			return domain.goal;
+		
 		ArrayList<Literal> goals = new ArrayList<>();
 		for (Expression expression : domain.initial) {
 			if (expression instanceof Assignment) {
