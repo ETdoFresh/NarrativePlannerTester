@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
 
+import sabre.Action;
 import sabre.Agent;
 import sabre.Domain;
 import sabre.Event;
@@ -11,14 +12,20 @@ import sabre.graph.PlanGraphEventNode;
 import sabre.graph.PlanGraphLiteralNode;
 import sabre.logic.ConjunctiveClause;
 import sabre.logic.Literal;
+import sabre.logic.Logical;
+import sabre.logic.Term;
 
 public class RelaxedNode implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	public PlanGraphEventNode eventNode;
 	public ArrayList<Explanation> explanations = new ArrayList<>();
+	public String schema;
+	public HashSet<Agent> consenting = new HashSet<>();
+	public HashSet<Agent> allAgentsInvolved = new HashSet<>();
+	public HashSet<Agent> inServiceOfAgentGoal = new HashSet<>();
 	public HashSet<Literal> inServiceOfGoalLiteral = new HashSet<>();
-	public HashSet<Agent> inServiceOfAgent = new HashSet<>();
+	public HashSet<Agent> agentsGoalSatisfiedByStep = new HashSet<>(); 
 	public int level;
 
 	public RelaxedNode(PlanGraphEventNode eventNode, ArrayList<Explanation> explanations, int level) {
@@ -27,16 +34,36 @@ public class RelaxedNode implements Serializable {
 		this.explanations = explanations;
 		this.level = level;
 
-		if (explanations != null && explanations.size() > 0)
-			GetWhatThisStepIsServing();
+		if (explanations != null && explanations.size() > 0) {
+			PopulateSchema();
+			PopulateConsensting();
+			PopulateAllAgentsInvolved();
+			PopulateInServiceOfGoalLiteral();
+			PopulateInServiceOfAgentLiteral();
+			PopulateAgentGoalStatisfiedByStep();
+			ComputeAuthorGoalLiteralDistance();
+		}
 	}
 
-	private void GetWhatThisStepIsServing() {
-		for (Explanation explanation : explanations)
-			for (Event event : explanation.steps)
-				if (event.equals(eventNode.event))
-					inServiceOfAgent.add(explanation.agent);
+	private void PopulateSchema() {
+		schema = eventNode.event.name;
+	}
 
+	private void PopulateConsensting() {
+		if (eventNode.event instanceof Action)
+			for (Term term : ((Action) eventNode.event).agents)
+				if (term instanceof Agent)
+					consenting.add((Agent) term);
+	}
+
+	private void PopulateAllAgentsInvolved() {
+		if (eventNode.event instanceof Action)
+			for (Logical parameter : ((Action) eventNode.event).arguments)
+				if (parameter instanceof Agent)
+					allAgentsInvolved.add((Agent) parameter);
+	}
+
+	private void PopulateInServiceOfGoalLiteral() {
 		Domain domain = eventNode.graph.space.domain;
 		for (Literal goalLiteral : AgentGoal.getCombinedAuthorAndAllAgentGoals(domain))
 			for (Explanation explanation : explanations) {
@@ -58,6 +85,47 @@ public class RelaxedNode implements Serializable {
 					}
 				}
 			}
+	}
+
+	private void PopulateInServiceOfAgentLiteral() {
+		Domain domain = eventNode.graph.space.domain;
+		for (Agent agent : domain.agents)
+			for (ConjunctiveClause goal : AgentGoal.get(domain, agent).toDNF().arguments) {
+				if (inServiceOfAgentGoal.contains(agent))
+					break;
+				for (Literal goalLiteral : goal.arguments)
+					if (inServiceOfGoalLiteral.contains(goalLiteral)) {
+						inServiceOfAgentGoal.add(agent);
+						break;
+					}
+			}
+	}
+
+	private void PopulateAgentGoalStatisfiedByStep() {
+		Domain domain = eventNode.graph.space.domain;
+		for (Agent agent : domain.agents)
+			for (ConjunctiveClause goal : AgentGoal.get(domain, agent).toDNF().arguments) {
+				if (agentsGoalSatisfiedByStep.contains(agent))
+					break;
+				for (Literal goalLiteral : goal.arguments) {
+					if (agentsGoalSatisfiedByStep.contains(agent))
+						break;
+					for (ConjunctiveClause effect : eventNode.event.effect.toDNF().arguments) {
+						if (agentsGoalSatisfiedByStep.contains(agent))
+							break;
+						for(Literal effectLiteral : effect.arguments)
+							if (CheckEquals.Literal(goalLiteral, effectLiteral)) {
+								agentsGoalSatisfiedByStep.add(agent);
+								break;
+							}
+					}
+				}
+			}	
+	}
+
+	private void ComputeAuthorGoalLiteralDistance() {
+		// TODO Auto-generated method stub
+
 	}
 
 	@Override
