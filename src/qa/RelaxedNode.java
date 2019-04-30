@@ -25,7 +25,8 @@ public class RelaxedNode implements Serializable {
 	public HashSet<Agent> allAgentsInvolved = new HashSet<>();
 	public HashSet<Agent> inServiceOfAgentGoal = new HashSet<>();
 	public HashSet<Literal> inServiceOfGoalLiteral = new HashSet<>();
-	public HashSet<Agent> agentsGoalSatisfiedByStep = new HashSet<>(); 
+	public HashSet<Agent> agentsGoalSatisfiedByStep = new HashSet<>();
+	public HashSet<SSGPair> satisfyingStepGoalLiteralPairs = new HashSet<>();
 	public int level;
 
 	public RelaxedNode(PlanGraphEventNode eventNode, ArrayList<Explanation> explanations, int level) {
@@ -42,6 +43,7 @@ public class RelaxedNode implements Serializable {
 			PopulateInServiceOfAgentLiteral();
 			PopulateAgentGoalStatisfiedByStep();
 			ComputeAuthorGoalLiteralDistance();
+			PopulateSSGPair();
 		}
 	}
 
@@ -113,19 +115,31 @@ public class RelaxedNode implements Serializable {
 					for (ConjunctiveClause effect : eventNode.event.effect.toDNF().arguments) {
 						if (agentsGoalSatisfiedByStep.contains(agent))
 							break;
-						for(Literal effectLiteral : effect.arguments)
+						for (Literal effectLiteral : effect.arguments)
 							if (CheckEquals.Literal(goalLiteral, effectLiteral)) {
 								agentsGoalSatisfiedByStep.add(agent);
 								break;
 							}
 					}
 				}
-			}	
+			}
 	}
 
 	private void ComputeAuthorGoalLiteralDistance() {
 		// TODO Auto-generated method stub
 
+	}
+	
+	private void PopulateSSGPair() {
+		if (agentsGoalSatisfiedByStep.size() == 0)
+			return;
+		
+		Domain domain = eventNode.graph.space.domain;
+		for (Literal goalLiteral : AgentGoal.getCombinedAuthorAndAllAgentGoals(domain))
+			for (ConjunctiveClause effect : eventNode.event.effect.toDNF().arguments)
+				for (Literal effectLiteral : effect.arguments)
+					if (CheckEquals.Literal(goalLiteral, effectLiteral))
+						satisfyingStepGoalLiteralPairs.add(new SSGPair(eventNode.event, goalLiteral));
 	}
 
 	@Override

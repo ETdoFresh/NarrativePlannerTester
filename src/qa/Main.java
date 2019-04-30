@@ -37,12 +37,12 @@ public class Main {
 	private static final String TITLE = "Planning Domain Automated Tester (PDAT), " + VERSION + "\n " + CREDITS + "\n";
 	private static final String USAGE = "USAGE: java -jar pdat.jar <filename>\n";
 	private static final String DASHLINE = "---------------------------------";
-	//private static String filename = "rrh.txt";
-	private static String filename = "domains/camelot.domain";
+	private static String filename = "rrh.txt";
+	//private static String filename = "domains/camelot.domain";
 
 	private static final boolean usePlanGraphExplanation = false;
 	private static final boolean deduplicatePlans = false; 
-	private static final DistanceMetric metric = DistanceMetric.GOAL;
+	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL_PAIR;
 	
 	static long lastModified = 0;
 	static boolean firstRun = true;

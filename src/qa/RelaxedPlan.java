@@ -209,6 +209,11 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		String str = "";
 		for (RelaxedNode node : nodes)
 			str += Text.BLANK + node + "\n";
+		
+		str += Text.BLANK + "---------------------------\n";
+		for (SSGPair pair : GetSSGPairs())
+			str += Text.BLANK + pair + "\n"; 
+		
 		return str;
 	}
 
@@ -219,5 +224,12 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 
 	public void remove(int i) {
 		nodes.remove(i);
+	}
+	
+	public HashSet<SSGPair> GetSSGPairs() {
+		HashSet<SSGPair> allPairs = new HashSet<>();
+		for (RelaxedNode node : this)
+			allPairs.addAll(node.satisfyingStepGoalLiteralPairs);
+		return allPairs;
 	}
 }

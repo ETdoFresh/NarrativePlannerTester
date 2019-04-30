@@ -10,7 +10,7 @@ import sabre.Plan;
 import sabre.space.SearchSpace;
 
 enum DistanceMetric {
-	ACTION, ISIF, AGENT_STEP, SCHEMA, AGENT_SCHEMA, GOAL, AGENT_GOAL, AGENT_SCHEMA_GOAL
+	ACTION, ISIF, AGENT_STEP, SCHEMA, AGENT_SCHEMA, GOAL, AGENT_GOAL, AGENT_SCHEMA_GOAL, SATSTEP_GOAL_PAIR
 };
 
 public class Distance {
@@ -52,6 +52,9 @@ public class Distance {
 			break;
 		case AGENT_SCHEMA_GOAL:
 			dist = agentSchemaGoalDistance(a, b);
+			break;
+		case SATSTEP_GOAL_PAIR:
+			dist = SSGPair(a, b);
 			break;
 		default:
 			System.out.println("?! What distance metric is this? " + distanceMetric);
@@ -207,5 +210,10 @@ public class Distance {
 			return 0f;
 		return 1 - (float) intersection.size() / union.size();
 	}
-
+	
+	public float SSGPair(RelaxedPlan a, RelaxedPlan b) {
+		HashSet<SSGPair> setA = a.GetSSGPairs();
+		HashSet<SSGPair> setB = b.GetSSGPairs();
+		return jaccard(setA, setB);
+	}
 }
