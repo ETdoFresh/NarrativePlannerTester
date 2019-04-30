@@ -7,6 +7,7 @@ import java.util.Set;
 import sabre.Action;
 import sabre.Event;
 import sabre.Plan;
+import sabre.logic.Literal;
 import sabre.space.SearchSpace;
 
 enum DistanceMetric {
@@ -98,9 +99,16 @@ public class Distance {
 	}
 
 	private float goalDistance(RelaxedPlan a, RelaxedPlan b) {
-		float[] vectorA = Vector.getGoalVector(space, a);
-		float[] vectorB = Vector.getGoalVector(space, b);
-		return Vector.distance(vectorA, vectorB);
+//		float[] vectorA = Vector.getGoalVector(space, a);
+//		float[] vectorB = Vector.getGoalVector(space, b);
+//		return Vector.distance(vectorA, vectorB);
+		HashSet<Literal> goalSetA = new HashSet<>();
+		HashSet<Literal> goalSetB = new HashSet<>();
+		for (RelaxedNode node : a)
+			goalSetA.addAll(node.inServiceOfGoalLiteral);
+		for (RelaxedNode node : b)
+			goalSetB.addAll(node.inServiceOfGoalLiteral);
+		return jaccard(goalSetA, goalSetB);
 	}
 
 	/**
