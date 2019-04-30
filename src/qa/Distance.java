@@ -11,7 +11,7 @@ import sabre.logic.Literal;
 import sabre.space.SearchSpace;
 
 enum DistanceMetric {
-	ACTION, ISIF, AGENT_STEP, SCHEMA, AGENT_SCHEMA, GOAL, AGENT_GOAL, AGENT_SCHEMA_GOAL, SATSTEP_GOAL_PAIR
+	ACTION, ISIF, AGENT_STEP, SCHEMA, AGENT_SCHEMA, GOAL, AGENT_GOAL, AGENT_GOAL_SCHEMA, SATSTEP_GOAL_PAIR
 };
 
 public class Distance {
@@ -51,8 +51,8 @@ public class Distance {
 		case AGENT_GOAL:
 			dist = agentGoalDistance(a, b);
 			break;
-		case AGENT_SCHEMA_GOAL:
-			dist = agentSchemaGoalDistance(a, b);
+		case AGENT_GOAL_SCHEMA:
+			dist = agentGoalSchemaDistance(a, b);
 			break;
 		case SATSTEP_GOAL_PAIR:
 			dist = SSGPair(a, b);
@@ -88,20 +88,19 @@ public class Distance {
 		return max;
 	}
 
-	private float agentSchemaGoalDistance(RelaxedPlan a, RelaxedPlan b) {
-		// TODO Auto-generated method stub
-		return 0;
+	private float agentGoalSchemaDistance(RelaxedPlan a, RelaxedPlan b) {
+		HashSet<AGSSSTriple> goalSetA = AGSSSTriple.GetByPlan(a);
+		HashSet<AGSSSTriple> goalSetB = AGSSSTriple.GetByPlan(b);
+		return jaccard(goalSetA, goalSetB);
 	}
 
 	private float agentGoalDistance(RelaxedPlan a, RelaxedPlan b) {
-		// TODO Auto-generated method stub
-		return 0;
+		HashSet<AGPair> goalSetA = AGPair.GetByPlan(a);
+		HashSet<AGPair> goalSetB = AGPair.GetByPlan(b);
+		return jaccard(goalSetA, goalSetB);
 	}
 
 	private float goalDistance(RelaxedPlan a, RelaxedPlan b) {
-//		float[] vectorA = Vector.getGoalVector(space, a);
-//		float[] vectorB = Vector.getGoalVector(space, b);
-//		return Vector.distance(vectorA, vectorB);
 		HashSet<Literal> goalSetA = new HashSet<>();
 		HashSet<Literal> goalSetB = new HashSet<>();
 		for (RelaxedNode node : a)
