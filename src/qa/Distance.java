@@ -11,7 +11,7 @@ import sabre.logic.Literal;
 import sabre.space.SearchSpace;
 
 enum DistanceMetric {
-	ACTION, ISIF, AGENT_STEP, SCHEMA, AGENT_SCHEMA, GOAL, AGENT_GOAL, AGENT_GOAL_SCHEMA, SATSTEP_GOAL_PAIR
+	ACTION, ISIF, AGENT_STEP, SCHEMA, AGENT_SCHEMA, GOAL, AGENT_GOAL, AGENT_GOAL_SCHEMA, SATSTEP_GOAL_PAIR, STEP_LEVEL
 };
 
 public class Distance {
@@ -56,6 +56,9 @@ public class Distance {
 			break;
 		case SATSTEP_GOAL_PAIR:
 			dist = SSGPair(a, b);
+			break;
+		case STEP_LEVEL:
+			dist = StepLevel(a, b);
 			break;
 		default:
 			System.out.println("?! What distance metric is this? " + distanceMetric);
@@ -222,5 +225,11 @@ public class Distance {
 		HashSet<SSGPair> setA = a.GetSSGPairs();
 		HashSet<SSGPair> setB = b.GetSSGPairs();
 		return jaccard(setA, setB);
+	}
+	
+	public float StepLevel(RelaxedPlan a, RelaxedPlan b) {
+		HashSet<SLPair> goalSetA = SLPair.GetByPlan(a);
+		HashSet<SLPair> goalSetB = SLPair.GetByPlan(b);
+		return jaccard(goalSetA, goalSetB);
 	}
 }
