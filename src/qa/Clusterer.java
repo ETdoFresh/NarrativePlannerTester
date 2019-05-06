@@ -17,7 +17,7 @@ public class Clusterer {
 	
 	private SearchSpace space;
 	
-	public Clusterer(ArrayList<RelaxedPlan> relaxedPlans, int k, int n, SearchSpace space, DistanceMetric metric, boolean deduplicateplans) {
+	public Clusterer(ArrayList<RelaxedPlan> relaxedPlans, int k, int n, SearchSpace space, Distance distance) {
 		this.space = space;
 		this.relaxedPlans = relaxedPlans;
 		this.k = k;
@@ -25,55 +25,26 @@ public class Clusterer {
 		this.clusters = new RelaxedPlanCluster[k];
 		for(int i=0; i<k; i++)
 			clusters[i] = new RelaxedPlanCluster(i, n);
-		this.distance = new Distance(metric, space);
+		this.distance = distance;
 		for(RelaxedPlan plan : relaxedPlans) {
 			plan.updateExplanations();
 			plan.updateImportantSteps(space);
 		}
-		if (deduplicateplans)
-			deDupePlans();
 	}
 		
-	private Clusterer(ArrayList<RelaxedPlan> relaxedPlans, int k, int n, SearchSpace space, Distance distance) {
-		this.space = space;
-		this.relaxedPlans = relaxedPlans;
-		this.k = k;
-		this.n = n;
-		this.clusters = new RelaxedPlanCluster[k];
-		this.distance = distance;
+	private Clusterer(Clusterer clusterer) {
+		space = clusterer.space;
+		relaxedPlans = clusterer.relaxedPlans;
+		k = clusterer.k;
+		n = clusterer.n;
+		clusters = new RelaxedPlanCluster[k];
+		for(int i=0; i<k; i++)
+			clusters[i] = clusterer.clusters[i].clone();
+		distance = clusterer.distance;
 	}
 	
 	public Clusterer clone() {
-		Clusterer clone = new Clusterer(relaxedPlans, k, n, space, distance); 
-		for(int i=0; i<k; i++)
-			clone.clusters[i] = clusters[i].clone();
-		return clone;
-	}
-	
-	/** Remove duplicate RelaxedPlans according to current distance metric */
-	private void deDupePlans() {
-		int previous = relaxedPlans.size();
-		ArrayList<RelaxedPlan> uniquePlans = new ArrayList<>();
-		for(RelaxedPlan plan : relaxedPlans) {
-			boolean duplicate = false;
-			for(RelaxedPlan existingPlan : uniquePlans) {
-				float dist = distance.getDistance(plan, existingPlan, relaxedPlans);
-				if(dist == 0) {
-					duplicate = true;
-					break;
-				} else {
-					//System.out.println("Distance was " + dist + " for\n" + existingPlan +"\nand\n" + plan);
-				}
-			}
-			if(!duplicate)
-				uniquePlans.add(plan);
-		}
-		relaxedPlans = uniquePlans;
-		if(relaxedPlans.size() < 10) {
-			System.out.println("PROBLEM: Only " + relaxedPlans.size() + " unique plans using " + distance.distanceMetric + " distance");
-			System.exit(1);
-		}
-		System.out.println("Deduped with " + distance.distanceMetric + " distance: " + relaxedPlans.size() + " unique plans out of " + previous + ".");
+		return new Clusterer(this);
 	}
 
 	/** For vectors **/
@@ -227,6 +198,14 @@ public class Clusterer {
 			iteration++;
 		} while (assignmentsChanged > 0);
 	}	
+	
+	public boolean HasEmptyCluster() {
+		for (int i = 0; i < k; i++)
+			if (getAssignments(i).isEmpty())
+				return true;
+		
+		return false;
+	}
 	
 	@Override
 	public String toString() {
