@@ -186,7 +186,6 @@ action apprehend(character attacker*, character target, weapon weapon, place pla
 		location(target) = place &
 		location(weapon) = attacker &
 		wielding(attacker) = weapon &
-		wielding(target) = Null &
 		alive(attacker) &
 		alive(target)
 	);

@@ -77,11 +77,11 @@ public class RelaxedPlanCleaner {
 				uniquePlans.remove(i);
 		}
 		
-		if (relaxedPlans.size() < 10) {
-			System.out.println("PROBLEM: Only " + relaxedPlans.size() + " unique plans using " + distance.distanceMetric
-					+ " distance");
-			System.exit(1);
-		}
+//		if (relaxedPlans.size() < 10) {
+//			System.out.println("PROBLEM: Only " + relaxedPlans.size() + " unique plans using " + distance.distanceMetric
+//					+ " distance");
+//			System.exit(1);
+//		}
 		System.out.println("Deduped with " + distance.distanceMetric + " distance: " + relaxedPlans.size()
 				+ " unique plans out of " + previous + ".");
 		
