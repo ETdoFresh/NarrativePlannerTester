@@ -24,7 +24,7 @@ public class CombinationsFromSets<E> implements Iterator<HashSet<E>>, Iterable<H
 		for (int i = 0; i < indices.length; i++)
 			indices[i] = 0;
 
-		if (sizes.length == 0 || sizes[0] == 0)
+		if (sizes.length == 0)
 			indices = new int[] { -1 };
 	}
 
@@ -43,9 +43,9 @@ public class CombinationsFromSets<E> implements Iterator<HashSet<E>>, Iterable<H
 		for (int i = indices.length - 1; i >= 0; i--) {
 			indices[i]++;
 
-			if (indices[0] == sizes[0]) // Total Termination
-				indices[0] = -1;
-			if (indices[i] == sizes[i]) // Loop and Increment Next Index
+			if (i == 0 && indices[i] >= sizes[i]) // Total Termination
+				indices[i] = -1;
+			if (indices[i] >= sizes[i]) // Loop and Increment Next Index
 				indices[i] = 0;
 			else // No Looping or Termination... done!
 				break;

@@ -43,6 +43,7 @@ public class Main {
 	// private static String filename = "rrh.txt";
 	private static String filename = "domains/camelot.domain";
 
+	private static final boolean onlyExploreAuthorGoals = false;
 	private static final boolean usePlanGraphExplanation = true;
 	private static final boolean deduplicatePlans = true;
 	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL_PAIR;
@@ -146,6 +147,7 @@ public class Main {
 			Clusterer bestClusterer = clusterer;
 			int[] assignments = new int[uniquePlans.size()];
 			float prevMinTotalClusterDistance = 0;
+			float prevSlope = -100;
 			int bestK = 0;
 			FileIO.Write("output.txt", "");
 
@@ -185,7 +187,7 @@ public class Main {
 
 						if (k > 1) {
 							float slope = minTotalClusterDistance - prevMinTotalClusterDistance;
-							if (slope <= -1) {
+							if (slope <= -1 && prevSlope != -1) {
 								bestK = k;
 								bestClusterer = clusterer.clone();
 								for (int i = 0; i < uniquePlans.size(); i++)
@@ -196,7 +198,8 @@ public class Main {
 					// System.out.println(DASHLINE);
 				}
 
-				System.out.println("Minimum Distance K = " + k + ": " + minTotalClusterDistance);
+				prevSlope = minTotalClusterDistance - prevMinTotalClusterDistance;
+				System.out.println("Minimum Distance K = " + k + ": " + minTotalClusterDistance + " slope: " + prevSlope);
 				FileIO.Append("output.txt", "Minimum Distance K = " + k + ": " + minTotalClusterDistance + "\n");
 				prevMinTotalClusterDistance = minTotalClusterDistance;
 			}
@@ -274,7 +277,7 @@ public class Main {
 		if (planGraphExp) {
 			txtfile = "PlanGraphExplanationsPlan.txt";
 			dir = "PlanGraphExplanationsPlans";
-			plans = PlanGraphExplanations.getExplainedPlans(space); // Runs much faster!
+			plans = PlanGraphExplanations.getExplainedPlans(space, onlyExploreAuthorGoals); // Runs much faster!
 		} else {
 			txtfile = "ExplanationsPlan.txt";
 			dir = "ExplanationsPlans";
