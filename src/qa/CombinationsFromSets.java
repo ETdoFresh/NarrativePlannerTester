@@ -37,7 +37,8 @@ public class CombinationsFromSets<E> implements Iterator<HashSet<E>>, Iterable<H
 	public HashSet<E> next() {
 		HashSet<E> nextSet = new HashSet<E>();
 		for (int i = 0; i < indices.length; i++) {
-			nextSet.add(sets.get(i).get(indices[i]));
+			if (sizes[i] > 0)
+				nextSet.add(sets.get(i).get(indices[i]));
 		}
 		for (int i = indices.length - 1; i >= 0; i--) {
 			indices[i]++;
