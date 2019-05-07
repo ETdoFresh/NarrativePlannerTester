@@ -57,6 +57,12 @@ public class RelaxedPlanCleaner {
 			}
 		}
 	}
+	
+	public static void stopStoryAfterOneAuthorGoalComplete(SearchSpace space, RelaxedPlan plan) {
+		ArrayList<RelaxedPlan> plans = new ArrayList<>();
+		plans.add(plan);
+		stopStoryAfterOneAuthorGoalComplete(space, plans);
+	}
 
 	private static boolean achievesAuthorGoal(HashSet<PlanGraphLiteralNode> achievedEffects,
 			HashSet<HashSet<PlanGraphLiteralNode>> authorGoals) {
