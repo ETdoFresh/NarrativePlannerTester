@@ -11,7 +11,7 @@ import sabre.logic.Literal;
 import sabre.space.SearchSpace;
 
 enum DistanceMetric {
-	ACTION, ISIF, AGENT_STEP, SCHEMA, AGENT_SCHEMA, GOAL, AGENT_GOAL, AGENT_GOAL_SCHEMA, SATSTEP_GOAL_PAIR, STEP_LEVEL
+	ACTION, ISIF, AGENT_STEP, SCHEMA, AGENT_SCHEMA, GOAL, AGENT_GOAL, AGENT_GOAL_SCHEMA, SATSTEP_GOAL_PAIR, STEP_LEVEL, SSG_SCHEMA_MULTI
 };
 
 public class Distance {
@@ -55,10 +55,13 @@ public class Distance {
 			dist = agentGoalSchemaDistance(a, b);
 			break;
 		case SATSTEP_GOAL_PAIR:
-			dist = SSGPair(a, b);
+			dist = SSGPairDistance(a, b);
 			break;
 		case STEP_LEVEL:
 			dist = StepLevel(a, b);
+			break;
+		case SSG_SCHEMA_MULTI:
+			dist = schemaSSGMultiDistance(a, b);
 			break;
 		default:
 			System.out.println("?! What distance metric is this? " + distanceMetric);
@@ -66,8 +69,7 @@ public class Distance {
 		}
 		return dist;
 	}
-
-	
+		
 	/**
 	 * @param plans - All Relaxed Plans
 	 * @return AgentSchema Vector where each dimension = MAX_OCCURENCES of dimension
@@ -113,6 +115,14 @@ public class Distance {
 		return jaccard(goalSetA, goalSetB);
 	}
 
+	private float schemaSSGMultiDistance(RelaxedPlan a, RelaxedPlan b) {
+		HashSet<SSGPair> setA = a.getSSGPairs();
+		HashSet<SSGPair> setB = b.getSSGPairs();
+		HashSet<AgentSchemaPair> setA2 = a.getAgentSchemaPairs();
+		HashSet<AgentSchemaPair> setB2 = b.getAgentSchemaPairs();
+		return 1 - (0.5f * (jaccard(setA, setB) + jaccard(setA2, setB2)));
+	}
+	
 	/**
 	 * ISIF distance between two plans: Weighted Jaccards of the sets of important
 	 * steps and explanation summaries
@@ -221,9 +231,9 @@ public class Distance {
 		return 1 - (float) intersection.size() / union.size();
 	}
 	
-	public float SSGPair(RelaxedPlan a, RelaxedPlan b) {
-		HashSet<SSGPair> setA = a.GetSSGPairs();
-		HashSet<SSGPair> setB = b.GetSSGPairs();
+	public float SSGPairDistance(RelaxedPlan a, RelaxedPlan b) {
+		HashSet<SSGPair> setA = a.getSSGPairs();
+		HashSet<SSGPair> setB = b.getSSGPairs();
 		return jaccard(setA, setB);
 	}
 	

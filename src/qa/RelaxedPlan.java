@@ -212,7 +212,7 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 			str += Text.BLANK + node + "\n";
 		
 		str += Text.BLANK + "---------------------------\n";
-		for (SSGPair pair : GetSSGPairs())
+		for (SSGPair pair : getSSGPairs())
 			str += Text.BLANK + pair + "\n"; 
 		
 		return str;
@@ -227,7 +227,17 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		nodes.remove(i);
 	}
 	
-	public HashSet<SSGPair> GetSSGPairs() {
+	public HashSet<AgentSchemaPair> getAgentSchemaPairs(){
+		HashSet<AgentSchemaPair> allPairs = new HashSet<>();
+		for(RelaxedNode node : this) {
+			for(sabre.Agent agent : node.consenting) {
+				allPairs.add(new AgentSchemaPair(agent.toString(), node.schema));
+			}
+		}
+		return allPairs;
+	}
+	
+	public HashSet<SSGPair> getSSGPairs() {
 		HashSet<SSGPair> allPairs = new HashSet<>();
 		for (RelaxedNode node : this)
 			allPairs.addAll(node.satisfyingStepGoalLiteralPairs);

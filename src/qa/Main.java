@@ -43,10 +43,10 @@ public class Main {
 	// private static String filename = "rrh.txt";
 	private static String filename = "domains/camelot.domain";
 
-	private static final boolean onlyExploreAuthorGoals = false;
+	private static final boolean onlyExploreAuthorGoals = true;
 	private static final boolean usePlanGraphExplanation = true;
 	private static final boolean deduplicatePlans = true;
-	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL_PAIR;
+	private static final DistanceMetric metric = DistanceMetric.SSG_SCHEMA_MULTI;
 
 	static long lastModified = 0;
 	static boolean firstRun = true;
@@ -152,7 +152,7 @@ public class Main {
 			FileIO.Write("output.txt", "");
 
 			// Set up k-medoids with unique RelaxedPlans
-			for (int k = 1; k <= Math.min(25, uniquePlans.size()); k++) {
+			for (int k = 1; k <= Math.min(6, uniquePlans.size()); k++) {
 				clusterer = new Clusterer(uniquePlans, k, space.actions.size(), space, distance);
 				// System.out.println(DASHLINE);
 				Random random = new Random();

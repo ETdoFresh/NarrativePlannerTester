@@ -51,9 +51,9 @@ intends(Merchant, alive(Merchant));
 intends(Guard, alive(Guard));
 intends(Guard, criminalAtLarge() = False);
 intends(Bandit, alive(Bandit));
-intends(Bandit, location(PeterCoin) = Chest);
+intends(Bandit, location(PeterCoin) = Bandit);
 intends(Bandit, location(BanditCoin) = Chest);
-intends(Bandit, location(Medicine) = Chest);
+//intends(Bandit, location(Medicine) = Bandit);
 
 // State
 location(Peter) = Home;
