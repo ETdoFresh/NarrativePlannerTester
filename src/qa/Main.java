@@ -37,10 +37,10 @@ public class Main {
 	private static final String TITLE = "Planning Domain Automated Tester (PDAT), " + VERSION + "\n " + CREDITS + "\n";
 	private static final String USAGE = "USAGE: java -jar pdat.jar <filename>\n";
 	private static final String DASHLINE = "---------------------------------";
-	private static String filename = "rrh.txt";
-	// private static String filename = "domains/camelot.domain";
+	// private static String filename = "rrh.txt";
+	private static String filename = "domains/camelot.domain";
 
-	private static final boolean usePlanGraphExplanation = false;
+	private static final boolean usePlanGraphExplanation = true;
 	private static final boolean deduplicatePlans = true;
 	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL_PAIR;
 
@@ -115,7 +115,7 @@ public class Main {
 //			// Uncomment this to generate new comparisons.
 //			Comparisons comparisons = Comparisons.compute(space, relaxedPlans);
 //			comparisons.keepRandomSet(100);
-//			FileIO.Write("Comparisons.json", comparisons.toString());
+			//FileIO.Write("Comparisons.json", comparisons.toString());
 
 			// Get RelaxedPlans from files
 			// ArrayList<RelaxedPlan> relaxedPlans =
@@ -261,9 +261,9 @@ public class Main {
 		RelaxedPlanCleaner.removeDuplicateSteps(plans);
 		RelaxedPlanCleaner.removeDuplicatePlans(plans);
 		FileIO.Write(txtfile, plans.toString());
-		File file = new File(dir);
-		if (!file.isDirectory())
-			file.mkdir();
+//		File file = new File(dir);
+//		if (!file.isDirectory())
+//			file.mkdir();
 		// Commenting for now to speed up computations... will put in back once we ready
 		// to serialize
 //		int i=0;

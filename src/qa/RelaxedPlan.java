@@ -121,7 +121,8 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		}
 		float minDistance = Float.MAX_VALUE;
 		for (int i = 0; i < plans.size(); i++) {
-			if (averageDistances[i] < minDistance) {
+			if (averageDistances[i] < minDistance 
+			|| (averageDistances[i] == minDistance && plans.get(i).size() < medoid.size())) {
 				minDistance = averageDistances[i];
 				medoid = plans.get(i).clone();
 			}
