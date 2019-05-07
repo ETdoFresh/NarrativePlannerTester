@@ -45,8 +45,8 @@ public class RelaxedNode implements Serializable {
 			PopulateAgentGoalStatisfiedByStep();
 			PopulateGoalLiteralStatisfiedByStep();
 			ComputeAuthorGoalLiteralDistance();
-			PopulateSSGPair();
 		}
+		PopulateSSGPair();
 	}
 
 	private void PopulateSchema() {
@@ -145,9 +145,6 @@ public class RelaxedNode implements Serializable {
 	}
 
 	private void PopulateSSGPair() {
-		if (agentsGoalSatisfiedByStep.size() == 0)
-			return;
-
 		Domain domain = eventNode.graph.space.domain;
 		for (Literal goalLiteral : AgentGoal.getCombinedAuthorAndAllAgentGoals(domain))
 			for (ConjunctiveClause effect : eventNode.event.effect.toDNF().arguments)

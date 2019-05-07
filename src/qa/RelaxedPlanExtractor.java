@@ -19,6 +19,7 @@ import sabre.logic.Literal;
 import sabre.logic.NegatedLiteral;
 import sabre.logic.Term;
 import sabre.space.SearchSpace;
+import sun.security.action.GetLongAction;
 
 public class RelaxedPlanExtractor {
 
@@ -104,6 +105,7 @@ public class RelaxedPlanExtractor {
 		return newExplanations;
 	}
 
+	// TODO Fix this when you get a chance... it's messed up....
 	private static void GetAllPossiblePlans(HashSet<PlanGraphLiteralNode> goalsAtThisLevel,
 			HashSet<PlanGraphLiteralNode> initialState, int level, ArrayList<Explanation> explanations,
 			RelaxedPlan plan, ArrayList<RelaxedPlan> plans) {
@@ -117,8 +119,7 @@ public class RelaxedPlanExtractor {
 		} else {
 			ArrayList<ArrayList<PlanGraphLiteralNode>> permutations = Permutations.getAll(goalsAtThisLevel);
 			for (ArrayList<PlanGraphLiteralNode> goalList : permutations) {
-				ArrayList<HashSet<RelaxedNode>> sets = new ArrayList<>();
-				GetAllPossibleSteps(goalList, level, 0, explanations, new HashSet<>(), sets);
+				CombinationsFromSets<RelaxedNode> sets = GetAllPossibleStepIterator(goalList, level, explanations);
 				for (HashSet<RelaxedNode> set : sets) {
 					HashSet<PlanGraphLiteralNode> newGoals = GetAllPreconditions(set);
 					int previousLevel = level - 1;
@@ -130,6 +131,52 @@ public class RelaxedPlanExtractor {
 				}
 			}
 		}
+	}
+
+	private static CombinationsFromSets<RelaxedNode> GetAllPossibleStepIterator(
+			ArrayList<PlanGraphLiteralNode> goalsAtThisLevel, int level, ArrayList<Explanation> explanations) {
+
+		ArrayList<ArrayList<RelaxedNode>> goalSets = new ArrayList<>();
+		for (PlanGraphLiteralNode goal : goalsAtThisLevel) {
+			ArrayList<RelaxedNode> set = new ArrayList<>();
+			for (PlanGraphNode stepAchievingGoal : goal.parents) {
+				if (stepAchievingGoal.getLevel() > level)
+					continue;
+
+				if (stepAchievingGoal instanceof PlanGraphEventNode) {
+					PlanGraphEventNode eventNode = (PlanGraphEventNode) stepAchievingGoal;
+					if (stepAchievingGoal instanceof PlanGraphActionNode) {
+						PlanGraphActionNode actionNode = (PlanGraphActionNode) stepAchievingGoal;
+						ArrayList<Explanation> newExplanations = new ArrayList<>(explanations);
+						for (Term agent : actionNode.event.agents) {
+							for (Explanation oldExplanation : explanations) {
+								if (oldExplanation.agent.equals(agent)) {
+									Explanation newExplanation = oldExplanation.add(actionNode);
+									if (newExplanation != null)
+										replace(oldExplanation, newExplanation, newExplanations);
+									else {
+										newExplanations = null;
+										break;
+									}
+								}
+							}
+							if (newExplanations == null) break;
+						}
+						if (newExplanations != null) {
+							RelaxedNode relaxedNode = new RelaxedNode(eventNode, newExplanations, level);
+							if (!set.contains(relaxedNode))
+								set.add(relaxedNode);							
+						}
+					} else {
+						RelaxedNode relaxedNode = new RelaxedNode(eventNode, explanations, level);
+						if (!set.contains(relaxedNode))
+							set.add(relaxedNode);
+					}
+				}
+			}
+			goalSets.add(set);
+		}
+		return new CombinationsFromSets<RelaxedNode>(goalSets);
 	}
 
 	private static void GetAllPossibleSteps(ArrayList<PlanGraphLiteralNode> goalsAtThisLevel, int level, int i,

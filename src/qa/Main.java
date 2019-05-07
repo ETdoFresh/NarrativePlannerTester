@@ -43,7 +43,7 @@ public class Main {
 	// private static String filename = "rrh.txt";
 	private static String filename = "domains/camelot.domain";
 
-	private static final boolean usePlanGraphExplanation = false;
+	private static final boolean usePlanGraphExplanation = true;
 	private static final boolean deduplicatePlans = true;
 	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL_PAIR;
 
