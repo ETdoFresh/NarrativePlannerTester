@@ -281,11 +281,11 @@ public class RelaxedPlanExtractor {
 			GetAllPossiblePGEPlans(goalLiterals, space.graph.size() - 1, agentsSteps, new RelaxedPlan(), plans);
 		}
 
-		goalLiterals = new HashSet<>();
-		for (ConjunctiveClause goal : goals.toDNF().arguments)
-			goalLiterals.addAll(getGoalLiterals(space.graph, goal.arguments));
-		
-		GetAllPossiblePGEPlans(goalLiterals, space.graph.size() - 1, agentsSteps, new RelaxedPlan(), plans);
+//		goalLiterals = new HashSet<>();
+//		for (ConjunctiveClause goal : goals.toDNF().arguments)
+//			goalLiterals.addAll(getGoalLiterals(space.graph, goal.arguments));
+//		
+//		GetAllPossiblePGEPlans(goalLiterals, space.graph.size() - 1, agentsSteps, new RelaxedPlan(), plans);
 
 		return plans;
 	}
@@ -299,7 +299,7 @@ public class RelaxedPlanExtractor {
 
 		if (level == 0 || goalsAtThisLevel.size() == 0) {
 			//RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(plan.get(0).eventNode.graph.space, plan);
-			RelaxedPlan equivalentPlan = plansGetEquivalentBySSG(plans, plan);
+			RelaxedPlan equivalentPlan = plansGetEquivalentByDistance(plans, plan);
 			if (equivalentPlan == null) {
 				plans.add(plan);
 				FileIO.Write("plan.txt", Integer.toString(plans.size()));
@@ -321,9 +321,9 @@ public class RelaxedPlanExtractor {
 		}
 	}
 
-	private static RelaxedPlan plansGetEquivalentBySSG(ArrayList<RelaxedPlan> plans, RelaxedPlan plan) {
+	private static RelaxedPlan plansGetEquivalentByDistance(ArrayList<RelaxedPlan> plans, RelaxedPlan plan) {
 		for (RelaxedPlan other : plans)
-			if (plan.getSSGPairs().equals(other.getSSGPairs()))
+			if (Main.distance.getDistance(plan, other, plans) == 0)
 				return other;
 
 		return null;

@@ -46,7 +46,8 @@ public class Main {
 	private static final boolean onlyExploreAuthorGoals = true;
 	private static final boolean usePlanGraphExplanation = true;
 	private static final boolean deduplicatePlans = true;
-	private static final DistanceMetric metric = DistanceMetric.SSG_SCHEMA_MULTI;
+	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL_PAIR;
+	public static Distance distance;
 
 	static long lastModified = 0;
 	static boolean firstRun = true;
@@ -74,6 +75,7 @@ public class Main {
 			printLastModified();
 			Domain domain = getDomain();
 			SearchSpace space = getSearchSpace(domain);
+			distance = new Distance(metric, space);
 			printSpaceStatistics(space);
 			checkDomainGoalEmpty(domain);
 			ArrayState initial = new ArrayState(space);
