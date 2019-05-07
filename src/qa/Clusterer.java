@@ -100,7 +100,7 @@ public class Clusterer {
 	}
 
 	public void kmedoids() {
-		System.out.println("K-MEDOIDS (with RelaxedPlans, no vectors): ");
+		//System.out.println("K-MEDOIDS (with RelaxedPlans, no vectors): ");
 		int iteration = 1;
 		int assignmentsChanged;
 		do {
@@ -124,13 +124,13 @@ public class Clusterer {
 					assignmentsChanged++;
 				}
 			}
-			System.out.println("Iteration " + iteration + " changed " + assignmentsChanged + " assignments.");
+			//System.out.println("Iteration " + iteration + " changed " + assignmentsChanged + " assignments.");
 			iteration++;
 		} while(assignmentsChanged > 0);
 	}
 	
 	public void kmedoidsWithVectors() {
-		System.out.println("K-MEDOIDS (using vectors): ");
+		//System.out.println("K-MEDOIDS (using vectors): ");
 		int iteration = 1;
 		int assignmentsChanged;
 		do {
@@ -154,7 +154,7 @@ public class Clusterer {
 					assignmentsChanged++;
 				}
 			}
-			System.out.println("Iteration " + iteration + " changed " + assignmentsChanged + " assignments.");
+			//System.out.println("Iteration " + iteration + " changed " + assignmentsChanged + " assignments.");
 			iteration++;
 		} while(assignmentsChanged > 0);
 	}
@@ -194,7 +194,7 @@ public class Clusterer {
 					assignmentsChanged++;
 				}
 			}
-			System.out.println("Iteration " + iteration +" changed " + assignmentsChanged + " assignments.");			
+			//System.out.println("Iteration " + iteration +" changed " + assignmentsChanged + " assignments.");			
 			iteration++;
 		} while (assignmentsChanged > 0);
 	}	

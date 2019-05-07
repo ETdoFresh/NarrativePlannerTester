@@ -10,8 +10,11 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,7 +43,7 @@ public class Main {
 	// private static String filename = "rrh.txt";
 	private static String filename = "domains/camelot.domain";
 
-	private static final boolean usePlanGraphExplanation = true;
+	private static final boolean usePlanGraphExplanation = false;
 	private static final boolean deduplicatePlans = true;
 	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL_PAIR;
 
@@ -115,7 +118,7 @@ public class Main {
 //			// Uncomment this to generate new comparisons.
 //			Comparisons comparisons = Comparisons.compute(space, relaxedPlans);
 //			comparisons.keepRandomSet(100);
-			//FileIO.Write("Comparisons.json", comparisons.toString());
+			// FileIO.Write("Comparisons.json", comparisons.toString());
 
 			// Get RelaxedPlans from files
 			// ArrayList<RelaxedPlan> relaxedPlans =
@@ -138,27 +141,31 @@ public class Main {
 			Distance distance = new Distance(metric, space);
 			if (deduplicatePlans)
 				uniquePlans = RelaxedPlanCleaner.deDupePlans(uniquePlans, distance);
-			
+
 			Clusterer clusterer = null;
+			Clusterer bestClusterer = clusterer;
+			int[] assignments = new int[uniquePlans.size()];
+			float prevMinTotalClusterDistance = 0;
+			int bestK = 0;
+			FileIO.Write("output.txt", "");
+
 			// Set up k-medoids with unique RelaxedPlans
-			for (int k = 1; k <= 10; k++) {
+			for (int k = 1; k <= Math.min(10, uniquePlans.size()); k++) {
 				clusterer = new Clusterer(uniquePlans, k, space.actions.size(), space, distance);
-				System.out.println(DASHLINE);
+				// System.out.println(DASHLINE);
 				Random random = new Random();
 
 				// Run clusterer X times
 				float minTotalClusterDistance = Float.POSITIVE_INFINITY;
-				int[] assignments = new int[uniquePlans.size()];
-				Clusterer bestClusterer = clusterer;
 				for (int run = 0; run < 100; run++) {
 					// Randomize Cluster assignments
 					for (int i = 0; i < uniquePlans.size(); i++)
 						uniquePlans.get(i).clusterAssignment = random.nextInt(k);
 
 					// Print cluster assignment counts
-					for (int i = 0; i < k; i++)
-						System.out.println("Cluster " + i + " has "
-								+ clusterer.getAssignments(clusterer.clusters[i].id).size() + " initial assignments.");
+//					for (int i = 0; i < k; i++)
+//						System.out.println("Cluster " + i + " has "
+//								+ clusterer.getAssignments(clusterer.clusters[i].id).size() + " initial assignments.");
 
 					// Run k-medoids
 					clusterer.kmedoids();
@@ -174,58 +181,72 @@ public class Main {
 					// Find the tightest clusters and store assignments
 					if (minTotalClusterDistance > totalDistanceFromMedoid && !clusterer.HasEmptyCluster()) {
 						minTotalClusterDistance = totalDistanceFromMedoid;
-						bestClusterer = clusterer.clone();
-						for (int i = 0; i < uniquePlans.size(); i++)
-							assignments[i] = uniquePlans.get(i).clusterAssignment;
+						// System.out.println("New Minimum Distance Found: " + minTotalClusterDistance);
 
-						System.out.println("New Minimum Distance Found: " + minTotalClusterDistance);
+						if (k > 1) {
+							float slope = minTotalClusterDistance - prevMinTotalClusterDistance;
+							if (slope <= -1) {
+								bestK = k;
+								bestClusterer = clusterer.clone();
+								for (int i = 0; i < uniquePlans.size(); i++)
+									assignments[i] = uniquePlans.get(i).clusterAssignment;
+							}
+						}
 					}
-					System.out.println(DASHLINE);
+					// System.out.println(DASHLINE);
 				}
-				
-				// Assign best assignments to plans
-				clusterer = bestClusterer;
-				for (int i = 0; i < uniquePlans.size(); i++)
-					uniquePlans.get(i).clusterAssignment = assignments[i];
-				
-				RelaxedPlan[][] clusters = new RelaxedPlan[k][];
-				for (int i = 0; i < k; i++)
-					clusters[i] = bestClusterer.getAssignments(i).toArray(new RelaxedPlan[bestClusterer.getAssignments(i).size()]);
-				
-				System.out.println(DASHLINE);
-				// System.out.println("Final medoids: " + clusterer.toString());
-				System.out.println("Minimum Distance Found: " + minTotalClusterDistance);
-				System.out.println("Best clusters:\n" + bestClusterer.toString());
-				System.out.println(DASHLINE);
-				
-				// Get valid example plans based on cluster medoids
-				RelaxedPlan[] exemplars = clusterer.getExemplars();
-				System.out.println("Exemplars:");
-				for (int i = 0; i < k; i++)
-					System.out.println("Cluster " + i + ":\n" + exemplars[i]);
+
+				System.out.println("Minimum Distance K = " + k + ": " + minTotalClusterDistance);
+				FileIO.Append("output.txt", "Minimum Distance K = " + k + ": " + minTotalClusterDistance + "\n");
+				prevMinTotalClusterDistance = minTotalClusterDistance;
 			}
+
+			// Assign best assignments to plans
+			clusterer = bestClusterer;
+			for (int i = 0; i < uniquePlans.size(); i++)
+				uniquePlans.get(i).clusterAssignment = assignments[i];
+
+			RelaxedPlan[][] clusters = new RelaxedPlan[bestK][];
+			for (int i = 0; i < bestK; i++)
+				clusters[i] = bestClusterer.getAssignments(i)
+						.toArray(new RelaxedPlan[bestClusterer.getAssignments(i).size()]);
+
+			System.out.println(DASHLINE);
+			FileIO.Append("output.txt", DASHLINE + "\n");
+			// System.out.println("Final medoids: " + clusterer.toString());
+
+			System.out.println("Best clusters:\n" + bestClusterer.toString());
+			System.out.println(DASHLINE);
+			FileIO.Append("output.txt", "Best clusters:\n" + bestClusterer.toString());
+			FileIO.Append("output.txt", DASHLINE + "\n");
+
+			// Get valid example plans based on cluster medoids
+//			RelaxedPlan[] exemplars = clusterer.getExemplars();
+//			System.out.println("Exemplars:");
+//			for (int i = 0; i < bestK; i++)
+//				System.out.println("Cluster " + i + ":\n" + exemplars[i]);
 
 			// Check if a solution exists
 			Planner planner = new Planner();
-			planner.setSearchSpace(space);
-			search = planner.getSearchFactory().makeSearch(domain.goal);
-			RootNode root = new RootNode(initial);
-			search.push(root);
-			System.out.println(Text.BLANK + "Searching for next solution...");
-			try {
-				result = runInteruptably(() -> search.getNextSolution()); // <----------------------- search
-			} catch (Exception ex) {
-				System.out.println(Text.FAIL + "Exception while searching for solution: " + ex);
-				continue;
-			}
-			if (result != null && result.plan != null)
-				System.out.println(Text.PASS + Text.SOLUTION);
-			else {
-				System.out.println(Text.FAIL + Text.SOLUTION);
-				result = null;
-				search = null;
-				continue;
-			}
+//			planner.setSearchSpace(space);
+//			search = planner.getSearchFactory().makeSearch(domain.goal);
+//			RootNode root = new RootNode(initial);
+//			search.push(root);
+//			System.out.println(Text.BLANK + "Searching for next solution...");
+//			try {
+//				result = runInteruptably(() -> search.getNextSolution()); // <----------------------- search
+//			} catch (Exception ex) {
+//				System.out.println(Text.FAIL + "Exception while searching for solution: " + ex);
+//				continue;
+//			}
+//			if (result != null && result.plan != null)
+//				System.out.println(Text.PASS + Text.SOLUTION);
+//			else {
+//				System.out.println(Text.FAIL + Text.SOLUTION);
+//				result = null;
+//				search = null;
+//				continue;
+//			}
 			// } catch (Exception ex) {
 			// System.out.println(ex);
 			// continue;

@@ -29,12 +29,13 @@ public class RelaxedPlanExtractor {
 		ArrayList<Explanation> explanations = getExplanations(space.domain);
 		GetAllPossiblePlans(goalLiterals, initialState, space.graph.size() - 1, explanations, new RelaxedPlan(), plans);
 
-		//for (ConjunctiveClause goal : goals.toDNF().arguments) {
-		//	goalLiterals = new HashSet<>(getGoalLiterals(space.graph, goal.arguments));
-		//	GetAllPossiblePlans(goalLiterals, initialState, space.graph.size() - 1, explanations, new RelaxedPlan(),
-		//			plans);
-		//}
-		
+		// For author goals only (smaller plans)
+		for (ConjunctiveClause goal : goals.toDNF().arguments) {
+			goalLiterals = new HashSet<>(getGoalLiterals(space.graph, goal.arguments));
+			GetAllPossiblePlans(goalLiterals, initialState, space.graph.size() - 1, explanations, new RelaxedPlan(),
+					plans);
+		}
+
 		return plans;
 	}
 
@@ -244,8 +245,8 @@ public class RelaxedPlanExtractor {
 		if (level == 0 || goalsAtThisLevel.size() == 0) {
 			plans.add(plan);
 		} else {
-			ArrayList<HashSet<RelaxedNode>> sets = new ArrayList<>();
-			GetAllPossiblePGESteps(new ArrayList<>(goalsAtThisLevel), level, agentsSteps, 0, new HashSet<>(), sets);
+			CombinationsFromSets<RelaxedNode> sets = GetAllPossiblePGEStepIterator(goalsAtThisLevel, level,
+					agentsSteps);
 			for (HashSet<RelaxedNode> set : sets) {
 				HashSet<PlanGraphLiteralNode> newGoals = GetAllPreconditions(set);
 				int previousLevel = level - 1;
@@ -256,30 +257,30 @@ public class RelaxedPlanExtractor {
 		}
 	}
 
-	private static void GetAllPossiblePGESteps(ArrayList<PlanGraphLiteralNode> goalsAtThisLevel, int level,
-			HashMap<Agent, HashSet<RelaxedNode>> agentsSteps, int i, HashSet<RelaxedNode> set,
-			ArrayList<HashSet<RelaxedNode>> sets) {
+	private static CombinationsFromSets<RelaxedNode> GetAllPossiblePGEStepIterator(
+			HashSet<PlanGraphLiteralNode> goalsAtThisLevel, int level,
+			HashMap<Agent, HashSet<RelaxedNode>> agentsSteps) {
 
-		if (i == goalsAtThisLevel.size()) {
-			sets.add(set);
-
-		} else {
-			for (PlanGraphNode node : goalsAtThisLevel.get(i).parents) {
-				if (node.getLevel() > level)
+		ArrayList<ArrayList<RelaxedNode>> goalSets = new ArrayList<>();
+		for (PlanGraphLiteralNode goal : goalsAtThisLevel) {
+			ArrayList<RelaxedNode> set = new ArrayList<>();
+			for (PlanGraphNode stepAchievingGoal : goal.parents) {
+				if (stepAchievingGoal.getLevel() > level)
 					continue;
 
-				if (!explainedByAllConsentingCharacters(node, level, agentsSteps))
+				if (!explainedByAllConsentingCharacters(stepAchievingGoal, level, agentsSteps))
 					continue;
 
-				if (node instanceof PlanGraphEventNode) {
-					PlanGraphEventNode eventNode = (PlanGraphEventNode) node;
-					int nextI = i + 1;
-					HashSet<RelaxedNode> newSet = new HashSet<>(set);
-					newSet.add(new RelaxedNode(eventNode, null, level));
-					GetAllPossiblePGESteps(goalsAtThisLevel, level, agentsSteps, nextI, newSet, sets);
+				if (stepAchievingGoal instanceof PlanGraphEventNode) {
+					PlanGraphEventNode eventNode = (PlanGraphEventNode) stepAchievingGoal;
+					RelaxedNode relaxedNode = new RelaxedNode(eventNode, null, level);
+					if (!set.contains(relaxedNode))
+						set.add(relaxedNode);
 				}
 			}
+			goalSets.add(set);
 		}
+		return new CombinationsFromSets<RelaxedNode>(goalSets);
 	}
 
 	private static boolean explainedByAllConsentingCharacters(PlanGraphNode node, int level,
@@ -303,16 +304,17 @@ public class RelaxedPlanExtractor {
 		}
 		return true;
 	}
-	
-	private static HashSet<PlanGraphLiteralNode> combineAllAuthorAndCharacterGoals(SearchSpace space, Expression goals) {
+
+	private static HashSet<PlanGraphLiteralNode> combineAllAuthorAndCharacterGoals(SearchSpace space,
+			Expression goals) {
 		HashSet<PlanGraphLiteralNode> combination = new HashSet<>();
 		for (ConjunctiveClause goal : goals.toDNF().arguments)
 			combination.addAll(getGoalLiterals(space.graph, goal.arguments));
-		
+
 		for (Agent agent : space.domain.agents)
 			for (ConjunctiveClause goal : AgentGoal.get(space.domain, agent).toDNF().arguments)
 				combination.addAll(getGoalLiterals(space.graph, goal.arguments));
-		
+
 		return combination;
 	}
 }

@@ -13,4 +13,13 @@ public class FileIO {
 		} catch (Exception ex) {
 		}
 	}
+	
+	public static void Append(String filename, String str) {
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(filename, true));
+			writer.write(str);
+			writer.close();
+		} catch (Exception ex) {
+		}
+	}
 }
