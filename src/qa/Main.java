@@ -150,7 +150,7 @@ public class Main {
 			FileIO.Write("output.txt", "");
 
 			// Set up k-medoids with unique RelaxedPlans
-			for (int k = 1; k <= Math.min(10, uniquePlans.size()); k++) {
+			for (int k = 1; k <= Math.min(25, uniquePlans.size()); k++) {
 				clusterer = new Clusterer(uniquePlans, k, space.actions.size(), space, distance);
 				// System.out.println(DASHLINE);
 				Random random = new Random();
@@ -215,8 +215,10 @@ public class Main {
 			FileIO.Append("output.txt", DASHLINE + "\n");
 			// System.out.println("Final medoids: " + clusterer.toString());
 
+			System.out.println("Selected K: " + bestK);
 			System.out.println("Best clusters:\n" + bestClusterer.toString());
 			System.out.println(DASHLINE);
+			FileIO.Append("output.txt", "Selected K: " + bestK + "\n");
 			FileIO.Append("output.txt", "Best clusters:\n" + bestClusterer.toString());
 			FileIO.Append("output.txt", DASHLINE + "\n");
 
