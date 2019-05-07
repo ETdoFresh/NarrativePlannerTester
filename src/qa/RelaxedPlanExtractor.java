@@ -323,7 +323,7 @@ public class RelaxedPlanExtractor {
 
 	private static RelaxedPlan plansGetEquivalentBySSG(ArrayList<RelaxedPlan> plans, RelaxedPlan plan) {
 		for (RelaxedPlan other : plans)
-			if (plan.GetSSGPairs().equals(other.GetSSGPairs()))
+			if (plan.getSSGPairs().equals(other.getSSGPairs()))
 				return other;
 
 		return null;
