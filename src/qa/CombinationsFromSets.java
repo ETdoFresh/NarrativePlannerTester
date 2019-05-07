@@ -23,9 +23,9 @@ public class CombinationsFromSets<E> implements Iterator<HashSet<E>>, Iterable<H
 		indices = new int[sets.size()];
 		for (int i = 0; i < indices.length; i++)
 			indices[i] = 0;
-		
-		if (sizes[0] == 0)
-			indices[0] = -1;
+
+		if (sizes.length == 0 || sizes[0] == 0)
+			indices = new int[] { -1 };
 	}
 
 	@Override
