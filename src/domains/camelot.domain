@@ -1,5 +1,5 @@
 domain: "Camelot";
-goal: location(Medicine) = Peter & location(Peter) = Home;
+goal: !alive(Peter) | (location(Medicine) = Peter & location(Peter) = Home);
 
 // Types
 type location;
@@ -40,6 +40,7 @@ weapon :	wielding(character);
 boolean :   isGuard(character);
 boolean :	isMerchant(character);
 boolean :   isBandit(character);
+boolean : 	criminalAtLarge();
 
 // Intentions
 intends(Peter, alive(Peter));
@@ -48,8 +49,7 @@ intends(Peter, location(Peter) = Home);
 intends(Merchant, location(Merchant) = Market);
 intends(Merchant, alive(Merchant));
 intends(Guard, alive(Guard));
-intends(Guard, !alive(Peter));
-intends(Guard, !alive(Bandit));
+intends(Guard, criminalAtLarge() = False);
 intends(Bandit, alive(Bandit));
 intends(Bandit, location(PeterCoin) = Chest);
 intends(Bandit, location(BanditCoin) = Chest);
@@ -76,6 +76,7 @@ path(Town, Home);
 isGuard(Guard) = True;
 isMerchant(Merchant) = True;
 isBandit(Bandit) = True;
+criminalAtLarge() = True;
 
 // Actions
 action walk(character character*, place from, place to){
@@ -114,7 +115,8 @@ action reportCriminal(character character*, character criminal, place place){
 		location(Guard) = place
 	);
 	effect: (
-		knowsCriminal(Guard, criminal)
+		knowsCriminal(Guard, criminal) &
+		criminalAtLarge() = True
 	);
 }
 
@@ -172,7 +174,8 @@ action attack(character attacker*, character target, weapon weapon, place place)
 	);
 	effect: (
 		!alive(target) &
-		knowsCriminal(Guard, attacker)
+		knowsCriminal(Guard, attacker) &
+		criminalAtLarge() = True
 	);
 }
 
@@ -189,7 +192,8 @@ action apprehend(character attacker*, character target, weapon weapon, place pla
 		alive(target)
 	);
 	effect: (
-		!alive(target)
+		!alive(target) &
+		criminalAtLarge() = False
 	);
 }
 
