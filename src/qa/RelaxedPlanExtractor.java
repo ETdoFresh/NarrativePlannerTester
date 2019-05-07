@@ -268,6 +268,8 @@ public class RelaxedPlanExtractor {
 			HashMap<Agent, HashSet<RelaxedNode>> agentsSteps, boolean onlyExploreAuthorGoals) {
 		ArrayList<RelaxedPlan> plans = new ArrayList<>();
 
+		FileIO.Write("plan.txt", "");
+
 		HashSet<PlanGraphLiteralNode> goalLiterals;
 		if (!onlyExploreAuthorGoals) {
 			goalLiterals = combineAllAuthorAndCharacterGoals(space, goals);
@@ -278,6 +280,12 @@ public class RelaxedPlanExtractor {
 			goalLiterals = new HashSet<>(getGoalLiterals(space.graph, goal.arguments));
 			GetAllPossiblePGEPlans(goalLiterals, space.graph.size() - 1, agentsSteps, new RelaxedPlan(), plans);
 		}
+
+		goalLiterals = new HashSet<>();
+		for (ConjunctiveClause goal : goals.toDNF().arguments)
+			goalLiterals.addAll(getGoalLiterals(space.graph, goal.arguments));
+		
+		GetAllPossiblePGEPlans(goalLiterals, space.graph.size() - 1, agentsSteps, new RelaxedPlan(), plans);
 
 		return plans;
 	}
@@ -290,9 +298,17 @@ public class RelaxedPlanExtractor {
 				goalsAtThisLevel.remove(goalLiterals);
 
 		if (level == 0 || goalsAtThisLevel.size() == 0) {
-			plans.add(plan);
+			//RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(plan.get(0).eventNode.graph.space, plan);
+			RelaxedPlan equivalentPlan = plansGetEquivalentBySSG(plans, plan);
+			if (equivalentPlan == null) {
+				plans.add(plan);
+				FileIO.Write("plan.txt", Integer.toString(plans.size()));
+			} else if (equivalentPlan.size() > plan.size()) {
+				plans.remove(equivalentPlan);
+				plans.add(plan);
+			}
 		} else {
-			CombinationsFromSets<RelaxedNode> sets = GetAllPossiblePGEStepIterator(goalsAtThisLevel, level, plan,
+			CombinationsFromSets<RelaxedNode> sets = GetAllPossiblePGEStepIterator(goalsAtThisLevel, level,
 					agentsSteps);
 
 			for (HashSet<RelaxedNode> set : sets) {
@@ -305,8 +321,16 @@ public class RelaxedPlanExtractor {
 		}
 	}
 
+	private static RelaxedPlan plansGetEquivalentBySSG(ArrayList<RelaxedPlan> plans, RelaxedPlan plan) {
+		for (RelaxedPlan other : plans)
+			if (plan.GetSSGPairs().equals(other.GetSSGPairs()))
+				return other;
+
+		return null;
+	}
+
 	private static CombinationsFromSets<RelaxedNode> GetAllPossiblePGEStepIterator(
-			HashSet<PlanGraphLiteralNode> goalsAtThisLevel, int level, RelaxedPlan plan,
+			HashSet<PlanGraphLiteralNode> goalsAtThisLevel, int level,
 			HashMap<Agent, HashSet<RelaxedNode>> agentsSteps) {
 
 		ArrayList<ArrayList<RelaxedNode>> empty = new ArrayList<>();
@@ -323,14 +347,15 @@ public class RelaxedPlanExtractor {
 					if (!explainedByAllConsentingCharacters(stepAchievingGoal, level, agentsSteps))
 						continue;
 
-					if (planContainsEventNode(plan, eventNode))
-						continue;
-
 					RelaxedNode relaxedNode = new RelaxedNode(eventNode, null, level);
 					if (!set.contains(relaxedNode))
 						set.add(relaxedNode);
 				}
 			}
+
+			if (goal.getLevel() > 0 && set.size() == 0)
+				return new CombinationsFromSets<RelaxedNode>(empty);
+
 			goalSets.add(set);
 		}
 		return new CombinationsFromSets<RelaxedNode>(goalSets);

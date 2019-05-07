@@ -43,7 +43,7 @@ public class Main {
 	// private static String filename = "rrh.txt";
 	private static String filename = "domains/camelot.domain";
 
-	private static final boolean onlyExploreAuthorGoals = false;
+	private static final boolean onlyExploreAuthorGoals = true;
 	private static final boolean usePlanGraphExplanation = true;
 	private static final boolean deduplicatePlans = true;
 	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL_PAIR;
@@ -187,7 +187,7 @@ public class Main {
 
 						if (k > 1) {
 							float slope = minTotalClusterDistance - prevMinTotalClusterDistance;
-							if (slope <= -1 && prevSlope != -1) {
+							if (slope <= -1 && prevSlope < -1) {
 								bestK = k;
 								bestClusterer = clusterer.clone();
 								for (int i = 0; i < uniquePlans.size(); i++)
@@ -198,7 +198,9 @@ public class Main {
 					// System.out.println(DASHLINE);
 				}
 
-				prevSlope = minTotalClusterDistance - prevMinTotalClusterDistance;
+				if (k > 1)
+					prevSlope = Math.max(minTotalClusterDistance - prevMinTotalClusterDistance, prevSlope);
+				
 				System.out.println("Minimum Distance K = " + k + ": " + minTotalClusterDistance + " slope: " + prevSlope);
 				FileIO.Append("output.txt", "Minimum Distance K = " + k + ": " + minTotalClusterDistance + "\n");
 				prevMinTotalClusterDistance = minTotalClusterDistance;
@@ -283,7 +285,7 @@ public class Main {
 			dir = "ExplanationsPlans";
 			plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
 		}
-		RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(space, plans);
+		//RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(space, plans);
 		RelaxedPlanCleaner.removeDuplicateSteps(plans);
 		RelaxedPlanCleaner.removeDuplicatePlans(plans);
 		FileIO.Write(txtfile, plans.toString());
