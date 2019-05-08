@@ -48,8 +48,8 @@ public class Main {
 	private static final boolean onlyExploreAuthorGoals = true;
 	private static final boolean usePlanGraphExplanation = true;
 	public static final boolean deduplicatePlans = true;
-	public static final boolean testDistances = true;
-	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL_SCHEMA_MULTI;
+	public static final boolean testDistances = true; // compares plan #1 to all plans including self
+	private static final DistanceMetric metric = DistanceMetric.FULL_SATSTEP_GOAL;
 	public static Distance distance;
 
 	static long lastModified = 0;

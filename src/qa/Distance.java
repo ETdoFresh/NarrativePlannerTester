@@ -255,12 +255,12 @@ public class Distance {
 	}
 	
 	private float fullSatStepGoalAgentSchemaMultiDistance(RelaxedPlan a, RelaxedPlan b) {
-		return combinedJaccard(fullIntersectionOverUnion(a.getSSGPairs(), b.getSSGPairs(), DomainSet.getAllSSGPairs()),
+		return fullCombinedJaccard(fullIntersectionOverUnion(a.getSSGPairs(), b.getSSGPairs(), DomainSet.getAllSSGPairs()),
 				fullIntersectionOverUnion(a.getAgentSchemaPairs(), b.getAgentSchemaPairs(), DomainSet.getAllAgentSchemaPairs()));
 	}
 	
 	private float fullSatStepGoalSchemaMultiDistance(RelaxedPlan a, RelaxedPlan b) {
-		return combinedJaccard(fullIntersectionOverUnion(a.getSchemas(), b.getSchemas(), DomainSet.getAllSchemas()),
+		return fullCombinedJaccard(fullIntersectionOverUnion(a.getSchemas(), b.getSchemas(), DomainSet.getAllSchemas()),
 				fullIntersectionOverUnion(a.getSSGPairs(), b.getSSGPairs(), DomainSet.getAllSSGPairs()));
 	}
 	
@@ -342,6 +342,10 @@ public class Distance {
 	private <E> float jaccard(Set<E> a, Set<E> b) {
 		return 1f - intersectionOverUnion(a, b);
 	}
+	
+	private float fullCombinedJaccard(float a, float b) {
+		return (a+b)/2f;
+	}
 
 	private float combinedJaccard(float a, float b) {
 		return 1f - ((a+b)/2);
@@ -355,8 +359,9 @@ public class Distance {
 		return (float) intersection.size() / union.size();
 	}
 	
+	// Testing: Not 1- , just int/un
 	private <E> float fullJaccard(Set<E> a, Set<E> b, Set<E> all) {
-		return 1f - fullIntersectionOverUnion(a, b, all);
+		return fullIntersectionOverUnion(a, b, all);
 	}
 	
 	private <E> float fullIntersectionOverUnion(Set<E> a, Set<E> b, Set<E> all) {
