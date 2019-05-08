@@ -47,8 +47,7 @@ public class Main {
 	private static final boolean onlyExploreAuthorGoals = true;
 	private static final boolean usePlanGraphExplanation = true;
 	public static final boolean deduplicatePlans = true;
-	//private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL;
-	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED;
+	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL;
 	public static Distance distance;
 
 	static long lastModified = 0;
