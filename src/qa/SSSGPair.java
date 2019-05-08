@@ -12,7 +12,7 @@ public class SSSGPair {
 		this.goal = goal;
 		this.satisfyingStepSchema = satisfyingStepSchema;
 	}
-
+	
 	public static HashSet<SSSGPair> GetByStep(RelaxedNode node) {
 		HashSet<SSSGPair> pairs = new HashSet<>();
 		for (SSGPair ssgPair : node.satisfyingStepGoalLiteralPairs)

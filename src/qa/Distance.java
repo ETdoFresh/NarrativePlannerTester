@@ -14,7 +14,8 @@ import sabre.space.SearchSpace;
 
 enum DistanceMetric {
 	ACTION, ISIF, AGENT_STEP, SCHEMA, AGENT_SCHEMA, GOAL, AGENT_GOAL, AGENT_GOAL_SCHEMA, SATSTEP_GOAL, STEP_LEVEL,
-	SATSTEP_GOAL_AGENT_SCHEMA_MULTI, SATSTEP_SCHEMA_GOAL, SATSTEP_GOAL_SCHEMA_MULTI, SATSTEP_SCHEMA_ACTION, TEST, SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED
+	SATSTEP_GOAL_AGENT_SCHEMA_MULTI, SATSTEP_SCHEMA_GOAL, SATSTEP_GOAL_SCHEMA_MULTI, SATSTEP_SCHEMA_ACTION, TEST, SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED,
+	FULL_ACTION, FULL_SATSTEP_GOAL, FULL_SATSTEP_SCHEMA_GOAL
 };
 
 public class Distance {
@@ -32,7 +33,7 @@ public class Distance {
 		float dist = -1;
 		switch (distanceMetric) {
 		case ACTION:
-			dist = actionDistance(a, b); // fullActionDistance(a, b);
+			dist = actionDistance(a, b);
 			break;
 		case AGENT_GOAL:
 			dist = agentGoalDistance(a, b);
@@ -46,6 +47,15 @@ public class Distance {
 		case AGENT_STEP:
 			dist = agentStepDistance(a, b);
 			break;
+		case FULL_ACTION:
+			dist = fullActionDistance(a, b);
+			break;
+		case FULL_SATSTEP_GOAL:
+			dist = fullSatStepGoalDistance(a, b);
+			break;
+		case FULL_SATSTEP_SCHEMA_GOAL:
+			dist = fullSatStepSchemaGoalDistance(a, b);
+			break;
 		case GOAL:
 			dist = goalDistance(a, b);
 			break;
@@ -53,7 +63,7 @@ public class Distance {
 			dist = isifDistance(a, b);
 			break;
 		case SATSTEP_GOAL:
-			dist = fullSatStepGoalDistance(a, b);// satStepGoalDistance(a, b); // fullSatStepGoalDistance(a, b);
+			dist = satStepGoalDistance(a, b);
 		case SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED:
 			dist = satStepSchemaGoalSchemasWeighted(a, b);
 			break;
@@ -148,8 +158,27 @@ public class Distance {
 	private float actionDistance(RelaxedPlan a, RelaxedPlan b) {
 		return jaccard(a.getActions(), b.getActions());
 	}
+	
+	private float fullSatStepSchemaGoalDistance(RelaxedPlan a, RelaxedPlan b) {
+		HashSet<SSSGPair> allSSSGPairs = new HashSet<>();
+		for(Action action : space.actions) {
+			for(Expression goal : AgentGoal.getCombinedAuthorAndAllAgentGoals(space.domain)) {
+				for(ConjunctiveClause clause : goal.toDNF().arguments) {
+					for(Literal goalLiteral : clause.arguments) {
+						for(ConjunctiveClause effect : action.effect.toDNF().arguments) {
+							for(Literal effectLiteral : effect.arguments) {
+								if(CheckEquals.Literal(goalLiteral, effectLiteral))
+									allSSSGPairs.add(new SSSGPair(goalLiteral, action.name));
+							}
+						}
+					}
+				}
+			}
+		}
+		return fullJaccard(SSSGPair.GetByPlan(a), SSSGPair.GetByPlan(b), allSSSGPairs);
+	}
 
-	public float fullSatStepGoalDistance(RelaxedPlan a, RelaxedPlan b) {
+	private float fullSatStepGoalDistance(RelaxedPlan a, RelaxedPlan b) {
 		HashSet<SSGPair> allSSGPairs = new HashSet<>();
 		for(Action action : space.actions) {			
 			for(Expression goal : AgentGoal.getCombinedAuthorAndAllAgentGoals(space.domain)) {

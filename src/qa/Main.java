@@ -43,11 +43,12 @@ public class Main {
 	// private static String filename = "rrh.txt";
 	private static String filename = "domains/camelot.domain";
 
-	private static final int hardCodedK = 3; // 0 for auto
+	private static final int hardCodedK = 4; // 0 for auto
+	private static final int maxK = 6;
 	private static final boolean onlyExploreAuthorGoals = true;
 	private static final boolean usePlanGraphExplanation = true;
 	public static final boolean deduplicatePlans = true;
-	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL;
+	private static final DistanceMetric metric = DistanceMetric.FULL_ACTION;
 	public static Distance distance;
 
 	static long lastModified = 0;
@@ -153,9 +154,9 @@ public class Main {
 			float prevSlope = -100;
 			int bestK = 0;
 			FileIO.Write("output.txt", "");
-
+			
 			// Set up k-medoids with unique RelaxedPlans
-			for (int k = 1; k <= Math.min(6, uniquePlans.size()); k++) {
+			for (int k = 1; k <= Math.min(maxK, uniquePlans.size()); k++) {
 				if (hardCodedK > 0 && hardCodedK != k)
 					continue;
 				
@@ -209,10 +210,9 @@ public class Main {
 				if (k > 1)
 					prevSlope = Math.max(minTotalClusterDistance - prevMinTotalClusterDistance, prevSlope);
 
-				System.out
-						.println("Minimum Distance K = " + k + ": " + minTotalClusterDistance + " slope: " + prevSlope);
+				System.out.println("Min Distance K = " + k + ": " + minTotalClusterDistance + " slope: " + prevSlope);
 				FileIO.Append("output.txt",
-						"Minimum Distance K = " + k + ": " + minTotalClusterDistance + " slope: " + prevSlope + "\n");
+						"Min Distance K = " + k + ": " + minTotalClusterDistance + " slope: " + prevSlope + "\n");
 				prevMinTotalClusterDistance = minTotalClusterDistance;
 			}
 
