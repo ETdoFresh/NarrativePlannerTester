@@ -23,6 +23,93 @@ public class Distance {
 		this.distanceMetric = metric;
 		this.space = space;
 	}
+	
+	public boolean equals(RelaxedPlan a, RelaxedPlan b) {
+		switch(distanceMetric) {
+		case ACTION:
+			break;
+		case AGENT_GOAL:			
+			break;
+		case AGENT_GOAL_SCHEMA:
+			break;
+		case AGENT_SCHEMA:
+			break;
+		case AGENT_STEP:
+			break;
+		case FULL_ACTION:
+			break;
+		case FULL_SATSTEP_GOAL:
+			return fullSatStepGoalEquals(a, b);
+		case FULL_SATSTEP_SCHEMA_GOAL:
+			return fullSatStepSchemaGoalEquals(a, b);
+		case GOAL:
+			break;
+		case ISIF:
+			break;
+		case SATSTEP_GOAL:
+			return satStepGoalEquals(a, b);
+		case SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED:
+			return satStepGoalPairSchemasWeightedEquals(a, b);
+		case SATSTEP_GOAL_AGENT_SCHEMA_MULTI:
+			return satStepGoalAgentSchemaMultiEquals(a, b);
+		case SATSTEP_GOAL_SCHEMA_MULTI:
+			return satStepGoalSchemaMultiEquals(a, b);
+		case SATSTEP_SCHEMA_ACTION:
+			return satStepSchemaActionEquals(a, b);
+		case SATSTEP_SCHEMA_GOAL:
+			return satStepSchemaGoalEquals(a, b);
+		case SCHEMA:
+			break;
+		case STEP_LEVEL:
+			break;
+		case TEST:
+			break;
+		default:
+			System.out.println("?! What distance metric is this? " + distanceMetric);
+			System.exit(1);
+		}
+		return false;
+	}
+
+	private boolean satStepSchemaGoalEquals(RelaxedPlan a, RelaxedPlan b) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	private boolean satStepSchemaActionEquals(RelaxedPlan a, RelaxedPlan b) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	private boolean satStepGoalSchemaMultiEquals(RelaxedPlan a, RelaxedPlan b) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	private boolean satStepGoalAgentSchemaMultiEquals(RelaxedPlan a, RelaxedPlan b) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	private boolean satStepGoalPairSchemasWeightedEquals(RelaxedPlan a, RelaxedPlan b) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	private boolean satStepGoalEquals(RelaxedPlan a, RelaxedPlan b) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	private boolean fullSatStepSchemaGoalEquals(RelaxedPlan a, RelaxedPlan b) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	private boolean fullSatStepGoalEquals(RelaxedPlan a, RelaxedPlan b) {
+		// TODO Auto-generated method stub
+		return false;
+	}
 
 	public float getDistance(RelaxedPlan a, RelaxedPlan b, ArrayList<RelaxedPlan> plans) {
 		float dist = -1;
@@ -59,6 +146,7 @@ public class Distance {
 			break;
 		case SATSTEP_GOAL:
 			dist = satStepGoalDistance(a, b);
+			break;
 		case SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED:
 			dist = satStepSchemaGoalSchemasWeighted(a, b);
 			break;
