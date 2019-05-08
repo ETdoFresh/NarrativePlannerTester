@@ -330,7 +330,7 @@ public class RelaxedPlanExtractor {
 
 	private static RelaxedPlan plansGetEquivalentByDistance(ArrayList<RelaxedPlan> plans, RelaxedPlan plan) {
 		for (RelaxedPlan other : plans)
-			if (Main.distance.getDistance(plan, other, plans) == 0)
+			if (Main.distance.isEqualTo(plan, other))
 				return other;
 
 		return null;

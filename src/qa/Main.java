@@ -43,12 +43,12 @@ public class Main {
 	// private static String filename = "rrh.txt";
 	private static String filename = "domains/camelot.domain";
 
-	private static final int hardCodedK = 4; // 0 for auto
+	private static final int hardCodedK = 3; // 0 for auto
 	private static final int maxK = 6;
 	private static final boolean onlyExploreAuthorGoals = true;
 	private static final boolean usePlanGraphExplanation = true;
 	public static final boolean deduplicatePlans = true;
-	private static final DistanceMetric metric = DistanceMetric.FULL_ACTION;
+	private static final DistanceMetric metric = DistanceMetric.FULL_SATSTEP_GOAL;
 	public static Distance distance;
 
 	static long lastModified = 0;
