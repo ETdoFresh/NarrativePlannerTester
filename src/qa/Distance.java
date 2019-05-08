@@ -12,7 +12,7 @@ import sabre.space.SearchSpace;
 
 enum DistanceMetric {
 	ACTION, ISIF, AGENT_STEP, SCHEMA, AGENT_SCHEMA, GOAL, AGENT_GOAL, AGENT_GOAL_SCHEMA, SATSTEP_GOAL_PAIR, STEP_LEVEL,
-	SSG_AGENT_SCHEMA_MULTI, SSSCHEMA_GOAL, SSG_SCHEMA_MULTI
+	SSG_AGENT_SCHEMA_MULTI, SSSCHEMA_GOAL, SSG_SCHEMA_MULTI, TEST
 };
 
 public class Distance {
@@ -68,6 +68,9 @@ public class Distance {
 		case STEP_LEVEL:
 			dist = StepLevel(a, b);
 			break;
+		case TEST:
+			dist = testDistance(a, b);
+			break;
 		default:
 			System.out.println("?! What distance metric is this? " + distanceMetric);
 			System.exit(1);
@@ -75,8 +78,13 @@ public class Distance {
 		return dist;
 	}
 
+	private float testDistance(RelaxedPlan a, RelaxedPlan b) {
+		return 0;
+	}
+
 	private float ssgSchemaMultiDistance(RelaxedPlan a, RelaxedPlan b) {
-		return combinedJaccard(schemaDistance(a, b), SSGPairDistance(a, b));
+		return combinedJaccard(intersectionOverUnion(a.getSchemas(), b.getSchemas()), 
+				intersectionOverUnion(a.getSSGPairs(), b.getSSGPairs()));
 	}
 
 	private float goalSchemaDistance(RelaxedPlan a, RelaxedPlan b) {
@@ -108,8 +116,9 @@ public class Distance {
 	}
 
 	private float schemaSSGMultiDistance(RelaxedPlan a, RelaxedPlan b) {
-		return combinedJaccard(jaccard(a.getSSGPairs(), b.getSSGPairs()), 
-				jaccard(a.getAgentSchemaPairs(), b.getAgentSchemaPairs()));
+		return combinedJaccard(
+				intersectionOverUnion(a.getSSGPairs(), b.getSSGPairs()), 
+				intersectionOverUnion(a.getAgentSchemaPairs(), b.getAgentSchemaPairs()));
 	}
 	
 	private float combinedJaccard(float a, float b) {
@@ -171,11 +180,9 @@ public class Distance {
 		float[] max = new float[0];
 		if (plans.size() > 0)
 			max = Vector.getAgentSchemaVector(space, plans.get(0));
-
 		// Prevent Divide by 0
 		for (int i = 0; i < max.length; i++)
 			max[i] = 1;
-
 		// Get Max!
 		for (int i = 0; i < plans.size(); i++) {
 			float[] vector = Vector.getAgentSchemaVector(space, plans.get(i));
@@ -201,13 +208,17 @@ public class Distance {
 
 		Set<Event> explSummaries_a = getExplSummaries(a.explanations);
 		Set<Event> explSummaries_b = getExplSummaries(b.explanations);
-		// System.out.println("Jaccard of IF summaries: " + jaccard(explSummaries_a,
-		// explSummaries_b)+"\n");
-		return combinedJaccard(notJaccard(importantSteps_a, importantSteps_b), notJaccard(explSummaries_a, explSummaries_b));
+		return combinedJaccard(intersectionOverUnion(importantSteps_a, importantSteps_b), 
+				intersectionOverUnion(explSummaries_a, explSummaries_b));
+	}
+
+	/** Jaccard distance between two sets: 1 - intersection over union **/
+	private <E> float jaccard(Set<E> a, Set<E> b) {
+		return 1f - intersectionOverUnion(a, b);
 	}
 
 	/** Jaccard is 1 - this */
-	private <E> float notJaccard(Set<E> a, Set<E> b) {
+	private <E> float intersectionOverUnion(Set<E> a, Set<E> b) {
 		HashSet<E> intersection = new HashSet<>();
 		HashSet<E> union = new HashSet<>();
 		union.addAll(a);
@@ -218,20 +229,6 @@ public class Distance {
 		if (union.isEmpty())
 			return 0f;
 		return (float) intersection.size() / union.size();
-	}
-
-	/** Jaccard distance between two sets: intersection over union **/
-	private <E> float jaccard(Set<E> a, Set<E> b) {
-		HashSet<E> intersection = new HashSet<>();
-		HashSet<E> union = new HashSet<>();
-		union.addAll(a);
-		union.addAll(b);
-		for (E item : a)
-			if (b.contains(item))
-				intersection.add(item);
-		if (union.isEmpty())
-			return 0f;
-		return 1 - (float) intersection.size() / union.size();
 	}
 
 
