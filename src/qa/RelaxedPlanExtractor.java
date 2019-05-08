@@ -288,8 +288,13 @@ public class RelaxedPlanExtractor {
 		return plans;
 	}
 
+	private static int numPlans = 0;
 	private static void GetAllPossiblePGEPlans(HashSet<PlanGraphLiteralNode> goalsAtThisLevel, int level,
 			HashMap<Agent, HashSet<RelaxedNode>> agentsSteps, RelaxedPlan plan, ArrayList<RelaxedPlan> plans) {
+		if(plans.size() > numPlans) {
+			numPlans = plans.size();
+			System.out.println(numPlans);
+		}
 
 		for (PlanGraphLiteralNode goalLiterals : new ArrayList<>(goalsAtThisLevel))
 			if (goalLiterals.getLevel() == 0)

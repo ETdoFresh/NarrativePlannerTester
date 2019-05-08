@@ -218,6 +218,13 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		}
 		return true;
 	}
+	
+	public String shortString() {
+		String s = "";
+		for(RelaxedNode node : nodes)
+			s += Text.BLANK + node + "\n";
+		return s;
+	}
 
 	@Override
 	public String toString() {
