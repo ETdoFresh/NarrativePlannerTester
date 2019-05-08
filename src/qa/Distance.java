@@ -7,6 +7,8 @@ import java.util.Set;
 import sabre.Action;
 import sabre.Event;
 import sabre.Plan;
+import sabre.logic.ConjunctiveClause;
+import sabre.logic.Expression;
 import sabre.logic.Literal;
 import sabre.space.SearchSpace;
 
@@ -30,7 +32,7 @@ public class Distance {
 		float dist = -1;
 		switch (distanceMetric) {
 		case ACTION:
-			dist = actionDistance(a, b);
+			dist = actionDistance(a, b); // fullActionDistance(a, b);
 			break;
 		case AGENT_GOAL:
 			dist = agentGoalDistance(a, b);
@@ -51,7 +53,7 @@ public class Distance {
 			dist = isifDistance(a, b);
 			break;
 		case SATSTEP_GOAL:
-			dist = satStepGoalDistance(a, b);
+			dist = fullSatStepGoalDistance(a, b);// satStepGoalDistance(a, b); // fullSatStepGoalDistance(a, b);
 			break;
 		case SATSTEP_GOAL_AGENT_SCHEMA_MULTI:
 			dist = satStepGoalAgentSchemaMultiDistance(a, b);
@@ -127,11 +129,37 @@ public class Distance {
 	private float agentSchemaDistance(RelaxedPlan a, RelaxedPlan b) {
 		return jaccard(a.getAgentSchemaPairs(), b.getAgentSchemaPairs());
 	}
-
+	
+	private float fullActionDistance(RelaxedPlan a, RelaxedPlan b) {
+		HashSet<Event> allActions = new HashSet<>();
+		for(Action action : space.actions)
+			allActions.add(action);
+		return fullJaccard(a.getActions(), b.getActions(), allActions);
+	}
+	
 	private float actionDistance(RelaxedPlan a, RelaxedPlan b) {
 		return jaccard(a.getActions(), b.getActions());
 	}
 
+	public float fullSatStepGoalDistance(RelaxedPlan a, RelaxedPlan b) {
+		HashSet<SSGPair> allSSGPairs = new HashSet<>();
+		for(Action action : space.actions) {			
+			for(Expression goal : AgentGoal.getCombinedAuthorAndAllAgentGoals(space.domain)) {
+				for(ConjunctiveClause clause : goal.toDNF().arguments) {
+					for(Literal goalLiteral : clause.arguments) {
+						for(ConjunctiveClause effect : action.effect.toDNF().arguments) {
+							for(Literal effectLiteral : effect.arguments) {
+								if(CheckEquals.Literal(goalLiteral, effectLiteral))
+									allSSGPairs.add(new SSGPair(action, goalLiteral));
+							}
+						}
+					}
+				}
+			}
+		}
+		return fullJaccard(a.getSSGPairs(), b.getSSGPairs(), allSSGPairs);
+	}
+	
 	public float satStepGoalDistance(RelaxedPlan a, RelaxedPlan b) {
 		return jaccard(a.getSSGPairs(), b.getSSGPairs());
 	}
@@ -198,26 +226,55 @@ public class Distance {
 		return summaries;
 	}
 
-	private float combinedJaccard(float a, float b) {
-		return 1f - ((a+b)/2);
-	}
-	
 	/** Jaccard distance between two sets: 1 - intersection over union **/
 	private <E> float jaccard(Set<E> a, Set<E> b) {
 		return 1f - intersectionOverUnion(a, b);
 	}
 
-	/** Jaccard is 1 - this */
+	private float combinedJaccard(float a, float b) {
+		return 1f - ((a+b)/2);
+	}
+	
 	private <E> float intersectionOverUnion(Set<E> a, Set<E> b) {
-		HashSet<E> intersection = new HashSet<>();
-		HashSet<E> union = new HashSet<>();
-		union.addAll(a);
-		union.addAll(b);
-		for (E item : a)
-			if (b.contains(item))
-				intersection.add(item);
+		HashSet<E> intersection = intersection(a, b);
+		HashSet<E> union = union(a, b);
 		if (union.isEmpty())
 			return 0f;
 		return (float) intersection.size() / union.size();
 	}
+	
+	private <E> float fullJaccard(Set<E> a, Set<E> b, Set<E> all) {
+		return 1f - fullIntersectionOverUnion(a, b, all);
+	}
+	
+	private <E> float fullIntersectionOverUnion(Set<E> a, Set<E> b, Set<E> all) {
+		HashSet<E> fullIntersection = fullIntersection(a, b, all);
+		if(all.isEmpty())
+			return 0;
+		return (float) fullIntersection.size() / all.size();
+	}
+
+	private <E> HashSet<E> union(Set<E> a, Set<E> b){
+		HashSet<E> union = new HashSet<>();
+		union.addAll(a);
+		union.addAll(b);
+		return union;
+	}
+	
+	private <E> HashSet<E> intersection(Set<E> a, Set<E> b){
+		HashSet<E> intersection = new HashSet<>();
+		for (E item : a)
+			if (b.contains(item))
+				intersection.add(item);	
+		return intersection;
+	}
+	
+	private <E> HashSet<E> fullIntersection(Set<E> a, Set<E> b, Set<E> all) {
+		HashSet<E> fullIntersection = new HashSet<>();
+		fullIntersection.addAll(all);
+		fullIntersection.removeAll(union(a, b));
+		fullIntersection.addAll(intersection(a, b));
+		return fullIntersection;
+	}
+	
 }

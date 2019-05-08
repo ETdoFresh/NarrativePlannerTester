@@ -29,7 +29,7 @@ public class AgentGoal {
 		return new ConjunctiveClause(goals);
 	}
 
-	public static Iterable<Expression> getAll(Domain domain) {
+	public static Iterable<Expression> getAllAgentGoals(Domain domain) {
 		ArrayList<Expression> agentGoals = new ArrayList<>();
 		for (Agent agent : domain.agents)
 			agentGoals.add(get(domain, agent));
@@ -38,7 +38,7 @@ public class AgentGoal {
 
 	public static Iterable<Literal> getCombinedAuthorAndAllAgentGoals(Domain domain) {
 		HashSet<Literal> literals = new HashSet<>();
-		for (Expression goals : getAll(domain))
+		for (Expression goals : getAllAgentGoals(domain))
 			for (ConjunctiveClause goal : goals.toDNF().arguments)
 				for (Literal literal : goal.arguments)
 					literals.add(literal);
