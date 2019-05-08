@@ -37,15 +37,15 @@ public class RelaxedNode implements Serializable {
 		this.level = level;
 
 		if (explanations != null && explanations.size() > 0) {
-			PopulateSchema();
-			PopulateConsensting();
-			PopulateAllAgentsInvolved();
 			PopulateInServiceOfGoalLiteral();
 			PopulateInServiceOfAgentLiteral();
 			PopulateAgentGoalStatisfiedByStep();
 			PopulateGoalLiteralStatisfiedByStep();
 			ComputeAuthorGoalLiteralDistance();
 		}
+		PopulateSchema();
+		PopulateConsensting();
+		PopulateAllAgentsInvolved();
 		PopulateSSGPair();
 	}
 

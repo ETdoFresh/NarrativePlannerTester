@@ -211,13 +211,19 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		for (RelaxedNode node : nodes)
 			str += Text.BLANK + node + "\n";
 		
-//		str += Text.BLANK + "---------------------------\n";
-//		for (SSGPair pair : getSSGPairs())
-//			str += Text.BLANK + pair + "\n";
+		str += Text.BLANK + "-- SSGPair ---------------------------\n";
+		for (SSGPair pair : getSSGPairs())
+			str += Text.BLANK + pair + "\n";
 		
-		str += Text.BLANK + "---------------------------\n";
+		str += Text.BLANK + "-- SSSGPair ---------------------------\n";
 		for (SSSGPair pair : SSSGPair.GetByPlan(this))
 			str += Text.BLANK + pair + "\n";
+		
+		str += Text.BLANK + "-- Schema ---------------------------\n";
+		str += Text.BLANK + getSchemas() + "\n";
+		
+		str += Text.BLANK + "-- AgentSchema Pair ---------------------------\n";
+		str += Text.BLANK + getAgentSchemaPairs() + "\n";
 		
 		return str;
 	}
@@ -245,6 +251,13 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		HashSet<SSGPair> allPairs = new HashSet<>();
 		for (RelaxedNode node : this)
 			allPairs.addAll(node.satisfyingStepGoalLiteralPairs);
+		return allPairs;
+	}
+	
+	public HashSet<String> getSchemas() {
+		HashSet<String> allPairs = new HashSet<>();
+		for (RelaxedNode node : this)
+			allPairs.add(node.schema);
 		return allPairs;
 	}
 }

@@ -39,9 +39,7 @@ public class Distance {
 			dist = agentGoalSchemaDistance(a, b);
 			break;
 		case AGENT_SCHEMA:
-			if (max == null)
-				max = getAgentSchemaMaxVector(plans);
-			dist = agentSchemaDistance(a, b, max);
+			dist = agentSchemaDistance(a, b);
 			break;
 		case AGENT_STEP:
 			dist = agentStepDistance(a, b);
@@ -177,13 +175,7 @@ public class Distance {
 
 	/** Schema distance between two plans: Euclidean square of the schema vectors */
 	private float schemaDistance(RelaxedPlan a, RelaxedPlan b) {
-		float[] vectorA = Vector.getSchemaVector(space, a);
-		float[] vectorB = Vector.getSchemaVector(space, b);
-		// vectorA = Vector.divide(vectorA, a.size());
-		// vectorB = Vector.divide(vectorB, b.size());
-		vectorA = Vector.normalize(vectorA);
-		vectorB = Vector.normalize(vectorB);
-		return Vector.distance(vectorA, vectorB);
+		return jaccard(a.getSchemas(), b.getSchemas());
 	}
 
 	/**
@@ -192,16 +184,8 @@ public class Distance {
 	 * 
 	 * @param allPlans
 	 */
-	private float agentSchemaDistance(RelaxedPlan a, RelaxedPlan b, float[] max) {
-		float[] vectorA = Vector.getAgentSchemaVector(space, a);
-		float[] vectorB = Vector.getAgentSchemaVector(space, b);
-		vectorA = Vector.divideComponentWise(vectorA, max);
-		vectorB = Vector.divideComponentWise(vectorB, max);
-		// vectorA = Vector.divide(vectorA, a.size());
-		// vectorB = Vector.divide(vectorB, b.size());
-		// vectorA = Vector.normalize(vectorA);
-		// vectorB = Vector.normalize(vectorB);
-		return Vector.distance(vectorA, vectorB);
+	private float agentSchemaDistance(RelaxedPlan a, RelaxedPlan b) {
+		return jaccard(a.getAgentSchemaPairs(), b.getAgentSchemaPairs());
 	}
 
 	/**
