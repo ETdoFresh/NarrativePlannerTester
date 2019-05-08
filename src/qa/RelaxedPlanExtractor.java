@@ -268,8 +268,6 @@ public class RelaxedPlanExtractor {
 			HashMap<Agent, HashSet<RelaxedNode>> agentsSteps, boolean onlyExploreAuthorGoals) {
 		ArrayList<RelaxedPlan> plans = new ArrayList<>();
 
-		FileIO.Write("plan.txt", "");
-
 		HashSet<PlanGraphLiteralNode> goalLiterals;
 		if (!onlyExploreAuthorGoals) {
 			goalLiterals = combineAllAuthorAndCharacterGoals(space, goals);

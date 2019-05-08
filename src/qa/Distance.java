@@ -4,12 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
-import sabre.Action;
 import sabre.Event;
-import sabre.Plan;
-import sabre.logic.ConjunctiveClause;
-import sabre.logic.Expression;
-import sabre.logic.Literal;
 import sabre.space.SearchSpace;
 
 enum DistanceMetric {
@@ -104,9 +99,13 @@ public class Distance {
 	}
 	
 	public float satStepSchemaGoalSchemasWeighted(RelaxedPlan a, RelaxedPlan b) {
-		return 0.99f * jaccard(SSSGPair.GetByPlan(a), SSSGPair.GetByPlan(b)) + 
-				0.01f * jaccard(a.getSSGPairs(), b.getSSGPairs()) +
-				0.00f * jaccard(a.getAgentSchemaPairs(), b.getAgentSchemaPairs());
+//		return 0.99f * satStepSchemaGoalDistance(a, b) + 
+//				0.01f * satStepGoalDistance(a, b) +
+//				0.00f * agentSchemaDistance(a, b);
+//		HashSet<SSGPair> all = DomainSet.getAllSSGPairs();
+//		HashSet<SSGPair> commonAndUnused = difference(all, union(a.getSSGPairs(), b.getSSGPairs()));
+//		commonAndUnused = union(all, intersection(a.getSSGPairs(), b.getSSGPairs()));
+		return fullSatStepGoalDistance(a,b);
 	}
 
 	private float satStepSchemaGoalDistance(RelaxedPlan a, RelaxedPlan b) {
@@ -139,10 +138,7 @@ public class Distance {
 	}
 	
 	private float fullActionDistance(RelaxedPlan a, RelaxedPlan b) {
-		HashSet<Event> allActions = new HashSet<>();
-		for(Action action : space.actions)
-			allActions.add(action);
-		return fullJaccard(a.getActions(), b.getActions(), allActions);
+		return fullJaccard(a.getActions(), b.getActions(), DomainSet.getAllActions());
 	}
 	
 	private float actionDistance(RelaxedPlan a, RelaxedPlan b) {
@@ -150,22 +146,7 @@ public class Distance {
 	}
 
 	public float fullSatStepGoalDistance(RelaxedPlan a, RelaxedPlan b) {
-		HashSet<SSGPair> allSSGPairs = new HashSet<>();
-		for(Action action : space.actions) {			
-			for(Expression goal : AgentGoal.getCombinedAuthorAndAllAgentGoals(space.domain)) {
-				for(ConjunctiveClause clause : goal.toDNF().arguments) {
-					for(Literal goalLiteral : clause.arguments) {
-						for(ConjunctiveClause effect : action.effect.toDNF().arguments) {
-							for(Literal effectLiteral : effect.arguments) {
-								if(CheckEquals.Literal(goalLiteral, effectLiteral))
-									allSSGPairs.add(new SSGPair(action, goalLiteral));
-							}
-						}
-					}
-				}
-			}
-		}
-		return fullJaccard(a.getSSGPairs(), b.getSSGPairs(), allSSGPairs);
+		return fullJaccard(a.getSSGPairs(), b.getSSGPairs(), DomainSet.getAllSSGPairs());
 	}
 	
 	public float satStepGoalDistance(RelaxedPlan a, RelaxedPlan b) {

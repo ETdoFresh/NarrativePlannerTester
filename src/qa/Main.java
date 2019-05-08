@@ -82,6 +82,7 @@ public class Main {
 			ArrayState initial = new ArrayState(space);
 			checkGoalTrueInitialState(domain, initial);
 			extendPlanGraph(space, initial);
+			DomainSet.Initialize(space);
 
 			// Number of actions available from the initial state
 			int firstSteps = 0;
