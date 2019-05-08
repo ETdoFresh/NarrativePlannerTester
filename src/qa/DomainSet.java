@@ -7,6 +7,7 @@ import sabre.Event;
 import sabre.logic.ConjunctiveClause;
 import sabre.logic.Expression;
 import sabre.logic.Literal;
+import sabre.logic.Term;
 import sabre.space.SearchSpace;
 
 public class DomainSet {
@@ -14,26 +15,49 @@ public class DomainSet {
 	private static HashSet<Event> allActions;
 	private static HashSet<SSGPair> allSSGPairs;
 	private static HashSet<SSSGPair> allSSSGPairs;
+	private static HashSet<AgentSchemaPair> allAgentSchemaPairs;
+	private static HashSet<String> allSchemas;
 
 	public static void Initialize(SearchSpace space) {
 		DomainSet.space = space;
+	}
+	
+	public static HashSet<String> getAllSchemas(){
+		if(allSchemas != null)
+			return allSchemas;
+		allSchemas = new HashSet<>();
+		for(Action action : space.actions)
+			allSchemas.add(action.name);
+		return allSchemas;
 	}
 	
 	public static HashSet<Event> getAllActions(){
 		if (allActions != null)
 			return allActions;
 		
-		HashSet<Event> allActions = new HashSet<>();
+		allActions = new HashSet<>();
 		for(Action action : space.actions)
 			allActions.add(action);
 		return allActions;
+	}
+	
+	public static HashSet<AgentSchemaPair> getAllAgentSchemaPairs(){
+		if(allAgentSchemaPairs != null)
+			return allAgentSchemaPairs;
+		allAgentSchemaPairs = new HashSet<>();
+		for(Action action : space.actions) {
+			for(Term agent : action.agents) {
+				allAgentSchemaPairs.add(new AgentSchemaPair(agent.toString(), action.name));
+			}
+		}
+		return allAgentSchemaPairs;
 	}
 	
 	public static HashSet<SSGPair> getAllSSGPairs() {
 		if (allSSGPairs != null)
 			return allSSGPairs;
 		
-		HashSet<SSGPair> allSSGPairs = new HashSet<>();
+		allSSGPairs = new HashSet<>();
 		for(Action action : space.actions) {			
 			for(Expression goal : AgentGoal.getCombinedAuthorAndAllAgentGoals(space.domain)) {
 				for(ConjunctiveClause clause : goal.toDNF().arguments) {
