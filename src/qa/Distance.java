@@ -32,40 +32,40 @@ public class Distance {
 		case ACTION:
 			dist = actionDistance(a, b);
 			break;
-		case ISIF:
-			dist = isifDistance(a, b);
-			break;
-		case AGENT_STEP:
-			dist = agentStepDistance(a, b);
-			break;
-		case SCHEMA:
-			dist = schemaDistance(a, b);
-			break;
-		case AGENT_SCHEMA:
-			if (max == null)
-				max = getAgentSchemaMaxVector(plans);
-			dist = agentSchemaDistance(a, b, max);
-			break;
-		case GOAL:
-			dist = goalDistance(a, b);
-			break;
-		case SSSCHEMA_GOAL:
-			dist = goalSchemaDistance(a, b);
-			break;
 		case AGENT_GOAL:
 			dist = agentGoalDistance(a, b);
 			break;
 		case AGENT_GOAL_SCHEMA:
 			dist = agentGoalSchemaDistance(a, b);
 			break;
+		case AGENT_SCHEMA:
+			if (max == null)
+				max = getAgentSchemaMaxVector(plans);
+			dist = agentSchemaDistance(a, b, max);
+			break;
+		case AGENT_STEP:
+			dist = agentStepDistance(a, b);
+			break;
+		case GOAL:
+			dist = goalDistance(a, b);
+			break;
+		case ISIF:
+			dist = isifDistance(a, b);
+			break;
 		case SATSTEP_GOAL_PAIR:
 			dist = SSGPairDistance(a, b);
 			break;
-		case STEP_LEVEL:
-			dist = StepLevel(a, b);
+		case SCHEMA:
+			dist = schemaDistance(a, b);
 			break;
 		case SSG_SCHEMA_MULTI:
 			dist = schemaSSGMultiDistance(a, b);
+			break;
+		case SSSCHEMA_GOAL:
+			dist = goalSchemaDistance(a, b);
+			break;
+		case STEP_LEVEL:
+			dist = StepLevel(a, b);
 			break;
 		default:
 			System.out.println("?! What distance metric is this? " + distanceMetric);
@@ -126,11 +126,12 @@ public class Distance {
 	}
 
 	private float schemaSSGMultiDistance(RelaxedPlan a, RelaxedPlan b) {
-		HashSet<SSGPair> setA = a.getSSGPairs();
-		HashSet<SSGPair> setB = b.getSSGPairs();
-		HashSet<AgentSchemaPair> setA2 = a.getAgentSchemaPairs();
-		HashSet<AgentSchemaPair> setB2 = b.getAgentSchemaPairs();
-		return 1 - (0.5f * (jaccard(setA, setB) + jaccard(setA2, setB2)));
+		return combinedJaccard(jaccard(a.getSSGPairs(), b.getSSGPairs()), 
+				jaccard(a.getAgentSchemaPairs(), b.getAgentSchemaPairs()));
+	}
+	
+	private float combinedJaccard(float a, float b) {
+		return 1f - ((a+b)/2);
 	}
 
 	/**
@@ -150,9 +151,7 @@ public class Distance {
 		Set<Event> explSummaries_b = getExplSummaries(b.explanations);
 		// System.out.println("Jaccard of IF summaries: " + jaccard(explSummaries_a,
 		// explSummaries_b)+"\n");
-		float returnVal = 1
-				- (0.5f * (jaccard(importantSteps_a, importantSteps_b) + jaccard(explSummaries_a, explSummaries_b)));
-		return returnVal;
+		return combinedJaccard(jaccard(importantSteps_a, importantSteps_b), jaccard(explSummaries_a, explSummaries_b));
 	}
 
 	private HashSet<Event> getExplSummaries(ArrayList<Explanation> explanations) {
