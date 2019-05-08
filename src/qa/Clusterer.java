@@ -113,7 +113,7 @@ public class Clusterer {
 				float minDistance = Float.MAX_VALUE;
 				int clusterToAssign = -1;
 				for(int c=0; c<k; c++) {
-					float dist = distance.getDistance(relaxedPlans.get(i), clusters[c].medoid, relaxedPlans);
+					float dist = distance.getDistance(relaxedPlans.get(i), clusters[c].medoid);
 					if(dist < minDistance) {
 						minDistance = dist;
 						clusterToAssign = c;
@@ -212,7 +212,7 @@ public class Clusterer {
 		String s = "";
 		for (int i = 0; i < k; i++)
 			s += "Cluster " + i + " (" + getAssignments(i).size() + " assignments):\n" 
-					+ clusters[i].medoid + "\n";
+					+ clusters[i].medoid.shortString() + "\n";
 		return s;
 	}
 }

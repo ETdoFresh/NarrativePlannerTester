@@ -9,8 +9,9 @@ import sabre.space.SearchSpace;
 
 enum DistanceMetric {
 	ACTION, ISIF, AGENT_STEP, SCHEMA, AGENT_SCHEMA, GOAL, AGENT_GOAL, AGENT_GOAL_SCHEMA, SATSTEP_GOAL, STEP_LEVEL,
-	SATSTEP_GOAL_AGENT_SCHEMA_MULTI, SATSTEP_SCHEMA_GOAL, SATSTEP_GOAL_SCHEMA_MULTI, SATSTEP_SCHEMA_ACTION, TEST,
-	SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED, FULL_ACTION, FULL_SATSTEP_GOAL, FULL_SATSTEP_SCHEMA_GOAL
+	SATSTEP_GOAL_AGENT_SCHEMA_MULTI, SATSTEP_SCHEMA_GOAL, SATSTEP_GOAL_SCHEMA_MULTI, SATSTEP_SCHEMA_ACTION, TEST, 
+	SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED, FULL_ACTION, FULL_SATSTEP_GOAL, FULL_SATSTEP_SCHEMA_GOAL, FULL_SATSTEP_GOAL_AGENT_SCHEMA_MULTI,
+	FULL_SATSTEP_GOAL_SCHEMA_MULTI
 };
 
 public class Distance {
@@ -23,9 +24,9 @@ public class Distance {
 		this.distanceMetric = metric;
 		this.space = space;
 	}
-
+	
 	public boolean isEqualTo(RelaxedPlan a, RelaxedPlan b) {
-		switch (distanceMetric) {
+		switch(distanceMetric) {
 		case ACTION:
 			break;
 		case AGENT_GOAL:
@@ -40,6 +41,10 @@ public class Distance {
 			break;
 		case FULL_SATSTEP_GOAL:
 			return fullSatStepGoalEquals(a, b);
+		case FULL_SATSTEP_GOAL_AGENT_SCHEMA_MULTI:
+			break;
+		case FULL_SATSTEP_GOAL_SCHEMA_MULTI:
+			break;
 		case FULL_SATSTEP_SCHEMA_GOAL:
 			return fullSatStepSchemaGoalEquals(a, b);
 		case GOAL:
@@ -51,7 +56,7 @@ public class Distance {
 		case SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED:
 			return satStepGoalPairSchemasWeightedEquals(a, b);
 		case SATSTEP_GOAL_AGENT_SCHEMA_MULTI:
-			return satStepGoalAgentSchemaMultiEquals(a, b);
+			return satStepGoalAgentSchemaMultiEquals(a, b);	
 		case SATSTEP_GOAL_SCHEMA_MULTI:
 			return satStepGoalSchemaMultiEquals(a, b);
 		case SATSTEP_SCHEMA_ACTION:
@@ -72,23 +77,19 @@ public class Distance {
 	}
 
 	private boolean satStepSchemaGoalEquals(RelaxedPlan a, RelaxedPlan b) {
-		// TODO Auto-generated method stub
-		return false;
+		return satStepSchemaGoalDistance(a, b) == 0;
 	}
 
 	private boolean satStepSchemaActionEquals(RelaxedPlan a, RelaxedPlan b) {
-		// TODO Auto-generated method stub
-		return false;
+		return satStepSchemaActionDistance(a, b) == 0;
 	}
 
 	private boolean satStepGoalSchemaMultiEquals(RelaxedPlan a, RelaxedPlan b) {
-		// TODO Auto-generated method stub
-		return false;
+		return satStepGoalSchemaMultiDistance(a, b) == 0;
 	}
 
 	private boolean satStepGoalAgentSchemaMultiEquals(RelaxedPlan a, RelaxedPlan b) {
-		// TODO Auto-generated method stub
-		return false;
+		return satStepGoalAgentSchemaMultiDistance(a, b) == 0;
 	}
 
 	private boolean satStepGoalPairSchemasWeightedEquals(RelaxedPlan a, RelaxedPlan b) {
@@ -97,8 +98,7 @@ public class Distance {
 	}
 
 	private boolean satStepGoalEquals(RelaxedPlan a, RelaxedPlan b) {
-		// TODO Auto-generated method stub
-		return false;
+		return satStepGoalDistance(a, b) == 0;
 	}
 
 	private boolean fullSatStepSchemaGoalEquals(RelaxedPlan a, RelaxedPlan b) {
@@ -109,7 +109,7 @@ public class Distance {
 		return satStepGoalDistance(a, b) == 0 && fullSatStepGoalDistance(a, b) == 0;
 	}
 
-	public float getDistance(RelaxedPlan a, RelaxedPlan b, ArrayList<RelaxedPlan> plans) {
+	public float getDistance(RelaxedPlan a, RelaxedPlan b) {
 		float dist = -1;
 		switch (distanceMetric) {
 		case ACTION:
@@ -133,6 +133,12 @@ public class Distance {
 		case FULL_SATSTEP_GOAL:
 			dist = fullSatStepGoalDistance(a, b);
 			break;
+		case FULL_SATSTEP_GOAL_AGENT_SCHEMA_MULTI:
+			dist = fullSatStepGoalAgentSchemaMultiDistance(a, b);
+			break;
+		case FULL_SATSTEP_GOAL_SCHEMA_MULTI:
+			dist = fullSatStepGoalSchemaMultiDistance(a, b);
+			break;
 		case FULL_SATSTEP_SCHEMA_GOAL:
 			dist = fullSatStepSchemaGoalDistance(a, b);
 			break;
@@ -145,7 +151,7 @@ public class Distance {
 		case SATSTEP_GOAL:
 			dist = satStepGoalDistance(a, b);
 			break;
-		case SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED:
+		case SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED: // *
 			dist = satStepSchemaGoalSchemasWeighted(a, b);
 			break;
 		case SATSTEP_GOAL_AGENT_SCHEMA_MULTI:
@@ -157,7 +163,7 @@ public class Distance {
 		case SATSTEP_SCHEMA_ACTION:
 			dist = satStepSchemaActionDistance(a, b);
 			break;
-		case SATSTEP_SCHEMA_GOAL:
+		case SATSTEP_SCHEMA_GOAL: 
 			dist = satStepSchemaGoalDistance(a, b);
 			break;
 		case SCHEMA:
@@ -226,7 +232,7 @@ public class Distance {
 	}
 
 	private float fullAgentSchemaDistance(RelaxedPlan a, RelaxedPlan b) {
-		return fullJaccard(a.getAgentSchemaPairs(), b.getAgentSchemaPairs());
+		return fullJaccard(a.getAgentSchemaPairs(), b.getAgentSchemaPairs(), DomainSet.getAllAgentSchemaPairs());
 	}
 	
 	private float agentSchemaDistance(RelaxedPlan a, RelaxedPlan b) {
@@ -241,6 +247,16 @@ public class Distance {
 		return jaccard(a.getActions(), b.getActions());
 	}
 
+	private float fullSatStepGoalAgentSchemaMultiDistance(RelaxedPlan a, RelaxedPlan b) {
+		return fullCombinedJaccard(fullIntersectionOverUnion(a.getSSGPairs(), b.getSSGPairs(), DomainSet.getAllSSGPairs()),
+				fullIntersectionOverUnion(a.getAgentSchemaPairs(), b.getAgentSchemaPairs(), DomainSet.getAllAgentSchemaPairs()));
+	}
+	
+	private float fullSatStepGoalSchemaMultiDistance(RelaxedPlan a, RelaxedPlan b) {
+		return fullCombinedJaccard(fullIntersectionOverUnion(a.getSchemas(), b.getSchemas(), DomainSet.getAllSchemas()),
+				fullIntersectionOverUnion(a.getSSGPairs(), b.getSSGPairs(), DomainSet.getAllSSGPairs()));
+	}
+	
 	private float fullSatStepSchemaGoalDistance(RelaxedPlan a, RelaxedPlan b) {
 		return fullJaccard(SSSGPair.GetByPlan(a), SSSGPair.GetByPlan(b), DomainSet.getAllSSSGPairs());
 	}
@@ -322,6 +338,10 @@ public class Distance {
 	private <E> float jaccard(Set<E> a, Set<E> b) {
 		return 1f - intersectionOverUnion(a, b);
 	}
+	
+	private float fullCombinedJaccard(float a, float b) {
+		return (a+b)/2f;
+	}
 
 	private float combinedJaccard(float a, float b) {
 		return 1f - ((a + b) / 2);
@@ -335,8 +355,9 @@ public class Distance {
 		return (float) intersection.size() / union.size();
 	}
 
+	// Testing: Not 1- , just int/un
 	private <E> float fullJaccard(Set<E> a, Set<E> b, Set<E> all) {
-		return 1f - fullIntersectionOverUnion(a, b, all);
+		return fullIntersectionOverUnion(a, b, all);
 	}
 
 	private <E> float fullIntersectionOverUnion(Set<E> a, Set<E> b, Set<E> all) {

@@ -17,33 +17,43 @@ public class DomainSet {
 	private static HashSet<SSGPair> allSSGPairs;
 	private static HashSet<SSSGPair> allSSSGPairs;
 	private static HashSet<AgentSchemaPair> allAgentSchemaPairs;
+	private static HashSet<String> allSchemas;
 
 	public static void Initialize(SearchSpace space) {
 		DomainSet.space = space;
 	}
-
-	public static HashSet<Event> getAllActions() {
+	
+	public static HashSet<String> getAllSchemas(){
+		if(allSchemas != null)
+			return allSchemas;
+		allSchemas = new HashSet<>();
+		for(Action action : space.actions)
+			allSchemas.add(action.name);
+		return allSchemas;
+	}
+	
+	public static HashSet<Event> getAllActions(){
 		if (allActions != null)
 			return allActions;
-
+		
 		allActions = new HashSet<>();
-		for (Action action : space.actions)
+		for(Action action : space.actions)
 			allActions.add(action);
 		return allActions;
 	}
-
+	
 	public static HashSet<SSGPair> getAllSSGPairs() {
 		if (allSSGPairs != null)
 			return allSSGPairs;
-
+		
 		allSSGPairs = new HashSet<>();
-		for (Action action : space.actions) {
-			for (Expression goal : AgentGoal.getCombinedAuthorAndAllAgentGoals(space.domain)) {
-				for (ConjunctiveClause clause : goal.toDNF().arguments) {
-					for (Literal goalLiteral : clause.arguments) {
-						for (ConjunctiveClause effect : action.effect.toDNF().arguments) {
-							for (Literal effectLiteral : effect.arguments) {
-								if (CheckEquals.Literal(goalLiteral, effectLiteral))
+		for(Action action : space.actions) {			
+			for(Expression goal : AgentGoal.getCombinedAuthorAndAllAgentGoals(space.domain)) {
+				for(ConjunctiveClause clause : goal.toDNF().arguments) {
+					for(Literal goalLiteral : clause.arguments) {
+						for(ConjunctiveClause effect : action.effect.toDNF().arguments) {
+							for(Literal effectLiteral : effect.arguments) {
+								if(CheckEquals.Literal(goalLiteral, effectLiteral))
 									allSSGPairs.add(new SSGPair(action, goalLiteral));
 							}
 						}

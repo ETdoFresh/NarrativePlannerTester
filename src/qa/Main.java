@@ -49,6 +49,7 @@ public class Main {
 	private static final boolean usePlanGraphExplanation = true;
 	public static final boolean deduplicatePlans = true;
 	private static final DistanceMetric metric = DistanceMetric.FULL_SATSTEP_GOAL;
+	public static final boolean testDistances = true; // compares plan #1 to all plans including self
 	public static Distance distance;
 
 	static long lastModified = 0;
@@ -144,6 +145,15 @@ public class Main {
 			System.out.println("  Unique Valid RelaxedPlans: " + countValid(uniquePlans, space));
 			System.out.println(DASHLINE);
 
+			/** ----------------------- At this point we have all the plans ------------------------------ */
+			
+			if(testDistances) {
+				DistanceTester tester = new DistanceTester(space);
+				RelaxedPlan a = uniquePlans.get(0);
+				for(RelaxedPlan b : uniquePlans)
+					tester.testDistances(a, b);
+			}
+			
 			Distance distance = new Distance(metric, space);
 			//if (deduplicatePlans)
 				//uniquePlans = RelaxedPlanCleaner.deDupePlans(uniquePlans, distance);
@@ -185,10 +195,8 @@ public class Main {
 					for (int i = 0; i < k; i++)
 						for (int j = 0; j < uniquePlans.size(); j++)
 							if (uniquePlans.get(j).clusterAssignment == i)
-								totalDistanceFromMedoid += clusterer.distance.getDistance(uniquePlans.get(j),
-										clusterer.clusters[i].medoid, uniquePlans)
-										* clusterer.distance.getDistance(uniquePlans.get(j),
-												clusterer.clusters[i].medoid, uniquePlans);
+								totalDistanceFromMedoid += clusterer.distance.getDistance(uniquePlans.get(j), clusterer.clusters[i].medoid)
+										* clusterer.distance.getDistance(uniquePlans.get(j), clusterer.clusters[i].medoid);
 
 					// Find the tightest clusters and store assignments
 					if (minTotalClusterDistance > totalDistanceFromMedoid && !clusterer.HasEmptyCluster()) {

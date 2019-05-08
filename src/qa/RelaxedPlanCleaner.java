@@ -97,7 +97,7 @@ public class RelaxedPlanCleaner {
 	private static boolean isPlanSmallest(RelaxedPlan plan, ArrayList<RelaxedPlan> plans, Distance distance) {
 		for (RelaxedPlan other : plans)
 			if (plan != other)
-				if (distance.getDistance(plan, other, plans) == 0)
+				if (distance.getDistance(plan, other) == 0)
 					if (other.size() < plan.size())
 						return false;
 		return true;
@@ -106,7 +106,7 @@ public class RelaxedPlanCleaner {
 	private static boolean isPlanSizeUnique(RelaxedPlan plan, ArrayList<RelaxedPlan> plans, Distance distance) {
 		for (RelaxedPlan other : plans)
 			if (plan != other)
-				if (distance.getDistance(plan, other, plans) == 0)
+				if (distance.getDistance(plan, other) == 0)
 					if (other.size() == plan.size())
 						return false;
 		return true;
