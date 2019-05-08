@@ -7,12 +7,14 @@ import java.util.Set;
 import sabre.Action;
 import sabre.Event;
 import sabre.Plan;
+import sabre.logic.ConjunctiveClause;
+import sabre.logic.Expression;
 import sabre.logic.Literal;
 import sabre.space.SearchSpace;
 
 enum DistanceMetric {
-	ACTION, ISIF, AGENT_STEP, SCHEMA, AGENT_SCHEMA, GOAL, AGENT_GOAL, AGENT_GOAL_SCHEMA, SATSTEP_GOAL_PAIR, STEP_LEVEL,
-	SSG_AGENT_SCHEMA_MULTI, SSSCHEMA_GOAL, SSG_SCHEMA_MULTI, TEST, SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED
+	ACTION, ISIF, AGENT_STEP, SCHEMA, AGENT_SCHEMA, GOAL, AGENT_GOAL, AGENT_GOAL_SCHEMA, SATSTEP_GOAL, STEP_LEVEL,
+	SATSTEP_GOAL_AGENT_SCHEMA_MULTI, SATSTEP_SCHEMA_GOAL, SATSTEP_GOAL_SCHEMA_MULTI, SATSTEP_SCHEMA_ACTION, TEST, SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED
 };
 
 public class Distance {
@@ -30,7 +32,7 @@ public class Distance {
 		float dist = -1;
 		switch (distanceMetric) {
 		case ACTION:
-			dist = actionDistance(a, b);
+			dist = actionDistance(a, b); // fullActionDistance(a, b);
 			break;
 		case AGENT_GOAL:
 			dist = agentGoalDistance(a, b);
@@ -50,25 +52,28 @@ public class Distance {
 		case ISIF:
 			dist = isifDistance(a, b);
 			break;
-		case SATSTEP_GOAL_PAIR:
-			dist = SSGPairDistance(a, b);
+		case SATSTEP_GOAL:
+			dist = fullSatStepGoalDistance(a, b);// satStepGoalDistance(a, b); // fullSatStepGoalDistance(a, b);
 		case SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED:
 			dist = satStepSchemaGoalSchemasWeighted(a, b);
+			break;
+		case SATSTEP_GOAL_AGENT_SCHEMA_MULTI:
+			dist = satStepGoalAgentSchemaMultiDistance(a, b);
+			break;
+		case SATSTEP_GOAL_SCHEMA_MULTI:
+			dist = satStepGoalSchemaMultiDistance(a, b);
+			break;
+		case SATSTEP_SCHEMA_ACTION:
+			dist = satStepSchemaActionDistance(a, b);
+			break;
+		case SATSTEP_SCHEMA_GOAL:
+			dist = satStepSchemaGoalDistance(a, b);
 			break;
 		case SCHEMA:
 			dist = schemaDistance(a, b);
 			break;
-		case SSG_AGENT_SCHEMA_MULTI:
-			dist = schemaSSGMultiDistance(a, b);
-			break;
-		case SSG_SCHEMA_MULTI:
-			dist = ssgSchemaMultiDistance(a, b);
-			break;
-		case SSSCHEMA_GOAL:
-			dist = goalSchemaDistance(a, b);
-			break;
 		case STEP_LEVEL:
-			dist = StepLevel(a, b);
+			dist = stepLevelDistance(a, b);
 			break;
 		case TEST:
 			dist = testDistance(a, b);
@@ -79,71 +84,99 @@ public class Distance {
 		}
 		return dist;
 	}
-
+	
+	/** goals served, satisfying step schemas */
 	private float testDistance(RelaxedPlan a, RelaxedPlan b) {
-		return 0;
+		return combinedJaccard(intersectionOverUnion(a.getGoalsServed(), b.getGoalsServed()),
+				intersectionOverUnion(SSSGPair.GetByPlan(a), SSSGPair.GetByPlan(b)));
 	}
 
-	private float ssgSchemaMultiDistance(RelaxedPlan a, RelaxedPlan b) {
+	/** sat step schema, all grounded actions */
+	private float satStepSchemaActionDistance(RelaxedPlan a, RelaxedPlan b) {
+		return combinedJaccard(intersectionOverUnion(SSSGPair.GetByPlan(a), SSSGPair.GetByPlan(b)), 
+				intersectionOverUnion(a.getActions(), b.getActions()));
+	}
+
+	/** grounded sat step, all schemas */
+	private float satStepGoalSchemaMultiDistance(RelaxedPlan a, RelaxedPlan b) {
 		return combinedJaccard(intersectionOverUnion(a.getSchemas(), b.getSchemas()), 
 				intersectionOverUnion(a.getSSGPairs(), b.getSSGPairs()));
 	}
 	
 	public float satStepSchemaGoalSchemasWeighted(RelaxedPlan a, RelaxedPlan b) {
-		return 0.98f * jaccard(SSSGPair.GetByPlan(a), SSSGPair.GetByPlan(b)) + 
+		return 0.99f * jaccard(SSSGPair.GetByPlan(a), SSSGPair.GetByPlan(b)) + 
 				0.01f * jaccard(a.getSSGPairs(), b.getSSGPairs()) +
-				0.01f * jaccard(a.getAgentSchemaPairs(), b.getAgentSchemaPairs());
+				0.00f * jaccard(a.getAgentSchemaPairs(), b.getAgentSchemaPairs());
 	}
 
-	private float goalSchemaDistance(RelaxedPlan a, RelaxedPlan b) {
-		HashSet<SSSGPair> goalSetA = SSSGPair.GetByPlan(a);
-		HashSet<SSSGPair> goalSetB = SSSGPair.GetByPlan(b);
-		return jaccard(goalSetA, goalSetB);
+	private float satStepSchemaGoalDistance(RelaxedPlan a, RelaxedPlan b) {
+		return jaccard(SSSGPair.GetByPlan(a), SSSGPair.GetByPlan(b));
 	}
 
 	private float agentGoalSchemaDistance(RelaxedPlan a, RelaxedPlan b) {
-		HashSet<AGSSSTriple> goalSetA = AGSSSTriple.GetByPlan(a);
-		HashSet<AGSSSTriple> goalSetB = AGSSSTriple.GetByPlan(b);
-		return jaccard(goalSetA, goalSetB);
+		return jaccard(AGSSSTriple.GetByPlan(a), AGSSSTriple.GetByPlan(b));
 	}
 
 	private float agentGoalDistance(RelaxedPlan a, RelaxedPlan b) {
-		HashSet<AGPair> goalSetA = AGPair.GetByPlan(a);
-		HashSet<AGPair> goalSetB = AGPair.GetByPlan(b);
-		return jaccard(goalSetA, goalSetB);
+		return jaccard(AGPair.GetByPlan(a), AGPair.GetByPlan(b));
 	}
 
 	private float goalDistance(RelaxedPlan a, RelaxedPlan b) {
-		HashSet<Literal> goalSetA = new HashSet<>();
-		HashSet<Literal> goalSetB = new HashSet<>();
-		for (RelaxedNode node : a)
-			goalSetA.addAll(node.inServiceOfGoalLiteral);
-		for (RelaxedNode node : b)
-			goalSetB.addAll(node.inServiceOfGoalLiteral);
-		return jaccard(goalSetA, goalSetB);
+		return jaccard(a.getGoalsServed(), b.getGoalsServed());
 	}
 
-	private float schemaSSGMultiDistance(RelaxedPlan a, RelaxedPlan b) {
-		return combinedJaccard(
-				intersectionOverUnion(a.getSSGPairs(), b.getSSGPairs()), 
+	private float satStepGoalAgentSchemaMultiDistance(RelaxedPlan a, RelaxedPlan b) {
+		return combinedJaccard(intersectionOverUnion(a.getSSGPairs(), b.getSSGPairs()), 
 				intersectionOverUnion(a.getAgentSchemaPairs(), b.getAgentSchemaPairs()));
 	}
 	
-	private float combinedJaccard(float a, float b) {
-		return 1f - ((a+b)/2);
+	private float schemaDistance(RelaxedPlan a, RelaxedPlan b) {
+		return jaccard(a.getSchemas(), b.getSchemas());
 	}
 
-	private HashSet<Event> getExplSummaries(ArrayList<Explanation> explanations) {
-		HashSet<Event> summaries = new HashSet<>();
-		for (Explanation e : explanations)
-			summaries.addAll(e.getSatisfyingSteps());
-		return summaries;
+	private float agentSchemaDistance(RelaxedPlan a, RelaxedPlan b) {
+		return jaccard(a.getAgentSchemaPairs(), b.getAgentSchemaPairs());
+	}
+	
+	private float fullActionDistance(RelaxedPlan a, RelaxedPlan b) {
+		HashSet<Event> allActions = new HashSet<>();
+		for(Action action : space.actions)
+			allActions.add(action);
+		return fullJaccard(a.getActions(), b.getActions(), allActions);
+	}
+	
+	private float actionDistance(RelaxedPlan a, RelaxedPlan b) {
+		return jaccard(a.getActions(), b.getActions());
 	}
 
-	/**
-	 * Agent step distance between two plans: Euclidean square of the agent step
-	 * vectors
-	 */
+	public float fullSatStepGoalDistance(RelaxedPlan a, RelaxedPlan b) {
+		HashSet<SSGPair> allSSGPairs = new HashSet<>();
+		for(Action action : space.actions) {			
+			for(Expression goal : AgentGoal.getCombinedAuthorAndAllAgentGoals(space.domain)) {
+				for(ConjunctiveClause clause : goal.toDNF().arguments) {
+					for(Literal goalLiteral : clause.arguments) {
+						for(ConjunctiveClause effect : action.effect.toDNF().arguments) {
+							for(Literal effectLiteral : effect.arguments) {
+								if(CheckEquals.Literal(goalLiteral, effectLiteral))
+									allSSGPairs.add(new SSGPair(action, goalLiteral));
+							}
+						}
+					}
+				}
+			}
+		}
+		return fullJaccard(a.getSSGPairs(), b.getSSGPairs(), allSSGPairs);
+	}
+	
+	public float satStepGoalDistance(RelaxedPlan a, RelaxedPlan b) {
+		return jaccard(a.getSSGPairs(), b.getSSGPairs());
+	}
+
+	public float stepLevelDistance(RelaxedPlan a, RelaxedPlan b) {
+		return jaccard(SLPair.GetByPlan(a), SLPair.GetByPlan(b));
+	}
+
+	/** Agent step distance between two plans: Euclidean square of the agent step vectors */
 	private float agentStepDistance(RelaxedPlan a, RelaxedPlan b) {
 		float[] vectorA = Vector.getAgentStepVector(space, a);
 		float[] vectorB = Vector.getAgentStepVector(space, b);
@@ -152,32 +185,6 @@ public class Distance {
 		vectorA = Vector.normalize(vectorA);
 		vectorB = Vector.normalize(vectorB);
 		return Vector.distance(vectorA, vectorB);
-	}
-
-	private float schemaDistance(RelaxedPlan a, RelaxedPlan b) {
-		return jaccard(a.getSchemas(), b.getSchemas());
-	}
-
-	private float agentSchemaDistance(RelaxedPlan a, RelaxedPlan b) {
-		return jaccard(a.getAgentSchemaPairs(), b.getAgentSchemaPairs());
-	}
-
-	private float actionDistance(RelaxedPlan a, RelaxedPlan b) {
-		HashSet<Event> set_a = new HashSet<>();
-		HashSet<Event> set_b = new HashSet<>();
-		for (RelaxedNode action : a)
-			set_a.add(action.eventNode.event);
-		for (RelaxedNode action : b)
-			set_b.add(action.eventNode.event);
-		return jaccard(set_a, set_b);
-	}
-
-	public float SSGPairDistance(RelaxedPlan a, RelaxedPlan b) {
-		return jaccard(a.getSSGPairs(), b.getSSGPairs());
-	}
-
-	public float StepLevel(RelaxedPlan a, RelaxedPlan b) {
-		return jaccard(SLPair.GetByPlan(a), SLPair.GetByPlan(b));
 	}
 	
 	/**
@@ -219,25 +226,63 @@ public class Distance {
 		return combinedJaccard(intersectionOverUnion(importantSteps_a, importantSteps_b), 
 				intersectionOverUnion(explSummaries_a, explSummaries_b));
 	}
+	
+	private HashSet<Event> getExplSummaries(ArrayList<Explanation> explanations) {
+		HashSet<Event> summaries = new HashSet<>();
+		for (Explanation e : explanations)
+			summaries.addAll(e.getSatisfyingSteps());
+		return summaries;
+	}
 
 	/** Jaccard distance between two sets: 1 - intersection over union **/
 	private <E> float jaccard(Set<E> a, Set<E> b) {
 		return 1f - intersectionOverUnion(a, b);
 	}
 
-	/** Jaccard is 1 - this */
+	private float combinedJaccard(float a, float b) {
+		return 1f - ((a+b)/2);
+	}
+	
 	private <E> float intersectionOverUnion(Set<E> a, Set<E> b) {
-		HashSet<E> intersection = new HashSet<>();
-		HashSet<E> union = new HashSet<>();
-		union.addAll(a);
-		union.addAll(b);
-		for (E item : a)
-			if (b.contains(item))
-				intersection.add(item);
+		HashSet<E> intersection = intersection(a, b);
+		HashSet<E> union = union(a, b);
 		if (union.isEmpty())
 			return 0f;
 		return (float) intersection.size() / union.size();
 	}
+	
+	private <E> float fullJaccard(Set<E> a, Set<E> b, Set<E> all) {
+		return 1f - fullIntersectionOverUnion(a, b, all);
+	}
+	
+	private <E> float fullIntersectionOverUnion(Set<E> a, Set<E> b, Set<E> all) {
+		HashSet<E> fullIntersection = fullIntersection(a, b, all);
+		if(all.isEmpty())
+			return 0;
+		return (float) fullIntersection.size() / all.size();
+	}
 
-
+	private <E> HashSet<E> union(Set<E> a, Set<E> b){
+		HashSet<E> union = new HashSet<>();
+		union.addAll(a);
+		union.addAll(b);
+		return union;
+	}
+	
+	private <E> HashSet<E> intersection(Set<E> a, Set<E> b){
+		HashSet<E> intersection = new HashSet<>();
+		for (E item : a)
+			if (b.contains(item))
+				intersection.add(item);	
+		return intersection;
+	}
+	
+	private <E> HashSet<E> fullIntersection(Set<E> a, Set<E> b, Set<E> all) {
+		HashSet<E> fullIntersection = new HashSet<>();
+		fullIntersection.addAll(all);
+		fullIntersection.removeAll(union(a, b));
+		fullIntersection.addAll(intersection(a, b));
+		return fullIntersection;
+	}
+	
 }

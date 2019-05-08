@@ -70,6 +70,20 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		return nodes.iterator();
 	}
 
+	public HashSet<Literal> getGoalsServed(){
+		HashSet<Literal> set = new HashSet<>();
+		for(RelaxedNode node : nodes)
+			set.addAll(node.inServiceOfGoalLiteral);
+		return set;
+	}
+	
+	public HashSet<Event> getActions(){
+		HashSet<Event> set = new HashSet<>();
+		for(RelaxedNode node : nodes)
+			set.add(node.eventNode.event);
+		return set;
+	}
+	
 	public boolean isValid(SearchSpace space) {
 		boolean invalid = false;
 		MutableArrayState state = new MutableArrayState(space);
@@ -81,8 +95,8 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 				invalid = true;
 				break;
 			}
-		}
-		return !invalid && space.goal.test(state);
+		}		
+		return !invalid; //&& space.goal.test(state);
 	}
 
 	public float intersection(RelaxedPlan other) {

@@ -47,6 +47,7 @@ public class Main {
 	private static final boolean onlyExploreAuthorGoals = true;
 	private static final boolean usePlanGraphExplanation = true;
 	public static final boolean deduplicatePlans = true;
+	//private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL;
 	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED;
 	public static Distance distance;
 
@@ -143,8 +144,8 @@ public class Main {
 			System.out.println(DASHLINE);
 
 			Distance distance = new Distance(metric, space);
-			if (deduplicatePlans)
-				uniquePlans = RelaxedPlanCleaner.deDupePlans(uniquePlans, distance);
+			//if (deduplicatePlans)
+				//uniquePlans = RelaxedPlanCleaner.deDupePlans(uniquePlans, distance);
 
 			Clusterer clusterer = null;
 			Clusterer bestClusterer = clusterer;
