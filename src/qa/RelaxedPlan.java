@@ -211,9 +211,13 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		for (RelaxedNode node : nodes)
 			str += Text.BLANK + node + "\n";
 		
+//		str += Text.BLANK + "---------------------------\n";
+//		for (SSGPair pair : getSSGPairs())
+//			str += Text.BLANK + pair + "\n";
+		
 		str += Text.BLANK + "---------------------------\n";
-		for (SSGPair pair : getSSGPairs())
-			str += Text.BLANK + pair + "\n"; 
+		for (SSSGPair pair : SSSGPair.GetByPlan(this))
+			str += Text.BLANK + pair + "\n";
 		
 		return str;
 	}

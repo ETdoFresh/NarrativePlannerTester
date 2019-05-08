@@ -11,7 +11,8 @@ import sabre.logic.Literal;
 import sabre.space.SearchSpace;
 
 enum DistanceMetric {
-	ACTION, ISIF, AGENT_STEP, SCHEMA, AGENT_SCHEMA, GOAL, AGENT_GOAL, AGENT_GOAL_SCHEMA, SATSTEP_GOAL_PAIR, STEP_LEVEL, SSG_SCHEMA_MULTI
+	ACTION, ISIF, AGENT_STEP, SCHEMA, AGENT_SCHEMA, GOAL, AGENT_GOAL, AGENT_GOAL_SCHEMA, SATSTEP_GOAL_PAIR, STEP_LEVEL,
+	SSG_SCHEMA_MULTI, SSSCHEMA_GOAL
 };
 
 public class Distance {
@@ -48,6 +49,9 @@ public class Distance {
 		case GOAL:
 			dist = goalDistance(a, b);
 			break;
+		case SSSCHEMA_GOAL:
+			dist = goalSchemaDistance(a, b);
+			break;
 		case AGENT_GOAL:
 			dist = agentGoalDistance(a, b);
 			break;
@@ -69,13 +73,13 @@ public class Distance {
 		}
 		return dist;
 	}
-		
+
 	/**
 	 * @param plans - All Relaxed Plans
 	 * @return AgentSchema Vector where each dimension = MAX_OCCURENCES of dimension
 	 */
 	private float[] getAgentSchemaMaxVector(ArrayList<RelaxedPlan> plans) {
-		float[] max = new float[0]; 
+		float[] max = new float[0];
 		if (plans.size() > 0)
 			max = Vector.getAgentSchemaVector(space, plans.get(0));
 
@@ -91,6 +95,12 @@ public class Distance {
 					max[j] = vector[j];
 		}
 		return max;
+	}
+
+	private float goalSchemaDistance(RelaxedPlan a, RelaxedPlan b) {
+		HashSet<SSSGPair> goalSetA = SSSGPair.GetByPlan(a);
+		HashSet<SSSGPair> goalSetB = SSSGPair.GetByPlan(b);
+		return jaccard(goalSetA, goalSetB);
 	}
 
 	private float agentGoalSchemaDistance(RelaxedPlan a, RelaxedPlan b) {
@@ -122,7 +132,7 @@ public class Distance {
 		HashSet<AgentSchemaPair> setB2 = b.getAgentSchemaPairs();
 		return 1 - (0.5f * (jaccard(setA, setB) + jaccard(setA2, setB2)));
 	}
-	
+
 	/**
 	 * ISIF distance between two plans: Weighted Jaccards of the sets of important
 	 * steps and explanation summaries
@@ -138,14 +148,16 @@ public class Distance {
 
 		Set<Event> explSummaries_a = getExplSummaries(a.explanations);
 		Set<Event> explSummaries_b = getExplSummaries(b.explanations);
-		//System.out.println("Jaccard of IF summaries: " + jaccard(explSummaries_a, explSummaries_b)+"\n");
-		float returnVal = 1 - (0.5f * (jaccard(importantSteps_a, importantSteps_b) + jaccard(explSummaries_a, explSummaries_b)));
+		// System.out.println("Jaccard of IF summaries: " + jaccard(explSummaries_a,
+		// explSummaries_b)+"\n");
+		float returnVal = 1
+				- (0.5f * (jaccard(importantSteps_a, importantSteps_b) + jaccard(explSummaries_a, explSummaries_b)));
 		return returnVal;
 	}
-	
-	private HashSet<Event> getExplSummaries(ArrayList<Explanation> explanations){
+
+	private HashSet<Event> getExplSummaries(ArrayList<Explanation> explanations) {
 		HashSet<Event> summaries = new HashSet<>();
-		for(Explanation e : explanations)
+		for (Explanation e : explanations)
 			summaries.addAll(e.getSatisfyingSteps());
 		return summaries;
 	}
@@ -226,17 +238,17 @@ public class Distance {
 		for (E item : a)
 			if (b.contains(item))
 				intersection.add(item);
-		if(union.isEmpty())
+		if (union.isEmpty())
 			return 0f;
 		return 1 - (float) intersection.size() / union.size();
 	}
-	
+
 	public float SSGPairDistance(RelaxedPlan a, RelaxedPlan b) {
 		HashSet<SSGPair> setA = a.getSSGPairs();
 		HashSet<SSGPair> setB = b.getSSGPairs();
 		return jaccard(setA, setB);
 	}
-	
+
 	public float StepLevel(RelaxedPlan a, RelaxedPlan b) {
 		HashSet<SLPair> goalSetA = SLPair.GetByPlan(a);
 		HashSet<SLPair> goalSetB = SLPair.GetByPlan(b);

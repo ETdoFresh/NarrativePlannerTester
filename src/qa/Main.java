@@ -46,7 +46,7 @@ public class Main {
 	private static final boolean onlyExploreAuthorGoals = true;
 	private static final boolean usePlanGraphExplanation = true;
 	private static final boolean deduplicatePlans = true;
-	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL_PAIR;
+	private static final DistanceMetric metric = DistanceMetric.SSSCHEMA_GOAL;
 	public static Distance distance;
 
 	static long lastModified = 0;
@@ -189,7 +189,7 @@ public class Main {
 
 						if (k > 1) {
 							float slope = minTotalClusterDistance - prevMinTotalClusterDistance;
-							if (slope <= -1 && prevSlope < -1) {
+							if (slope <= -0.1 && prevSlope < -0.1) {
 								bestK = k;
 								bestClusterer = clusterer.clone();
 								for (int i = 0; i < uniquePlans.size(); i++)
@@ -204,7 +204,7 @@ public class Main {
 					prevSlope = Math.max(minTotalClusterDistance - prevMinTotalClusterDistance, prevSlope);
 				
 				System.out.println("Minimum Distance K = " + k + ": " + minTotalClusterDistance + " slope: " + prevSlope);
-				FileIO.Append("output.txt", "Minimum Distance K = " + k + ": " + minTotalClusterDistance + "\n");
+				FileIO.Append("output.txt", "Minimum Distance K = " + k + ": " + minTotalClusterDistance + " slope: " + prevSlope + "\n");
 				prevMinTotalClusterDistance = minTotalClusterDistance;
 			}
 
