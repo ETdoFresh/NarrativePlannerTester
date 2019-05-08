@@ -43,10 +43,11 @@ public class Main {
 	// private static String filename = "rrh.txt";
 	private static String filename = "domains/camelot.domain";
 
+	private static final int hardCodedK = 3; // 0 for auto
 	private static final boolean onlyExploreAuthorGoals = true;
 	private static final boolean usePlanGraphExplanation = true;
-	private static final boolean deduplicatePlans = true;
-	private static final DistanceMetric metric = DistanceMetric.SSSCHEMA_GOAL;
+	public static final boolean deduplicatePlans = true;
+	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED;
 	public static Distance distance;
 
 	static long lastModified = 0;
@@ -155,6 +156,9 @@ public class Main {
 
 			// Set up k-medoids with unique RelaxedPlans
 			for (int k = 1; k <= Math.min(6, uniquePlans.size()); k++) {
+				if (hardCodedK > 0 && hardCodedK != k)
+					continue;
+				
 				clusterer = new Clusterer(uniquePlans, k, space.actions.size(), space, distance);
 				// System.out.println(DASHLINE);
 				Random random = new Random();
@@ -180,7 +184,9 @@ public class Main {
 						for (int j = 0; j < uniquePlans.size(); j++)
 							if (uniquePlans.get(j).clusterAssignment == i)
 								totalDistanceFromMedoid += clusterer.distance.getDistance(uniquePlans.get(j),
-										clusterer.clusters[i].medoid, uniquePlans);
+										clusterer.clusters[i].medoid, uniquePlans)
+										* clusterer.distance.getDistance(uniquePlans.get(j),
+												clusterer.clusters[i].medoid, uniquePlans);
 
 					// Find the tightest clusters and store assignments
 					if (minTotalClusterDistance > totalDistanceFromMedoid && !clusterer.HasEmptyCluster()) {
@@ -189,7 +195,7 @@ public class Main {
 
 						if (k > 1) {
 							float slope = minTotalClusterDistance - prevMinTotalClusterDistance;
-							if (slope <= -0.1 && prevSlope < -0.1) {
+							if ((slope <= -0.99 && prevSlope < -0.99) || hardCodedK > 0) {
 								bestK = k;
 								bestClusterer = clusterer.clone();
 								for (int i = 0; i < uniquePlans.size(); i++)
@@ -202,9 +208,11 @@ public class Main {
 
 				if (k > 1)
 					prevSlope = Math.max(minTotalClusterDistance - prevMinTotalClusterDistance, prevSlope);
-				
-				System.out.println("Minimum Distance K = " + k + ": " + minTotalClusterDistance + " slope: " + prevSlope);
-				FileIO.Append("output.txt", "Minimum Distance K = " + k + ": " + minTotalClusterDistance + " slope: " + prevSlope + "\n");
+
+				System.out
+						.println("Minimum Distance K = " + k + ": " + minTotalClusterDistance + " slope: " + prevSlope);
+				FileIO.Append("output.txt",
+						"Minimum Distance K = " + k + ": " + minTotalClusterDistance + " slope: " + prevSlope + "\n");
 				prevMinTotalClusterDistance = minTotalClusterDistance;
 			}
 
@@ -287,7 +295,7 @@ public class Main {
 			dir = "ExplanationsPlans";
 			plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
 		}
-		//RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(space, plans);
+		// RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(space, plans);
 		RelaxedPlanCleaner.removeDuplicateSteps(plans);
 		RelaxedPlanCleaner.removeDuplicatePlans(plans);
 		FileIO.Write(txtfile, plans.toString());

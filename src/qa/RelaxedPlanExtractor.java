@@ -298,13 +298,17 @@ public class RelaxedPlanExtractor {
 				goalsAtThisLevel.remove(goalLiterals);
 
 		if (level == 0 || goalsAtThisLevel.size() == 0) {
-			//RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(plan.get(0).eventNode.graph.space, plan);
-			RelaxedPlan equivalentPlan = plansGetEquivalentByDistance(plans, plan);
-			if (equivalentPlan == null) {
-				plans.add(plan);
-				FileIO.Write("plan.txt", Integer.toString(plans.size()));
-			} else if (equivalentPlan.size() > plan.size()) {
-				plans.remove(equivalentPlan);
+			if (Main.deduplicatePlans) {
+				// RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(plan.get(0).eventNode.graph.space,
+				// plan);
+				RelaxedPlan equivalentPlan = plansGetEquivalentByDistance(plans, plan);
+				if (equivalentPlan == null) {
+					plans.add(plan);
+				} else if (equivalentPlan.size() > plan.size()) {
+					plans.remove(equivalentPlan);
+					plans.add(plan);
+				}
+			} else {
 				plans.add(plan);
 			}
 		} else {

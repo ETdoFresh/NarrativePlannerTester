@@ -12,7 +12,7 @@ import sabre.space.SearchSpace;
 
 enum DistanceMetric {
 	ACTION, ISIF, AGENT_STEP, SCHEMA, AGENT_SCHEMA, GOAL, AGENT_GOAL, AGENT_GOAL_SCHEMA, SATSTEP_GOAL_PAIR, STEP_LEVEL,
-	SSG_AGENT_SCHEMA_MULTI, SSSCHEMA_GOAL, SSG_SCHEMA_MULTI, TEST
+	SSG_AGENT_SCHEMA_MULTI, SSSCHEMA_GOAL, SSG_SCHEMA_MULTI, TEST, SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED
 };
 
 public class Distance {
@@ -52,6 +52,8 @@ public class Distance {
 			break;
 		case SATSTEP_GOAL_PAIR:
 			dist = SSGPairDistance(a, b);
+		case SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED:
+			dist = satStepSchemaGoalSchemasWeighted(a, b);
 			break;
 		case SCHEMA:
 			dist = schemaDistance(a, b);
@@ -85,6 +87,12 @@ public class Distance {
 	private float ssgSchemaMultiDistance(RelaxedPlan a, RelaxedPlan b) {
 		return combinedJaccard(intersectionOverUnion(a.getSchemas(), b.getSchemas()), 
 				intersectionOverUnion(a.getSSGPairs(), b.getSSGPairs()));
+	}
+	
+	public float satStepSchemaGoalSchemasWeighted(RelaxedPlan a, RelaxedPlan b) {
+		return 0.98f * jaccard(SSSGPair.GetByPlan(a), SSSGPair.GetByPlan(b)) + 
+				0.01f * jaccard(a.getSSGPairs(), b.getSSGPairs()) +
+				0.01f * jaccard(a.getAgentSchemaPairs(), b.getAgentSchemaPairs());
 	}
 
 	private float goalSchemaDistance(RelaxedPlan a, RelaxedPlan b) {
