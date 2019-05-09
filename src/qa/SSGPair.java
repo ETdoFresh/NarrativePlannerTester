@@ -3,6 +3,7 @@ package qa;
 import sabre.Event;
 import sabre.logic.Literal;
 
+// (Satisfy Step, Goal) Pair
 public class SSGPair {
 	public Event satisfyingStep;
 	public Literal goal;

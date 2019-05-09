@@ -51,6 +51,7 @@ public class Main {
 	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED;
 	public static final boolean testDistances = true; // compares plan #1 to all plans including self
 	public static Distance distance;
+	public static final boolean considerStepsForLiteralsAlreadyTrueInInitialState = true;
 
 	static long lastModified = 0;
 	static boolean firstRun = true;

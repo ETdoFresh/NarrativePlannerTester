@@ -9,6 +9,7 @@ import sabre.graph.PlanGraphEventNode;
 import sabre.logic.ConjunctiveClause;
 import sabre.logic.Literal;
 
+// (Agent, Goal, Satisfy Step Schema) Triple
 public class AGSSSTriple {
 	public Agent agent;
 	public Literal goal;

@@ -357,6 +357,10 @@ public class RelaxedPlanExtractor {
 		ArrayList<ArrayList<Object>> empty = new ArrayList<>();
 		ArrayList<ArrayList<Object>> goalSets = new ArrayList<>();
 		for (PlanGraphLiteralNode goal : goalsAtThisLevel) {
+			
+			if (!Main.considerStepsForLiteralsAlreadyTrueInInitialState && goal.getLevel() == 0)
+				continue;
+			
 			ArrayList<Object> set = new ArrayList<>();
 			for (PlanGraphNode stepAchievingGoal : goal.parents) {
 				if (stepAchievingGoal instanceof PlanGraphEventNode) {

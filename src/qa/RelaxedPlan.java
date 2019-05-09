@@ -239,6 +239,10 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		for (SSSGPair pair : SSSGPair.GetByPlan(this))
 			str += Text.BLANK + pair + "\n";
 		
+		str += Text.BLANK + "-- ASSSGPair ---------------------------\n";
+		for (ASSSGPair pair : ASSSGPair.GetByPlan(this))
+			str += Text.BLANK + pair + "\n";
+		
 		str += Text.BLANK + "-- Schema ---------------------------\n";
 		str += Text.BLANK + getSchemas() + "\n";
 		

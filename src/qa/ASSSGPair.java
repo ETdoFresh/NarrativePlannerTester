@@ -2,27 +2,31 @@ package qa;
 
 import java.util.HashSet;
 
+import sabre.logic.ConjunctiveClause;
 import sabre.logic.Literal;
 
-// (Satisfy Step Schema, Goal) Pair
-public class SSSGPair {
+// (Author Satisfy Step Schema, Goal) Pair
+public class ASSSGPair {
 	public Literal goal;
 	public String satisfyingStepSchema;
 
-	public SSSGPair(Literal goal, String satisfyingStepSchema) {
+	public ASSSGPair(Literal goal, String satisfyingStepSchema) {
 		this.goal = goal;
 		this.satisfyingStepSchema = satisfyingStepSchema;
 	}
 	
-	public static HashSet<SSSGPair> GetByStep(RelaxedNode node) {
-		HashSet<SSSGPair> pairs = new HashSet<>();
-		for (SSGPair ssgPair : node.satisfyingStepGoalLiteralPairs)
-			pairs.add(new SSSGPair(ssgPair.goal, ssgPair.satisfyingStep.name));
+	public static HashSet<ASSSGPair> GetByStep(RelaxedNode node) {
+		HashSet<ASSSGPair> pairs = new HashSet<>();
+		for (ConjunctiveClause goals : node.eventNode.graph.space.domain.goal.toDNF().arguments)
+			for (Literal goal : goals.arguments)
+				for (SSGPair ssgPair : node.satisfyingStepGoalLiteralPairs)
+					if (CheckEquals.Literal(ssgPair.goal, goal))
+						pairs.add(new ASSSGPair(goal, ssgPair.satisfyingStep.name));
 		return pairs;
 	}
 
-	public static HashSet<SSSGPair> GetByPlan(RelaxedPlan plan) {
-		HashSet<SSSGPair> pairs = new HashSet<>();
+	public static HashSet<ASSSGPair> GetByPlan(RelaxedPlan plan) {
+		HashSet<ASSSGPair> pairs = new HashSet<>();
 		for (RelaxedNode node : plan)
 			pairs.addAll(GetByStep(node));
 		return pairs;
@@ -45,7 +49,7 @@ public class SSSGPair {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		SSSGPair other = (SSSGPair) obj;
+		ASSSGPair other = (ASSSGPair) obj;
 		if (goal == null) {
 			if (other.goal != null)
 				return false;
