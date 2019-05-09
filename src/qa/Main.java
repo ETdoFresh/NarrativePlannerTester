@@ -43,12 +43,12 @@ public class Main {
 	// private static String filename = "rrh.txt";
 	private static String filename = "domains/camelot.domain";
 
-	private static final int hardCodedK = 3; // 0 for auto
+	private static final int hardCodedK = 0; // 0 for auto
 	private static final int maxK = 6;
 	private static final boolean onlyExploreAuthorGoals = true;
 	private static final boolean usePlanGraphExplanation = true;
 	public static final boolean deduplicatePlans = true;
-	private static final DistanceMetric metric = DistanceMetric.FULL_SATSTEP_GOAL;
+	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED;
 	public static final boolean testDistances = true; // compares plan #1 to all plans including self
 	public static Distance distance;
 
@@ -160,6 +160,7 @@ public class Main {
 
 			Clusterer clusterer = null;
 			Clusterer bestClusterer = clusterer;
+			Clusterer[] bestClusterers = new Clusterer[maxK+1];
 			int[] assignments = new int[uniquePlans.size()];
 			float prevMinTotalClusterDistance = 0;
 			float prevSlope = -100;
@@ -171,16 +172,18 @@ public class Main {
 				if (hardCodedK > 0 && hardCodedK != k)
 					continue;
 				
-				clusterer = new Clusterer(uniquePlans, k, space.actions.size(), space, distance);
 				// System.out.println(DASHLINE);
 				Random random = new Random();
 
 				// Run clusterer X times
-				float minTotalClusterDistance = Float.POSITIVE_INFINITY;
+				float minAverageClusterDistance = Float.POSITIVE_INFINITY;
 				for (int run = 0; run < 100; run++) {
+					
+					clusterer = new Clusterer(uniquePlans, k, space.actions.size(), space, distance);	
 					// Randomize Cluster assignments
 					for (int i = 0; i < uniquePlans.size(); i++)
-						uniquePlans.get(i).clusterAssignment = random.nextInt(k);
+						//uniquePlans.get(i).clusterAssignment = random.nextInt(k);
+						clusterer.clusters[random.nextInt(k)].plans.add(uniquePlans.get(i));
 
 					// Print cluster assignment counts
 //					for (int i = 0; i < k; i++)
@@ -191,25 +194,28 @@ public class Main {
 					clusterer.kmedoids();
 
 					// Other Evaluation [Tightest Clusters]
-					float totalDistanceFromMedoid = 0;
+					float averageDistanceFromMedoids = 0;
 					for (int i = 0; i < k; i++)
-						for (int j = 0; j < uniquePlans.size(); j++)
-							if (uniquePlans.get(j).clusterAssignment == i)
-								totalDistanceFromMedoid += clusterer.distance.getDistance(uniquePlans.get(j), clusterer.clusters[i].medoid)
-										* clusterer.distance.getDistance(uniquePlans.get(j), clusterer.clusters[i].medoid);
+						for (RelaxedPlanCluster cluster : clusterer.clusters)
+						{
+							float averageDistanceFromMedoid = 0;
+							for (RelaxedPlan plan : cluster.plans)
+								averageDistanceFromMedoid += distance.getDistance(plan, cluster.medoid);
+							//averageDistanceFromMedoid /= cluster.plans.size();
+							averageDistanceFromMedoids += averageDistanceFromMedoid;
+						}
+					averageDistanceFromMedoids /= k;
 
 					// Find the tightest clusters and store assignments
-					if (minTotalClusterDistance > totalDistanceFromMedoid && !clusterer.HasEmptyCluster()) {
-						minTotalClusterDistance = totalDistanceFromMedoid;
-						// System.out.println("New Minimum Distance Found: " + minTotalClusterDistance);
+					if (minAverageClusterDistance > averageDistanceFromMedoids && !clusterer.HasEmptyCluster()) {
+						minAverageClusterDistance = averageDistanceFromMedoids;
+						bestClusterers[k] = clusterer.clone();
 
 						if (k > 1) {
-							float slope = minTotalClusterDistance - prevMinTotalClusterDistance;
+							float slope = minAverageClusterDistance - prevMinTotalClusterDistance;
 							if ((slope <= -0.99 && prevSlope < -0.99) || hardCodedK > 0) {
 								bestK = k;
 								bestClusterer = clusterer.clone();
-								for (int i = 0; i < uniquePlans.size(); i++)
-									assignments[i] = uniquePlans.get(i).clusterAssignment;
 							}
 						}
 					}
@@ -217,23 +223,16 @@ public class Main {
 				}
 
 				if (k > 1)
-					prevSlope = Math.max(minTotalClusterDistance - prevMinTotalClusterDistance, prevSlope);
+					prevSlope = Math.max(minAverageClusterDistance - prevMinTotalClusterDistance, prevSlope);
 
-				System.out.println("Min Distance K = " + k + ": " + minTotalClusterDistance + " slope: " + prevSlope);
+				System.out.println("Min Distance K = " + k + ": " + minAverageClusterDistance + " slope: " + prevSlope);
 				FileIO.Append("output.txt",
-						"Min Distance K = " + k + ": " + minTotalClusterDistance + " slope: " + prevSlope + "\n");
-				prevMinTotalClusterDistance = minTotalClusterDistance;
+						"Min Distance K = " + k + ": " + minAverageClusterDistance + " slope: " + prevSlope + "\n");
+				prevMinTotalClusterDistance = minAverageClusterDistance;
 			}
 
 			// Assign best assignments to plans
 			clusterer = bestClusterer;
-			for (int i = 0; i < uniquePlans.size(); i++)
-				uniquePlans.get(i).clusterAssignment = assignments[i];
-
-			RelaxedPlan[][] clusters = new RelaxedPlan[bestK][];
-			for (int i = 0; i < bestK; i++)
-				clusters[i] = bestClusterer.getAssignments(i)
-						.toArray(new RelaxedPlan[bestClusterer.getAssignments(i).size()]);
 
 			System.out.println(DASHLINE);
 			FileIO.Append("output.txt", DASHLINE + "\n");
@@ -305,8 +304,8 @@ public class Main {
 			plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
 		}
 		// RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(space, plans);
-		RelaxedPlanCleaner.removeDuplicateSteps(plans);
-		RelaxedPlanCleaner.removeDuplicatePlans(plans);
+		//RelaxedPlanCleaner.removeDuplicateSteps(plans);
+		//RelaxedPlanCleaner.removeDuplicatePlans(plans);
 		FileIO.Write(txtfile, plans.toString());
 //		File file = new File(dir);
 //		if (!file.isDirectory())

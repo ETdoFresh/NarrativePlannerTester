@@ -124,21 +124,20 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 	public static RelaxedPlan medoid(ArrayList<RelaxedPlan> plans, Distance distance) {
 		RelaxedPlan medoid = null;
 		float[] averageDistances = new float[plans.size()];
-		SearchSpace space = null;
+		
 		for (int i = 0; i < plans.size(); i++) {
 			float sum = 0;
-			if (space == null)
-				space = plans.get(i).nodes.get(0).eventNode.graph.space;
 			for (RelaxedPlan other : plans)
 				sum += distance.getDistance(plans.get(i), other);
 			averageDistances[i] = sum / plans.size();
 		}
+		
 		float minDistance = Float.MAX_VALUE;
 		for (int i = 0; i < plans.size(); i++) {
 			if (averageDistances[i] < minDistance 
 			|| (averageDistances[i] == minDistance && plans.get(i).size() < medoid.size())) {
 				minDistance = averageDistances[i];
-				medoid = plans.get(i).clone();
+				medoid = plans.get(i);
 			}
 		}
 		if (medoid == null)

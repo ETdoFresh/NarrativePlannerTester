@@ -105,9 +105,12 @@ public class Clusterer {
 		int assignmentsChanged;
 		do {
 			assignmentsChanged = 0;
+			
 			// Update medoids
 			for(RelaxedPlanCluster cluster : clusters)
-				cluster.medoid = RelaxedPlan.medoid(getAssignments(cluster.id), distance);
+				//cluster.medoid = RelaxedPlan.medoid(getAssignments(cluster.id), distance);
+				cluster.medoid = RelaxedPlan.medoid(cluster.plans, distance);
+			
 			// Update assignments
 			for(int i=0; i<relaxedPlans.size(); i++) {
 				float minDistance = Float.MAX_VALUE;
@@ -119,8 +122,13 @@ public class Clusterer {
 						clusterToAssign = c;
 					}
 				}
-				if(relaxedPlans.get(i).clusterAssignment != clusterToAssign) {
-					relaxedPlans.get(i).clusterAssignment = clusterToAssign;
+				
+				//if(relaxedPlans.get(i).clusterAssignment != clusterToAssign) {
+				//	relaxedPlans.get(i).clusterAssignment = clusterToAssign;
+				if (!clusters[clusterToAssign].plans.contains(relaxedPlans.get(i))) {
+					for (int j = 0; j < k; j++)
+						clusters[j].plans.remove(relaxedPlans.get(i));
+					clusters[clusterToAssign].plans.add(relaxedPlans.get(i));
 					assignmentsChanged++;
 				}
 			}
@@ -200,8 +208,8 @@ public class Clusterer {
 	}	
 	
 	public boolean HasEmptyCluster() {
-		for (int i = 0; i < k; i++)
-			if (getAssignments(i).isEmpty())
+		for (RelaxedPlanCluster cluster : clusters)
+			if (cluster.plans.isEmpty())
 				return true;
 		
 		return false;
@@ -211,7 +219,7 @@ public class Clusterer {
 	public String toString() {
 		String s = "";
 		for (int i = 0; i < k; i++)
-			s += "Cluster " + i + " (" + getAssignments(i).size() + " assignments):\n" 
+			s += "Cluster " + i + " (" + clusters[i].plans.size() + " assignments):\n" 
 					+ clusters[i].medoid.shortString() + "\n";
 		return s;
 	}

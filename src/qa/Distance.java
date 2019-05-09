@@ -93,8 +93,7 @@ public class Distance {
 	}
 
 	private boolean satStepGoalPairSchemasWeightedEquals(RelaxedPlan a, RelaxedPlan b) {
-		// TODO Auto-generated method stub
-		return false;
+		return satStepSchemaGoalSchemasWeighted(a, b) == 0;
 	}
 
 	private boolean satStepGoalEquals(RelaxedPlan a, RelaxedPlan b) {
@@ -201,9 +200,9 @@ public class Distance {
 	}
 
 	public float satStepSchemaGoalSchemasWeighted(RelaxedPlan a, RelaxedPlan b) {
-		return 0.98f * fullSatStepSchemaGoalDistance(a, b) + 
-				0.01f * fullSatStepGoalDistance(a, b) +
-				0.01f * fullAgentSchemaDistance(a, b);
+		return	0.800f * satStepSchemaGoalDistance(a, b) + 
+				0.200f * satStepGoalDistance(a, b) +
+				0.000f * agentSchemaDistance(a, b);
 	}
 
 	private float satStepSchemaGoalDistance(RelaxedPlan a, RelaxedPlan b) {
@@ -232,7 +231,7 @@ public class Distance {
 	}
 
 	private float fullAgentSchemaDistance(RelaxedPlan a, RelaxedPlan b) {
-		return fullJaccard(a.getAgentSchemaPairs(), b.getAgentSchemaPairs(), DomainSet.getAllAgentSchemaPairs());
+		return 1 - fullJaccard(a.getAgentSchemaPairs(), b.getAgentSchemaPairs(), DomainSet.getAllAgentSchemaPairs());
 	}
 	
 	private float agentSchemaDistance(RelaxedPlan a, RelaxedPlan b) {
@@ -258,11 +257,11 @@ public class Distance {
 	}
 	
 	private float fullSatStepSchemaGoalDistance(RelaxedPlan a, RelaxedPlan b) {
-		return fullJaccard(SSSGPair.GetByPlan(a), SSSGPair.GetByPlan(b), DomainSet.getAllSSSGPairs());
+		return 1 - fullJaccard(SSSGPair.GetByPlan(a), SSSGPair.GetByPlan(b), DomainSet.getAllSSSGPairs());
 	}
 
 	private float fullSatStepGoalDistance(RelaxedPlan a, RelaxedPlan b) {
-		return fullJaccard(a.getSSGPairs(), b.getSSGPairs(), DomainSet.getAllSSGPairs());
+		return 1 -fullJaccard(a.getSSGPairs(), b.getSSGPairs(), DomainSet.getAllSSGPairs());
 	}
 
 	public float satStepGoalDistance(RelaxedPlan a, RelaxedPlan b) {
@@ -376,9 +375,8 @@ public class Distance {
 
 	private <E> HashSet<E> intersection(Set<E> a, Set<E> b) {
 		HashSet<E> intersection = new HashSet<>();
-		for (E item : a)
-			if (b.contains(item))
-				intersection.add(item);
+		intersection.addAll(a);
+		intersection.retainAll(b);
 		return intersection;
 	}
 
