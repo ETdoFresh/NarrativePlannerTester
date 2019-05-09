@@ -51,7 +51,7 @@ public class Main {
 	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED;
 	public static final boolean testDistances = true; // compares plan #1 to all plans including self
 	public static Distance distance;
-	public static final boolean considerStepsForLiteralsAlreadyTrueInInitialState = true;
+	public static final boolean considerStepsForLiteralsAlreadyTrueInInitialState = false;
 
 	static long lastModified = 0;
 	static boolean firstRun = true;
@@ -146,44 +146,47 @@ public class Main {
 			System.out.println("  Unique Valid RelaxedPlans: " + countValid(uniquePlans, space));
 			System.out.println(DASHLINE);
 
-			/** ----------------------- At this point we have all the plans ------------------------------ */
-			
-			if(testDistances) {
+			/**
+			 * ----------------------- At this point we have all the plans
+			 * ------------------------------
+			 */
+
+			if (testDistances) {
 				DistanceTester tester = new DistanceTester(space);
 				RelaxedPlan a = uniquePlans.get(0);
-				for(RelaxedPlan b : uniquePlans)
+				for (RelaxedPlan b : uniquePlans)
 					tester.testDistances(a, b);
 			}
-			
+
 			Distance distance = new Distance(metric, space);
-			//if (deduplicatePlans)
-				//uniquePlans = RelaxedPlanCleaner.deDupePlans(uniquePlans, distance);
+			// if (deduplicatePlans)
+			// uniquePlans = RelaxedPlanCleaner.deDupePlans(uniquePlans, distance);
 
 			Clusterer clusterer = null;
 			Clusterer bestClusterer = clusterer;
-			Clusterer[] bestClusterers = new Clusterer[maxK+1];
+			Clusterer[] bestClusterers = new Clusterer[maxK + 1];
 			int[] assignments = new int[uniquePlans.size()];
 			float prevMinTotalClusterDistance = 0;
 			float prevSlope = -100;
 			int bestK = 0;
 			FileIO.Write("output.txt", "");
-			
+
 			// Set up k-medoids with unique RelaxedPlans
 			for (int k = 1; k <= Math.min(maxK, uniquePlans.size()); k++) {
 				if (hardCodedK > 0 && hardCodedK != k)
 					continue;
-				
+
 				// System.out.println(DASHLINE);
 				Random random = new Random();
 
 				// Run clusterer X times
 				float minAverageClusterDistance = Float.POSITIVE_INFINITY;
 				for (int run = 0; run < 100; run++) {
-					
-					clusterer = new Clusterer(uniquePlans, k, space.actions.size(), space, distance);	
+
+					clusterer = new Clusterer(uniquePlans, k, space.actions.size(), space, distance);
 					// Randomize Cluster assignments
 					for (int i = 0; i < uniquePlans.size(); i++)
-						//uniquePlans.get(i).clusterAssignment = random.nextInt(k);
+						// uniquePlans.get(i).clusterAssignment = random.nextInt(k);
 						clusterer.clusters[random.nextInt(k)].plans.add(uniquePlans.get(i));
 
 					// Print cluster assignment counts
@@ -192,19 +195,12 @@ public class Main {
 //								+ clusterer.getAssignments(clusterer.clusters[i].id).size() + " initial assignments.");
 
 					// Run k-medoids
-					clusterer.kmedoids();
+					clusterer.kmeans();
 
 					// Other Evaluation [Tightest Clusters]
 					float averageDistanceFromMedoids = 0;
-					for (int i = 0; i < k; i++)
-						for (RelaxedPlanCluster cluster : clusterer.clusters)
-						{
-							float averageDistanceFromMedoid = 0;
-							for (RelaxedPlan plan : cluster.plans)
-								averageDistanceFromMedoid += distance.getDistance(plan, cluster.medoid);
-							//averageDistanceFromMedoid /= cluster.plans.size();
-							averageDistanceFromMedoids += averageDistanceFromMedoid;
-						}
+					for (RelaxedPlanCluster cluster : clusterer.clusters)
+						averageDistanceFromMedoids = cluster.averageDistance;
 					averageDistanceFromMedoids /= k;
 
 					// Find the tightest clusters and store assignments
@@ -305,8 +301,8 @@ public class Main {
 			plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
 		}
 		// RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(space, plans);
-		//RelaxedPlanCleaner.removeDuplicateSteps(plans);
-		//RelaxedPlanCleaner.removeDuplicatePlans(plans);
+		// RelaxedPlanCleaner.removeDuplicateSteps(plans);
+		// RelaxedPlanCleaner.removeDuplicatePlans(plans);
 		FileIO.Write(txtfile, plans.toString());
 //		File file = new File(dir);
 //		if (!file.isDirectory())

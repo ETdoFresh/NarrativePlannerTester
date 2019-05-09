@@ -8,7 +8,7 @@ import sabre.Event;
 import sabre.space.SearchSpace;
 
 enum DistanceMetric {
-	ACTION, ISIF, AGENT_STEP, SCHEMA, AGENT_SCHEMA, GOAL, AGENT_GOAL, AGENT_GOAL_SCHEMA, SATSTEP_GOAL, STEP_LEVEL,
+	ACTION, ISIF, SCHEMA, AGENT_SCHEMA, GOAL, AGENT_GOAL, AGENT_GOAL_SCHEMA, SATSTEP_GOAL, STEP_LEVEL,
 	SATSTEP_GOAL_AGENT_SCHEMA_MULTI, SATSTEP_SCHEMA_GOAL, SATSTEP_GOAL_SCHEMA_MULTI, SATSTEP_SCHEMA_ACTION, TEST,
 	SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED, FULL_ACTION, FULL_SATSTEP_GOAL, FULL_SATSTEP_SCHEMA_GOAL,
 	FULL_SATSTEP_GOAL_AGENT_SCHEMA_MULTI, FULL_SATSTEP_GOAL_SCHEMA_MULTI, AUTHOR_SATSTEP_SCHEMA_GOAL
@@ -34,8 +34,6 @@ public class Distance {
 		case AGENT_GOAL_SCHEMA:
 			break;
 		case AGENT_SCHEMA:
-			break;
-		case AGENT_STEP:
 			break;
 		case AUTHOR_SATSTEP_SCHEMA_GOAL:
 			return authorSatStepSchemaGoalEquals(a, b);
@@ -129,9 +127,6 @@ public class Distance {
 		case AGENT_SCHEMA:
 			dist = agentSchemaDistance(a, b);
 			break;
-		case AGENT_STEP:
-			dist = agentStepDistance(a, b);
-			break;
 		case AUTHOR_SATSTEP_SCHEMA_GOAL:
 			dist = authorSatStepSchemaGoalDistance(a, b);
 			break;
@@ -213,9 +208,9 @@ public class Distance {
 	}
 
 	public float satStepSchemaGoalSchemasWeighted(RelaxedPlan a, RelaxedPlan b) {
-		return 0.900f * authorSatStepSchemaGoalDistance(a, b) 
-				+ 0.100f * satStepSchemaGoalDistance(a, b) 
-				+ 0.000f * satStepGoalDistance(a, b)
+		return 0.700f * authorSatStepSchemaGoalDistance(a, b) 
+				+ 0.200f * satStepSchemaGoalDistance(a, b) 
+				+ 0.100f * satStepGoalDistance(a, b)
 				+ 0.000f * agentSchemaDistance(a, b);
 	}
 
@@ -288,40 +283,6 @@ public class Distance {
 		return jaccard(SLPair.GetByPlan(a), SLPair.GetByPlan(b));
 	}
 
-	/**
-	 * Agent step distance between two plans: Euclidean square of the agent step
-	 * vectors
-	 */
-	private float agentStepDistance(RelaxedPlan a, RelaxedPlan b) {
-		float[] vectorA = Vector.getAgentStepVector(space, a);
-		float[] vectorB = Vector.getAgentStepVector(space, b);
-		// vectorA = Vector.divide(vectorA, a.size());
-		// vectorB = Vector.divide(vectorB, b.size());
-		vectorA = Vector.normalize(vectorA);
-		vectorB = Vector.normalize(vectorB);
-		return Vector.distance(vectorA, vectorB);
-	}
-
-	/**
-	 * @param plans - All Relaxed Plans
-	 * @return AgentSchema Vector where each dimension = MAX_OCCURENCES of dimension
-	 */
-	private float[] getAgentSchemaMaxVector(ArrayList<RelaxedPlan> plans) {
-		float[] max = new float[0];
-		if (plans.size() > 0)
-			max = Vector.getAgentSchemaVector(space, plans.get(0));
-		// Prevent Divide by 0
-		for (int i = 0; i < max.length; i++)
-			max[i] = 1;
-		// Get Max!
-		for (int i = 0; i < plans.size(); i++) {
-			float[] vector = Vector.getAgentSchemaVector(space, plans.get(i));
-			for (int j = 0; j < vector.length; j++)
-				if (max[j] < vector[j])
-					max[j] = vector[j];
-		}
-		return max;
-	}
 
 	/**
 	 * ISIF distance between two plans: Weighted Jaccards of the sets of important

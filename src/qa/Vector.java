@@ -1,100 +1,109 @@
 package qa;
 
 import java.util.ArrayList;
-
-import sabre.Action;
-import sabre.Agent;
-import sabre.logic.ConjunctiveClause;
-import sabre.logic.Expression;
-import sabre.logic.Literal;
-import sabre.space.SearchSpace;
-import sabre.util.ImmutableSet;
+import java.util.HashSet;
 
 public class Vector {
 
-	/** The number of steps taken by each agent */
-	public static float[] getAgentStepVector(SearchSpace space, RelaxedPlan plan) {
-		float[] vector = new float[space.domain.agents.size()];
-		for (int i = 0; i < space.domain.agents.size(); i++) {
-			Agent agent = space.domain.agents.get(i);
-			for (RelaxedNode node : plan) {
-				if (node.eventNode.event instanceof Action) {
-					Action action = (Action) node.eventNode.event;
-					if (action.agents.contains(agent))
-						vector[i]++;
-				}
-			}
+	public static float[] getEmpty(Distance distance) {
+		switch (distance.distanceMetric) {
+		case SATSTEP_GOAL:
+			return new float[DomainSet.getAllSSGPairs().size()];
+		case SATSTEP_SCHEMA_GOAL:
+			return new float[DomainSet.getAllSSSGPairs().size()];
+		case AUTHOR_SATSTEP_SCHEMA_GOAL:
+			return new float[DomainSet.getAllASSSGPairs().size()];
+		case SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED:
+			return new float[DomainSet.getAllASSSGPairs().size() + DomainSet.getAllSSGPairs().size()
+					+ DomainSet.getAllSSSGPairs().size()];
+		default:
+			return null;
 		}
+	}
+
+	public static float[] get(RelaxedPlan plan, Distance distance) {
+		switch (distance.distanceMetric) {
+		case SATSTEP_GOAL:
+			return getSSGVector(plan);
+		case SATSTEP_SCHEMA_GOAL:
+			return getSSSGVector(plan);
+		case AUTHOR_SATSTEP_SCHEMA_GOAL:
+			return getASSSGVector(plan);
+		case SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED:
+			return getWeighted(plan, distance);
+		default:
+			return null;
+		}
+	}
+
+	public static float getWeightedDistance(float[] a, float[] b) {
+		int length1 = DomainSet.getAllASSSGPairs().size();
+		int length2 = DomainSet.getAllSSSGPairs().size();
+		int length3 = DomainSet.getAllSSGPairs().size();
+		float[] aASSSG = get(a, 0, length1);
+		float[] aSSSG = get(a, length1, length2);
+		float[] aSSG = get(a, length2, length3);
+		float[] bASSSG = get(b, 0, length1);
+		float[] bSSSG = get(b, length1, length2);
+		float[] bSSG = get(b, length2, length3);
+		return 0.7f * distance(aASSSG, bASSSG) + 0.2f * distance(aSSSG, bSSSG) + 0.1f * distance(aSSG, bSSG);
+	}
+
+	private static float[] get(float[] a, int start, int length) {
+		float[] vector = new float[length];
+		for (int i = 0; i < length; i++)
+			vector[i] = a[start + i];
 		return vector;
 	}
 
-	/** The number of times each type of action appears in the plan */
-	public static float[] getSchemaVector(SearchSpace space, RelaxedPlan plan) {
-		ArrayList<String> actionNames = new ArrayList<>();
-		for (Action action : space.domain.actions)
-			if (!actionNames.contains(action.name))
-				actionNames.add(action.name);
-
-		float[] vector = new float[actionNames.size()];
-		for (int i = 0; i < actionNames.size(); i++) {
-			for (RelaxedNode node : plan) {
-				if (node.eventNode.event.name.equals(actionNames.get(i)))
-					vector[i]++;
-			}
-		}
+	private static float[] getWeighted(RelaxedPlan plan, Distance distance) {
+		float[] vector = getEmpty(distance);
+		float[] vector1 = getASSSGVector(plan);
+		float[] vector2 = getSSSGVector(plan);
+		float[] vector3 = getSSGVector(plan);
+		for (int i = 0; i < vector1.length; i++)
+			vector[i] = vector1[i];
+		for (int i = 0; i < vector2.length; i++)
+			vector[i + vector1.length] = vector2[i];
+		for (int i = 0; i < vector3.length; i++)
+			vector[i + vector1.length + vector2.length] = vector3[i];
 		return vector;
 	}
 
-	/** The number of times each agent takes an action of each type */
-	public static float[] getAgentSchemaVector(SearchSpace space, RelaxedPlan plan) {
-		ArrayList<String> actionNames = new ArrayList<>();
-		for (Action action : space.domain.actions)
-			if (!actionNames.contains(action.name))
-				actionNames.add(action.name);
-
-		ImmutableSet<Agent> agents = space.domain.agents;
-		float[] vector = new float[actionNames.size() * agents.size()];
-
-		// ActionNames=i, Agents=j
-		for (int i = 0; i < actionNames.size(); i++)
-			for (int j = 0; j < agents.size(); j++)
-				for (RelaxedNode node : plan)
-					if (node.eventNode.event.name.equals(actionNames.get(i)))
-						if (node.eventNode.event instanceof Action) {
-							Action action = (Action) node.eventNode.event;
-							if (action.agents.contains(agents.get(j)))
-								vector[i * agents.size() + j]++;
-						}
+	private static float[] getASSSGVector(RelaxedPlan plan) {
+		ArrayList<ASSSGPair> all = new ArrayList<>(DomainSet.getAllASSSGPairs());
+		float[] vector = new float[all.size()];
+		HashSet<ASSSGPair> pairs = ASSSGPair.GetByPlan(plan);
+		for (int i = 0; i < all.size(); i++)
+			if (pairs.contains(all.get(i)))
+				vector[i] = 1;
 		return vector;
 	}
 
-	public static float[] getGoalVector(SearchSpace space, RelaxedPlan plan) {
-		ArrayList<Literal> goals = new ArrayList<>();
-
-		// Author Goals
-		for (ConjunctiveClause goal : space.domain.goal.toDNF().arguments)
-			for (Literal literal : goal.arguments)
-				if (!goals.contains(literal))
-					goals.add(literal);
-
-		// Agent Goals
-		for (Expression agentGoal : AgentGoal.getAllAgentGoals(space.domain))
-			for (ConjunctiveClause goal : agentGoal.toDNF().arguments)
-				for (Literal literal : goal.arguments)
-					if (!goals.contains(literal))
-						goals.add(literal);
-
-		float[] vector = new float[goals.size()];
-		for (int i = 0; i < goals.size(); i++)
-		for (RelaxedNode node : plan) {			
-			for (ConjunctiveClause effect : node.eventNode.event.effect.toDNF().arguments)
-				if(effect.arguments.contains(goals.get(i))) {
-					vector[i]++;
-					break;
-				}
-					
-		}
+	private static float[] getSSSGVector(RelaxedPlan plan) {
+		ArrayList<SSSGPair> all = new ArrayList<>(DomainSet.getAllSSSGPairs());
+		float[] vector = new float[all.size()];
+		HashSet<SSSGPair> pairs = SSSGPair.GetByPlan(plan);
+		for (int i = 0; i < all.size(); i++)
+			if (pairs.contains(all.get(i)))
+				vector[i] = 1;
 		return vector;
+	}
+
+	private static float[] getSSGVector(RelaxedPlan plan) {
+		ArrayList<SSGPair> all = new ArrayList<>(DomainSet.getAllSSGPairs());
+		float[] vector = new float[all.size()];
+		for (int i = 0; i < all.size(); i++)
+			if (plan.getSSGPairs().contains(all.get(i)))
+				vector[i] = 1;
+		return vector;
+	}
+
+	public static float[] add(float[] lhs, float[] rhs) {
+		float[] sum = lhs.clone();
+		for (int i = 0; i < sum.length; i++)
+			sum[i] += rhs[i];
+		return sum;
 	}
 
 	public static float squareMagnitude(float[] vector) {

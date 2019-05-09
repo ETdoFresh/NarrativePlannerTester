@@ -54,6 +54,11 @@ public class RelaxedPlanVector {
 				actionValues[i] = false;
 		}
 	}
+	
+	public RelaxedPlanVector(int n) {
+		this.size = n;
+		this.actionValues = new boolean[size];
+	}
 
 	/** Get the list of actions represented by this vector */
 	public ArrayList<Action> toActionList() {

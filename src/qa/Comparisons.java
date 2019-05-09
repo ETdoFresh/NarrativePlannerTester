@@ -24,66 +24,66 @@ public class Comparisons {
 
 	private void compute() {
 		
-		float[] max = Vector.getAgentSchemaVector(space, plans.get(0));
-		// Prevent Divide by 0
-		for (int i = 0; i < max.length; i++)
-			max[i] = 1;
-		// Get Max!
-		for (int i = 0; i < plans.size(); i++) {
-			float[] vector = Vector.getAgentSchemaVector(space, plans.get(i));
-			for (int j = 0; j < vector.length; j++)
-				if (max[j] < vector[j])
-					max[j] = vector[j];
-		}
-		
-		for (int i = 0; i < plans.size(); i++)
-			for (int j = i + 1; j < plans.size(); j++) {
-				RelaxedPlan a = plans.get(i);
-				RelaxedPlan b = plans.get(j);
-				String name;
-				float[] vectorA, vectorB;
-				ArrayList<DistanceMeasure> measures = new ArrayList<>();
-
-				name = "Action Distance"; //-----------------------------------
-				vectorA = Vector.getSchemaVector(space, a);
-				vectorB = Vector.getSchemaVector(space, b);
-				measures.add(
-						new DistanceMeasure(name, vectorA, vectorB, Vector.distance(vectorA, vectorB)));
-
-				name = "Action Distance Normalized"; //-----------------------------------
-				vectorA = Vector.normalize(vectorA);
-				vectorB = Vector.normalize(vectorB);
-				measures.add(
-						new DistanceMeasure(name, vectorA, vectorB, Vector.distance(vectorA, vectorB)));
-				
-				name = "Agent + Schema Distance"; //-----------------------------------
-				vectorA = Vector.getAgentSchemaVector(space, a);
-				vectorB = Vector.getAgentSchemaVector(space, b);
-				measures.add(
-						new DistanceMeasure(name, vectorA, vectorB, Vector.distance(vectorA, vectorB)));
-
-				name = "Agent + Schema Distance Normalized"; //-----------------------------------
-				vectorA = Vector.normalize(vectorA);
-				vectorB = Vector.normalize(vectorB);
-				measures.add(
-						new DistanceMeasure(name, vectorA, vectorB, Vector.distance(vectorA, vectorB)));
-				
-				name = "Agent + Schema Distance Divide by Max Occurences"; //-----------------------------------
-				vectorA = Vector.getAgentSchemaVector(space, a);
-				vectorB = Vector.getAgentSchemaVector(space, b);
-				vectorA = Vector.divideComponentWise(vectorA, max);
-				vectorB = Vector.divideComponentWise(vectorB, max);
-				measures.add(
-						new DistanceMeasure(name, vectorA, vectorB, Vector.distance(vectorA, vectorB)));
-				
-				name = "Goal distance"; //-----------------------------------
-				vectorA = Vector.getGoalVector(space, a);
-				vectorB = Vector.getGoalVector(space, b);
-				measures.add(
-						new DistanceMeasure(name, vectorA, vectorB, Vector.distance(vectorA, vectorB)));
-				
-				comparisons.add(new Comparison(a, b, measures));
-			}
+//		float[] max = Vector.getAgentSchemaVector(space, plans.get(0));
+//		// Prevent Divide by 0
+//		for (int i = 0; i < max.length; i++)
+//			max[i] = 1;
+//		// Get Max!
+//		for (int i = 0; i < plans.size(); i++) {
+//			float[] vector = Vector.getAgentSchemaVector(space, plans.get(i));
+//			for (int j = 0; j < vector.length; j++)
+//				if (max[j] < vector[j])
+//					max[j] = vector[j];
+//		}
+//		
+//		for (int i = 0; i < plans.size(); i++)
+//			for (int j = i + 1; j < plans.size(); j++) {
+//				RelaxedPlan a = plans.get(i);
+//				RelaxedPlan b = plans.get(j);
+//				String name;
+//				float[] vectorA, vectorB;
+//				ArrayList<DistanceMeasure> measures = new ArrayList<>();
+//
+//				name = "Action Distance"; //-----------------------------------
+//				vectorA = Vector.getSchemaVector(space, a);
+//				vectorB = Vector.getSchemaVector(space, b);
+//				measures.add(
+//						new DistanceMeasure(name, vectorA, vectorB, Vector.distance(vectorA, vectorB)));
+//
+//				name = "Action Distance Normalized"; //-----------------------------------
+//				vectorA = Vector.normalize(vectorA);
+//				vectorB = Vector.normalize(vectorB);
+//				measures.add(
+//						new DistanceMeasure(name, vectorA, vectorB, Vector.distance(vectorA, vectorB)));
+//				
+//				name = "Agent + Schema Distance"; //-----------------------------------
+//				vectorA = Vector.getAgentSchemaVector(space, a);
+//				vectorB = Vector.getAgentSchemaVector(space, b);
+//				measures.add(
+//						new DistanceMeasure(name, vectorA, vectorB, Vector.distance(vectorA, vectorB)));
+//
+//				name = "Agent + Schema Distance Normalized"; //-----------------------------------
+//				vectorA = Vector.normalize(vectorA);
+//				vectorB = Vector.normalize(vectorB);
+//				measures.add(
+//						new DistanceMeasure(name, vectorA, vectorB, Vector.distance(vectorA, vectorB)));
+//				
+//				name = "Agent + Schema Distance Divide by Max Occurences"; //-----------------------------------
+//				vectorA = Vector.getAgentSchemaVector(space, a);
+//				vectorB = Vector.getAgentSchemaVector(space, b);
+//				vectorA = Vector.divideComponentWise(vectorA, max);
+//				vectorB = Vector.divideComponentWise(vectorB, max);
+//				measures.add(
+//						new DistanceMeasure(name, vectorA, vectorB, Vector.distance(vectorA, vectorB)));
+//				
+//				name = "Goal distance"; //-----------------------------------
+//				vectorA = Vector.getGoalVector(space, a);
+//				vectorB = Vector.getGoalVector(space, b);
+//				measures.add(
+//						new DistanceMeasure(name, vectorA, vectorB, Vector.distance(vectorA, vectorB)));
+//				
+//				comparisons.add(new Comparison(a, b, measures));
+//			}
 	}
 
 	@Override
