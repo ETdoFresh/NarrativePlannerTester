@@ -227,7 +227,7 @@ public class Clusterer {
 				float dist = distance.distanceMetric == DistanceMetric.SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED
 						? Vector.getWeightedDistance(cluster.centroid, Vector.get(plan, distance))
 						: Vector.distance(cluster.centroid, Vector.get(plan, distance));
-				if (minDistance > dist) {
+				if (minDistance > dist || (minDistance == dist && plan.size() < cluster.medoid.size())) {
 					minDistance = dist;
 					cluster.medoid = plan;
 				}

@@ -45,7 +45,7 @@ public class Main {
 
 	private static final int hardCodedK = 0; // 0 for auto
 	private static final int maxK = 6;
-	private static final int numClustererRuns = 20;
+	private static final int numClustererRuns = 50;
 	private static final boolean onlyExploreAuthorGoals = true;
 	private static final boolean usePlanGraphExplanation = true;
 	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED;
@@ -53,6 +53,7 @@ public class Main {
 	private static final boolean deserializePlans = false;
 	private static final boolean dedupePlansWithActionDistance = false;
 	private static final boolean dedupePlansWithMainDistance = false;
+	private static final boolean findMostUniqueMedoids = true;
 
 	public static final boolean isValidCheck = true;
 	public static final boolean avoidAddingDuplicatesInExtractor = true;
@@ -169,6 +170,7 @@ public class Main {
 			Clusterer bestClusterer = clusterer;
 			Clusterer[] bestClusterers = new Clusterer[maxK + 1];
 			float prevMinTotalClusterDistance = 0;
+			float prevMaxClusterDist = -1;
 			float prevSlope = -100;
 			int bestK = 0;
 			FileIO.Write("output.txt", "");
@@ -181,8 +183,9 @@ public class Main {
 
 				// Run clusterer X times
 				float minAverageClusterDistance = Float.POSITIVE_INFINITY;
+				float maxAverageClusterDistance = Float.NEGATIVE_INFINITY;
 				for (int run = 0; run < numClustererRuns; run++) {
-					System.out.println("Beginning kmedoids run " + run);
+					//System.out.println("Beginning kmedoids run " + run);
 					clusterer = new Clusterer(relaxedPlans, k, space.actions.size(), space, distance);
 
 					// Randomize Cluster assignments
@@ -197,28 +200,51 @@ public class Main {
 					else
 						clusterer.kmedoids();
 
-					// Other Evaluation [Tightest Clusters]
-					float averageDistanceFromCentroids = 0;
-					for (RelaxedPlanCluster cluster : clusterer.clusters)
-						averageDistanceFromCentroids = cluster.averageDistance;
-					averageDistanceFromCentroids /= k;
+					if (findMostUniqueMedoids) {
+						float averageClusterDistance = 0;
+						for (RelaxedPlanCluster cluster : clusterer.clusters)
+							for (RelaxedPlanCluster other : clusterer.clusters)
+								averageClusterDistance += Vector.getWeightedDistance(cluster.centroid, other.centroid);
+						averageClusterDistance /= k;
 
-					System.out.println("Done with run " + run + " with average distance from centroid: "
-							+ averageDistanceFromCentroids);
+						System.out.println("Kmedoids/mean run " + run + " avgDist: " + averageClusterDistance);
+						if (maxAverageClusterDistance < averageClusterDistance) {
+							maxAverageClusterDistance = averageClusterDistance;
+							bestClusterers[k] = clusterer.clone();
+							if (k > 1) {
+								float slope = maxAverageClusterDistance - prevMaxClusterDist;
+								if ((slope <= -0.01 && prevSlope < -0.01) || hardCodedK > 0) {
+									bestK = k;
+									bestClusterer = clusterer.clone();
+								}
+							}
+						}
 
-					if (Float.isNaN(averageDistanceFromCentroids))
-						continue;
-					
-					// Find the tightest clusters and store assignments
-					if (minAverageClusterDistance > averageDistanceFromCentroids && !clusterer.HasEmptyCluster()) {
-						minAverageClusterDistance = averageDistanceFromCentroids;
-						bestClusterers[k] = clusterer.clone();
+					} else {
+						float averageDistanceFromCentroids = 0;
+						for (RelaxedPlanCluster cluster : clusterer.clusters)
+							averageDistanceFromCentroids = cluster.averageDistance;
+						averageDistanceFromCentroids /= k;
 
-						if (k > 1) {
-							float slope = minAverageClusterDistance - prevMinTotalClusterDistance;
-							if ((slope <= -0.05 && prevSlope < -0.05) || hardCodedK > 0) {
-								bestK = k;
-								bestClusterer = clusterer.clone();
+						System.out.println("Done with run " + run + " with average distance from centroid: "
+								+ averageDistanceFromCentroids);
+
+						System.out.println("Kmedoids/mean run " + run + " avgDist: " + averageDistanceFromCentroids);
+						
+						if (Float.isNaN(averageDistanceFromCentroids))
+							continue;
+
+						// Find the tightest clusters and store assignments
+						if (minAverageClusterDistance > averageDistanceFromCentroids && !clusterer.HasEmptyCluster()) {
+							minAverageClusterDistance = averageDistanceFromCentroids;
+							bestClusterers[k] = clusterer.clone();
+
+							if (k > 1) {
+								float slope = minAverageClusterDistance - prevMinTotalClusterDistance;
+								if ((slope <= -0.01 && prevSlope < -0.01) || hardCodedK > 0) {
+									bestK = k;
+									bestClusterer = clusterer.clone();
+								}
 							}
 						}
 					}
@@ -227,10 +253,16 @@ public class Main {
 				if (k > 1)
 					prevSlope = minAverageClusterDistance - prevMinTotalClusterDistance;
 
-				System.out.println("Min Distance K = " + k + ": " + minAverageClusterDistance + " slope: " + prevSlope);
+				if (findMostUniqueMedoids)
+					System.out.println("Max Distance K = " + k + ": " + maxAverageClusterDistance);
+				else
+					System.out.println(
+							"Min Distance K = " + k + ": " + minAverageClusterDistance + " slope: " + prevSlope);
+
 				FileIO.Append("output.txt",
 						"Min Distance K = " + k + ": " + minAverageClusterDistance + " slope: " + prevSlope + "\n");
 				prevMinTotalClusterDistance = minAverageClusterDistance;
+				prevMaxClusterDist = maxAverageClusterDistance;
 			}
 
 			// Assign best assignments to plans
