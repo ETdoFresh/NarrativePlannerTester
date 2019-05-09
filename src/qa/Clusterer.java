@@ -60,12 +60,7 @@ public class Clusterer {
 	
 	/** Get all RelaxedPlans that are assigned to a cluster */
 	protected ArrayList<RelaxedPlan> getAssignments(int clusterID){
-		ArrayList<RelaxedPlan> assigned = new ArrayList<>();
-		for(int i=0; i<relaxedPlans.size(); i++) {
-			if(relaxedPlans.get(i).clusterAssignment == clusterID)
-				assigned.add(relaxedPlans.get(i));
-		}
-		return assigned;
+		return clusters[clusterID].plans;
 	}
 
 	/** Get all vectors that are assigned to a cluster */
@@ -83,7 +78,7 @@ public class Clusterer {
 		RelaxedPlan[] plans = new RelaxedPlan[k];
 		for(RelaxedPlanCluster cluster : clusters) {
 			RelaxedPlan exemplar = cluster.medoid.clone();
-			ArrayList<RelaxedPlan> assignments = getAssignments(cluster.id);
+			ArrayList<RelaxedPlan> assignments = clusters[cluster.id].plans;
 			while(!exemplar.isValid(space)) {
 				assignments.remove(exemplar);
 				if(assignments.isEmpty())
@@ -100,17 +95,17 @@ public class Clusterer {
 	}
 
 	public void kmedoids() {
-		//System.out.println("K-MEDOIDS (with RelaxedPlans, no vectors): ");
 		int iteration = 1;
 		int assignmentsChanged;
 		do {
-			assignmentsChanged = 0;
-			
+			assignmentsChanged = 0;			
+			System.out.println("Iteration " + iteration + ": Updating medoids");
 			// Update medoids
 			for(RelaxedPlanCluster cluster : clusters)
 				//cluster.medoid = RelaxedPlan.medoid(getAssignments(cluster.id), distance);
 				cluster.medoid = RelaxedPlan.medoid(cluster.plans, distance);
 			
+			System.out.println("Iteration " + iteration + ": Updating assignments");
 			// Update assignments
 			for(int i=0; i<relaxedPlans.size(); i++) {
 				float minDistance = Float.MAX_VALUE;

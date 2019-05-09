@@ -72,15 +72,46 @@ public class RelaxedPlanCleaner {
 
 		return false;
 	}
+	
+	// TESTING
+	public static ArrayList<RelaxedPlan> deDupePlans(ArrayList<RelaxedPlan> relaxedPlans, Distance distance, SearchSpace space){
+		System.out.println("Dedupifying");
+		HashSet<RelaxedPlan> set = new HashSet<>();
+		ArrayList<RelaxedPlan> fullSet = new ArrayList<>(relaxedPlans);	
+
+		for(RelaxedPlan plan : fullSet) {
+			if(relaxedPlans.contains(plan)) {
+				ArrayList<RelaxedPlan> equivalent = new ArrayList<>();
+				for(RelaxedPlan other : fullSet) {
+					if(plan != other && distance.getDistance(plan, other) == 0)
+						equivalent.add(other);
+				}
+				relaxedPlans.remove(plan); 
+				RelaxedPlan best = plan;
+				for(RelaxedPlan other : equivalent) {
+					relaxedPlans.remove(other);
+					if(other.isValid(space) && !best.isValid(space))
+						best = other;
+					else if(other.size() < best.size())
+						best = other;
+				}
+				set.add(best);
+				System.out.println(relaxedPlans.size() + " --> " + set.size());
+			}
+		}
+		return new ArrayList<>(set);
+	}
 
 	/** Remove duplicate RelaxedPlans according to current distance metric */
 	public static ArrayList<RelaxedPlan> deDupePlans(ArrayList<RelaxedPlan> relaxedPlans, Distance distance) {
+		System.out.println("Dedupifying");
 		int previous = relaxedPlans.size();
-		ArrayList<RelaxedPlan> uniquePlans = new ArrayList<>(relaxedPlans);
+		ArrayList<RelaxedPlan> uniquePlans = new ArrayList<>(relaxedPlans);		
 		for (int i = uniquePlans.size() - 1; i >= 0; i--) {
 			RelaxedPlan plan = uniquePlans.get(i);
 			if (!isPlanSmallest(plan, uniquePlans, distance) || !isPlanSizeUnique(plan, uniquePlans, distance))
-				uniquePlans.remove(i);
+				uniquePlans.remove(i);			
+			System.out.println(uniquePlans.size());
 		}
 		
 //		if (relaxedPlans.size() < 10) {

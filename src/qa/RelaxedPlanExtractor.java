@@ -309,19 +309,19 @@ public class RelaxedPlanExtractor {
 //				goalsAtThisLevel.remove(goalLiterals);
 
 		if (level == 0 || goalsAtThisLevel.size() == 0) {
-			if (Main.deduplicatePlans) {
-				// RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(plan.get(0).eventNode.graph.space,
-				// plan);
+			if (Main.avoidAddingDuplicatesInExtractor) {
+				// RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(plan.get(0).eventNode.graph.space, plan);
 				RelaxedPlan equivalentPlan = plansGetEquivalentByDistance(plans, plan);
 				if (equivalentPlan == null) {
 					plans.add(plan);
-				} else if (equivalentPlan.size() > plan.size()) {
+				} else if(equivalentPlan.isValid(Main.space) && !plan.isValid(Main.space)) {
+					// do nothing
+				} else if((plan.isValid(Main.space) && !equivalentPlan.isValid(Main.space)) || plan.size() < equivalentPlan.size()) {
 					plans.remove(equivalentPlan);
 					plans.add(plan);
 				}
-			} else {
+			} else
 				plans.add(plan);
-			}
 		} else {
 			CombinationsFromSets<Object> sets = GetAllPossiblePGEStepIterator(goalsAtThisLevel, level, agentsSteps);
 
@@ -343,9 +343,10 @@ public class RelaxedPlanExtractor {
 	}
 
 	private static RelaxedPlan plansGetEquivalentByDistance(ArrayList<RelaxedPlan> plans, RelaxedPlan plan) {
-		for (RelaxedPlan other : plans)
-			if (Main.distance.isEqualTo(plan, other))
+		for (RelaxedPlan other : plans) { 
+			if(Main.distance.isEqualTo(plan, other))
 				return other;
+		}
 
 		return null;
 	}
