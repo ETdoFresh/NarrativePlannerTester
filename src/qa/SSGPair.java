@@ -1,10 +1,12 @@
 package qa;
 
+import java.io.Serializable;
+
 import sabre.Event;
 import sabre.logic.Literal;
 
 // (Satisfy Step, Goal) Pair
-public class SSGPair {
+public class SSGPair implements Serializable {
 	public Event satisfyingStep;
 	public Literal goal;
 	

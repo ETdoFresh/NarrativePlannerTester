@@ -21,7 +21,6 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 	private ArrayList<RelaxedNode> nodes = new ArrayList<>();
 	public ArrayList<Explanation> explanations = new ArrayList<>();
 	public ArrayList<RelaxedNode> importantSteps = new ArrayList<>();
-	public int clusterAssignment = -1;
 
 	public RelaxedPlan clone() {
 		RelaxedPlan clone = new RelaxedPlan();
@@ -90,12 +89,14 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		for (int i = 0; i < nodes.size(); i++) {
 			Event event = nodes.get(i).eventNode.event;
 			if (event.precondition.test(state))
-				event.effect.impose(state, state); // really?
+				event.effect.impose(state, state);
 			else {
 				invalid = true;
 				break;
 			}
-		}		
+		}
+		if(!invalid)
+			System.out.println("This is valid: " + this.shortString());
 		return !invalid; //&& space.goal.test(state);
 	}
 

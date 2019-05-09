@@ -43,15 +43,22 @@ public class Main {
 	// private static String filename = "rrh.txt";
 	private static String filename = "domains/camelot.domain";
 
-	private static final int hardCodedK = 0; // 0 for auto
+	private static final int hardCodedK = 4; // 0 for auto
 	private static final int maxK = 6;
+	private static final int numClustererRuns = 20;
 	private static final boolean onlyExploreAuthorGoals = true;
 	private static final boolean usePlanGraphExplanation = true;
-	public static final boolean deduplicatePlans = true;
 	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED;
-	public static final boolean testDistances = true; // compares plan #1 to all plans including self
+	private static final boolean serializePlans = false;
+	private static final boolean deserializePlans = false;
+	private static final boolean dedupePlansWithActionDistance = true;
+	private static final boolean dedupePlansWithMainDistance = false;
+
+	public static final boolean avoidAddingDuplicatesInExtractor = true;
+	public static final boolean testDistances = false; // compares plan #1 to all plans including self
 	public static Distance distance;
 	public static final boolean considerStepsForLiteralsAlreadyTrueInInitialState = false;
+	public static SearchSpace space;
 
 	static long lastModified = 0;
 	static boolean firstRun = true;
@@ -78,7 +85,7 @@ public class Main {
 			resetLastModified();
 			printLastModified();
 			Domain domain = getDomain();
-			SearchSpace space = getSearchSpace(domain);
+			space = getSearchSpace(domain);
 			distance = new Distance(metric, space);
 			printSpaceStatistics(space);
 			checkDomainGoalEmpty(domain);
@@ -120,31 +127,30 @@ public class Main {
 
 			System.out.println("\nLet's try clustering...");
 
-			// Get RelaxedPlans (true = PGE, false = Explanations)
-			ArrayList<RelaxedPlan> relaxedPlans = getRelaxedPlans(space, usePlanGraphExplanation);
+			ArrayList<RelaxedPlan> relaxedPlans;
+			if (deserializePlans)
+				relaxedPlans = deserializeRelaxedPlans("PlanGraphExplanationsPlans");
+			else
+				relaxedPlans = getRelaxedPlans(space, usePlanGraphExplanation);
 
 //			// Uncomment this to generate new comparisons.
 //			Comparisons comparisons = Comparisons.compute(space, relaxedPlans);
 //			comparisons.keepRandomSet(100);
 			// FileIO.Write("Comparisons.json", comparisons.toString());
 
-			// Get RelaxedPlans from files
-			// ArrayList<RelaxedPlan> relaxedPlans =
-			// deserializeRelaxedPlans("PlanGraphExplanationsPlans");
-
 			System.out.println("  Total RelaxedPlans: " + relaxedPlans.size());
 			System.out.println("  Valid RelaxedPlans: " + countValid(relaxedPlans, space));
-
-			// Remove duplicate RelaxedPlans
-			ArrayList<RelaxedPlan> uniquePlans = new ArrayList<>();
-			for (RelaxedPlan plan : relaxedPlans) {
-				if (!uniquePlans.contains(plan))
-					uniquePlans.add(plan);
-			}
-
-			System.out.println("  Unique RelaxedPlans: " + uniquePlans.size());
-			System.out.println("  Unique Valid RelaxedPlans: " + countValid(uniquePlans, space));
 			System.out.println(DASHLINE);
+
+			if (dedupePlansWithActionDistance) {
+				relaxedPlans = RelaxedPlanCleaner.deDupePlans(relaxedPlans, new Distance(DistanceMetric.ACTION, space),
+						space);
+				System.out.println("Plans after deduping with ACTION Distance: " + relaxedPlans.size());
+			}
+			if (dedupePlansWithMainDistance) {
+				relaxedPlans = RelaxedPlanCleaner.deDupePlans(relaxedPlans, distance, space);
+				System.out.println("Plans after deduping with " + metric + " Distance: " + relaxedPlans.size());
+			}
 
 			/**
 			 * ----------------------- At this point we have all the plans
@@ -153,74 +159,72 @@ public class Main {
 
 			if (testDistances) {
 				DistanceTester tester = new DistanceTester(space);
-				RelaxedPlan a = uniquePlans.get(0);
-				for (RelaxedPlan b : uniquePlans)
+				RelaxedPlan a = relaxedPlans.get(0);
+				for (RelaxedPlan b : relaxedPlans)
 					tester.testDistances(a, b);
 			}
-
-			Distance distance = new Distance(metric, space);
-			// if (deduplicatePlans)
-			// uniquePlans = RelaxedPlanCleaner.deDupePlans(uniquePlans, distance);
 
 			Clusterer clusterer = null;
 			Clusterer bestClusterer = clusterer;
 			Clusterer[] bestClusterers = new Clusterer[maxK + 1];
-			int[] assignments = new int[uniquePlans.size()];
 			float prevMinTotalClusterDistance = 0;
 			float prevSlope = -100;
 			int bestK = 0;
 			FileIO.Write("output.txt", "");
 
 			// Set up k-medoids with unique RelaxedPlans
-			for (int k = 1; k <= Math.min(maxK, uniquePlans.size()); k++) {
+			for (int k = 1; k <= Math.min(maxK, relaxedPlans.size()); k++) {
 				if (hardCodedK > 0 && hardCodedK != k)
 					continue;
-
-				// System.out.println(DASHLINE);
 				Random random = new Random();
 
 				// Run clusterer X times
 				float minAverageClusterDistance = Float.POSITIVE_INFINITY;
-				for (int run = 0; run < 100; run++) {
+				for (int run = 0; run < numClustererRuns; run++) {
+					System.out.println("Beginning kmedoids run " + run);
+					clusterer = new Clusterer(relaxedPlans, k, space.actions.size(), space, distance);
 
-					clusterer = new Clusterer(uniquePlans, k, space.actions.size(), space, distance);
 					// Randomize Cluster assignments
-					for (int i = 0; i < uniquePlans.size(); i++)
-						// uniquePlans.get(i).clusterAssignment = random.nextInt(k);
-						clusterer.clusters[random.nextInt(k)].plans.add(uniquePlans.get(i));
+					for (int i = 0; i < relaxedPlans.size(); i++)
+						clusterer.clusters[random.nextInt(k)].plans.add(relaxedPlans.get(i));
 
-					// Print cluster assignment counts
-//					for (int i = 0; i < k; i++)
-//						System.out.println("Cluster " + i + " has "
-//								+ clusterer.getAssignments(clusterer.clusters[i].id).size() + " initial assignments.");
-
-					// Run k-medoids
-					clusterer.kmeans();
+					if (distance.distanceMetric == DistanceMetric.SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED
+							|| distance.distanceMetric == DistanceMetric.SATSTEP_GOAL
+							|| distance.distanceMetric == DistanceMetric.SATSTEP_SCHEMA_GOAL
+							|| distance.distanceMetric == DistanceMetric.AUTHOR_SATSTEP_SCHEMA_GOAL)
+						clusterer.kmeans();
+					else
+						clusterer.kmedoids();
 
 					// Other Evaluation [Tightest Clusters]
-					float averageDistanceFromMedoids = 0;
+					float averageDistanceFromCentroids = 0;
 					for (RelaxedPlanCluster cluster : clusterer.clusters)
-						averageDistanceFromMedoids = cluster.averageDistance;
-					averageDistanceFromMedoids /= k;
+						averageDistanceFromCentroids = cluster.averageDistance;
+					averageDistanceFromCentroids /= k;
 
+					System.out.println("Done with run " + run + " with average distance from centroid: "
+							+ averageDistanceFromCentroids);
+
+					if (Float.isNaN(averageDistanceFromCentroids))
+						continue;
+					
 					// Find the tightest clusters and store assignments
-					if (minAverageClusterDistance > averageDistanceFromMedoids && !clusterer.HasEmptyCluster()) {
-						minAverageClusterDistance = averageDistanceFromMedoids;
+					if (minAverageClusterDistance > averageDistanceFromCentroids && !clusterer.HasEmptyCluster()) {
+						minAverageClusterDistance = averageDistanceFromCentroids;
 						bestClusterers[k] = clusterer.clone();
 
 						if (k > 1) {
 							float slope = minAverageClusterDistance - prevMinTotalClusterDistance;
-							if ((slope <= -0.99 && prevSlope < -0.99) || hardCodedK > 0) {
+							if ((slope <= -0.05 && prevSlope < -0.05) || hardCodedK > 0) {
 								bestK = k;
 								bestClusterer = clusterer.clone();
 							}
 						}
 					}
-					// System.out.println(DASHLINE);
 				}
 
 				if (k > 1)
-					prevSlope = Math.max(minAverageClusterDistance - prevMinTotalClusterDistance, prevSlope);
+					prevSlope = minAverageClusterDistance - prevMinTotalClusterDistance;
 
 				System.out.println("Min Distance K = " + k + ": " + minAverageClusterDistance + " slope: " + prevSlope);
 				FileIO.Append("output.txt",
@@ -236,10 +240,11 @@ public class Main {
 			// System.out.println("Final medoids: " + clusterer.toString());
 
 			System.out.println("Selected K: " + bestK);
-			System.out.println("Best clusters:\n" + bestClusterer.toString());
+
+			System.out.println("Best clusters:\n" + clusterer.toString());
 			System.out.println(DASHLINE);
 			FileIO.Append("output.txt", "Selected K: " + bestK + "\n");
-			FileIO.Append("output.txt", "Best clusters:\n" + bestClusterer.toString());
+			FileIO.Append("output.txt", "Best clusters:\n" + clusterer.toString());
 			FileIO.Append("output.txt", DASHLINE + "\n");
 
 			// Get valid example plans based on cluster medoids
@@ -247,9 +252,9 @@ public class Main {
 //			System.out.println("Exemplars:");
 //			for (int i = 0; i < bestK; i++)
 //				System.out.println("Cluster " + i + ":\n" + exemplars[i]);
-
-			// Check if a solution exists
-			Planner planner = new Planner();
+//
+//			// Check if a solution exists
+//			Planner planner = new Planner();
 //			planner.setSearchSpace(space);
 //			search = planner.getSearchFactory().makeSearch(domain.goal);
 //			RootNode root = new RootNode(initial);
@@ -273,8 +278,9 @@ public class Main {
 			// System.out.println(ex);
 			// continue;
 			// }
-		}
-	}
+
+		} // end while
+	} // end Main
 
 	private static int countValid(ArrayList<RelaxedPlan> plans, SearchSpace space) {
 		int count = 0;
@@ -304,18 +310,18 @@ public class Main {
 		// RelaxedPlanCleaner.removeDuplicateSteps(plans);
 		// RelaxedPlanCleaner.removeDuplicatePlans(plans);
 		FileIO.Write(txtfile, plans.toString());
-//		File file = new File(dir);
-//		if (!file.isDirectory())
-//			file.mkdir();
-		// Commenting for now to speed up computations... will put in back once we ready
-		// to serialize
-//		int i=0;
-//		for(RelaxedPlan p : plans) {
-//			i++;
-//			ObjectOutputStream objOut = new ObjectOutputStream(new FileOutputStream(dir + "/plan_" + i + ".ser"));
-//			objOut.writeObject(p);
-//			objOut.close();
-//		}		
+		if (serializePlans) {
+			File file = new File(dir);
+			if (!file.isDirectory())
+				file.mkdir();
+			int i = 0;
+			for (RelaxedPlan p : plans) {
+				i++;
+				ObjectOutputStream objOut = new ObjectOutputStream(new FileOutputStream(dir + "/plan_" + i + ".ser"));
+				objOut.writeObject(p);
+				objOut.close();
+			}
+		}
 		return plans;
 	}
 
