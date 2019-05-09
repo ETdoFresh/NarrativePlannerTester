@@ -304,11 +304,14 @@ public class RelaxedPlanExtractor {
 			System.out.println(numPlans);
 		}
 
-//		for (PlanGraphLiteralNode goalLiterals : new ArrayList<>(goalsAtThisLevel))
-//			if (goalLiterals.getLevel() == 0)
-//				goalsAtThisLevel.remove(goalLiterals);
+		boolean allLevelZero = true;
+		for (PlanGraphLiteralNode goalLiterals : new ArrayList<>(goalsAtThisLevel))
+			if (goalLiterals.getLevel() != 0) {
+				allLevelZero = false;
+				break;
+			}
 
-		if (level == 0 || goalsAtThisLevel.size() == 0) {
+		if (level == 0 || allLevelZero || goalsAtThisLevel.size() == 0) {
 			if (Main.avoidAddingDuplicatesInExtractor) {
 				// RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(plan.get(0).eventNode.graph.space, plan);
 				RelaxedPlan equivalentPlan = plansGetEquivalentByDistance(plans, plan);

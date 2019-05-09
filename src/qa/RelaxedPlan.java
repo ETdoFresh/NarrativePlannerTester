@@ -84,6 +84,9 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 	}
 	
 	public boolean isValid(SearchSpace space) {
+		if (!Main.isValidCheck)
+			return true;
+		
 		boolean invalid = false;
 		MutableArrayState state = new MutableArrayState(space);
 		for (int i = 0; i < nodes.size(); i++) {

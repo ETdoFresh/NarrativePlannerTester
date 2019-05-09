@@ -43,7 +43,7 @@ public class Main {
 	// private static String filename = "rrh.txt";
 	private static String filename = "domains/camelot.domain";
 
-	private static final int hardCodedK = 4; // 0 for auto
+	private static final int hardCodedK = 0; // 0 for auto
 	private static final int maxK = 6;
 	private static final int numClustererRuns = 20;
 	private static final boolean onlyExploreAuthorGoals = true;
@@ -51,9 +51,10 @@ public class Main {
 	private static final DistanceMetric metric = DistanceMetric.SATSTEP_GOAL_PAIR_SCHEMAS_WEIGTHED;
 	private static final boolean serializePlans = false;
 	private static final boolean deserializePlans = false;
-	private static final boolean dedupePlansWithActionDistance = true;
+	private static final boolean dedupePlansWithActionDistance = false;
 	private static final boolean dedupePlansWithMainDistance = false;
 
+	public static final boolean isValidCheck = true;
 	public static final boolean avoidAddingDuplicatesInExtractor = true;
 	public static final boolean testDistances = false; // compares plan #1 to all plans including self
 	public static Distance distance;
