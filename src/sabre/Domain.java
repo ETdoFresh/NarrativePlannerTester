@@ -63,7 +63,7 @@ public class Domain implements Serializable {
 		this.goal = Expression.TRUE;
 	}
 	
-	Domain(Domain toClone, String name, String comment, Expression goal) {
+	public Domain(Domain toClone, String name, String comment, Expression goal) {
 		this.name = name;
 		this.comment = comment;
 		DomainConstructor constructor = new DomainConstructor(this);
@@ -101,6 +101,17 @@ public class Domain implements Serializable {
 	
 	private static final <T> void add(ImmutableSet<T> set, T object) {
 		((MutableSet<T>) set).add(object);
+	}
+	
+	// PDAT!
+	public void addAction(Action action) {
+		add(actions, action);
+	}
+	public void addAxiom(Axiom axiom) {
+		add(axioms, axiom);
+	}
+	public void addProperty(Property property) {
+		add(properties, property);
 	}
 	
 	@Override

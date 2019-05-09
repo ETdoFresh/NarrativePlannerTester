@@ -20,7 +20,7 @@ public class Slot implements Serializable {
 	public final ImmutableArray<Logical> arguments;
 	public final Entity initial;
 	
-	Slot(SearchSpace space, int id, Property property, ImmutableArray<Logical> arguments, Entity initial) {
+	public Slot(SearchSpace space, int id, Property property, ImmutableArray<Logical> arguments, Entity initial) {
 		this.space = space;
 		this.id = id;
 		this.property = property;

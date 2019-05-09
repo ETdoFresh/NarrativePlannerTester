@@ -40,7 +40,7 @@ public class Main {
 	//private static String filename = "rrh.txt";
 	private static String filename = "domains/camelot.domain";
 
-	private static final DistanceMetric metric = DistanceMetric.ISIF;
+	private static final DistanceMetric metric = DistanceMetric.ACTION;
 	
 	static long lastModified = 0;
 	static boolean firstRun = true;

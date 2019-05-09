@@ -2,6 +2,7 @@ package qa;
 
 import java.util.ArrayList;
 
+import sabre.Event;
 import sabre.space.SearchSpace;
 
 public class Clusterer {
@@ -110,6 +111,12 @@ public class Clusterer {
 	public RelaxedPlan[] getExemplars() {
 		RelaxedPlan[] plans = new RelaxedPlan[k];
 		for(RelaxedPlanCluster cluster : clusters) {
+			Event[] events = cluster.medoid.getEvents();
+			LandmarkProblem newProblem = new LandmarkProblem(space.domain, events);
+			System.out.println("******************************");
+			System.out.println(space.domain.toString());
+			System.out.println(newProblem.domain.toString());
+			// ---------------------------
 			RelaxedPlan exemplar = cluster.medoid.clone();
 			ArrayList<RelaxedPlan> assignments = getAssignments(cluster.id);
 			while(!exemplar.isValid(space)) {

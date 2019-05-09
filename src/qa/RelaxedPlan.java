@@ -131,6 +131,16 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		return medoid;
 	}
 	
+	public Event[] getEvents() {
+		Event[] events = new Event[nodes.size()];
+		int i=0;
+		for(RelaxedNode node : nodes) {
+			events[i] = node.eventNode.event;
+			i++;
+		}
+		return events;
+	}
+	
 	public void updateExplanations() {
 		for(RelaxedNode node : nodes) {
 			this.explanations.addAll(node.explanations);

@@ -10,7 +10,7 @@ public class Entity extends Unique implements Term {
 
 	public final ImmutableSet<Type> types = new MutableSet<>(new Type[0]);
 	
-	Entity(Domain domain, int id, String name, String comment) {
+	public Entity(Domain domain, int id, String name, String comment) {
 		super(domain, id, name, comment);
 	}
 	

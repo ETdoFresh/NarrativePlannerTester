@@ -11,7 +11,7 @@ public class Type extends Unique implements Typed, Serializable {
 	
 	public final ImmutableSet<Type> parents = new MutableSet<>(new Type[0]);
 	
-	Type(Domain domain, int id, String name, String comment) {
+	public Type(Domain domain, int id, String name, String comment) {
 		super(domain, id, name, comment);
 	}
 	
