@@ -45,6 +45,7 @@ public class Main {
 
 	private static final int hardCodedK = 5; // 0 for auto
 	private static final int maxK = 6;
+	private static final int numClustererRuns = 1;
 	private static final boolean onlyExploreAuthorGoals = true;
 	private static final boolean usePlanGraphExplanation = true;
 	private static final DistanceMetric metric = DistanceMetric.FULL_SATSTEP_GOAL_SCHEMA_MULTI;
@@ -175,7 +176,7 @@ public class Main {
 
 				// Run clusterer X times
 				float minAverageClusterDistance = Float.POSITIVE_INFINITY;
-				for (int run = 0; run < 100; run++) {
+				for (int run = 0; run < numClustererRuns; run++) {
 					System.out.println("Beginning kmedoids run " + run);
 					clusterer = new Clusterer(relaxedPlans, k, space.actions.size(), space, distance);	
 
