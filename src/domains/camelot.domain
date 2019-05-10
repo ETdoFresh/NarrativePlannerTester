@@ -78,6 +78,8 @@ isGuard(Guard) = True;
 isMerchant(Merchant) = True;
 isBandit(Bandit) = True;
 criminalAtLarge() = True;
+wielding(Guard) = GuardSword;
+wielding(Bandit) = BanditSword;
 
 // Actions
 action walk(character character*, place from, place to){
@@ -98,7 +100,7 @@ action buy(character character*, merchandise item, coin coin){
 		location(coin) = character &
 		location(character) = Market &
 		location(Merchant) = Market &
-		isBandit(character) = False
+		knowsCriminal(Merchant, character) = False
 	);
 	effect: (
 		location(item) = character &
@@ -200,7 +202,6 @@ action apprehend(character attacker*, character target, weapon weapon, place pla
 
 action takeFromContainer(character character*, item item, container container, place place){
 	precondition: (
-		!isGuard(character) &
 		location(character) = place & 
 		location(container) = place &
 		location(item) = container &
@@ -213,7 +214,6 @@ action takeFromContainer(character character*, item item, container container, p
 
 action putInContainer(character character*, item item, container container, place place){
 	precondition: (
-		!isGuard(character) &
 		location(character) = place &
 		location(container) = place &
 		location(item) = character &
