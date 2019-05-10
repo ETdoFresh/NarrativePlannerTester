@@ -266,7 +266,7 @@ public class Clusterer {
 		String s = "";
 		for (int i = 0; i < k; i++)
 			s += "Cluster " + i + " (" + clusters[i].plans.size() + " assignments):\n"
-					+ clusters[i].medoid.shortString() + "\n";
+					+ clusters[i].getShortestPlan().shortString() + "\n";
 		return s;
 	}
 }

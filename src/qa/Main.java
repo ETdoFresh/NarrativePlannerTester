@@ -53,7 +53,7 @@ public class Main {
 	private static final boolean deserializePlans = false;
 	private static final boolean dedupePlansWithActionDistance = false;
 	private static final boolean dedupePlansWithMainDistance = false;
-	private static final boolean findMostUniqueMedoids = true;
+	private static final boolean findMostUniqueMedoids = false;
 
 	public static final boolean isValidCheck = true;
 	public static final boolean avoidAddingDuplicatesInExtractor = true;
@@ -366,8 +366,8 @@ public class Main {
 			plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
 		}
 		RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(space, plans);
-		// RelaxedPlanCleaner.removeDuplicateSteps(plans);
-		// RelaxedPlanCleaner.removeDuplicatePlans(plans);
+		RelaxedPlanCleaner.removeDuplicateSteps(plans);
+		RelaxedPlanCleaner.removeDuplicatePlans(plans);
 		FileIO.Write(txtfile, plans.toString());
 		if (serializePlans) {
 			File file = new File(dir);

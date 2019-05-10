@@ -26,8 +26,16 @@ public class RelaxedPlanCluster {
 		return clone;
 	}
 	
+	public RelaxedPlan getShortestPlan() {
+		RelaxedPlan shortestPlan = null;
+		for (RelaxedPlan plan : plans)
+			if (shortestPlan == null || plan.size() < shortestPlan.size())
+				shortestPlan = plan;
+		return shortestPlan;
+	}
+	
 	@Override
 	public String toString() {
-		return "Cluster " + id + ": Medoid: " + medoid.toString();
+		return "Cluster " + id + ": ShortestPlan: " + getShortestPlan().toString();
 	}
 }
