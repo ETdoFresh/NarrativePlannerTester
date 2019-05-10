@@ -43,14 +43,10 @@ boolean :   isBandit(character);
 boolean : 	criminalAtLarge();
 
 // Intentions
-intends(Peter, alive(Peter));
 intends(Peter, location(Medicine) = Peter);
 intends(Peter, location(Peter) = Home);
 intends(Merchant, location(Merchant) = Market);
-intends(Merchant, alive(Merchant));
-intends(Guard, alive(Guard));
 intends(Guard, criminalAtLarge() = False);
-intends(Bandit, alive(Bandit));
 intends(Bandit, location(PeterCoin) = Bandit);
 intends(Bandit, location(BanditCoin) = Bandit);
 intends(Bandit, location(Medicine) = Bandit);
@@ -80,6 +76,10 @@ criminalAtLarge() = True;
 wielding(Guard) = GuardSword;
 wielding(Bandit) = BanditSword;
 wielding(Merchant) = MerchantSword;
+alive(Guard) = True;
+alive(Merchant) = True;
+alive(Peter) = True;
+alive(Bandit) = True;
 
 // Actions
 action walk(character character*, place from, place to){
@@ -212,11 +212,10 @@ action loot(character character*, character body, item item, place place){
 	precondition: (
 		location(character) = place &
 		location(body) = place &
-		!alive(body) &
+		alive(body) = False &
 		location(item) = body &
 		alive(character)
-	);
-	
+	);	
 	effect: (
 		location(item) = character
 	);
