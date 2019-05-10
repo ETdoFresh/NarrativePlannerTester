@@ -1,5 +1,6 @@
 domain: "Camelot";
-goal: !alive(Peter) | (location(Medicine) = Peter & location(Peter) = Home);
+goal: !alive(Peter) | (location(Peter) = Home & location(Medicine) = Peter);
+//goal: !alive(Bandit);
 
 // Types
 type location;
@@ -213,10 +214,25 @@ action putInContainer(character character*, item item, container container, plac
 	precondition: (
 		location(character) = place &
 		location(container) = place &
-		location(item) = character
+		location(item) = character &
+		alive(character)
 	);
 	effect: (
 		location(item) = container
+	);
+}
+
+action loot(character character*, character body, item item, place place){
+	precondition: (
+		location(character) = place &
+		location(body) = place &
+		!alive(body) &
+		location(item) = body &
+		alive(character)
+	);
+	
+	effect: (
+		location(item) = character
 	);
 }
 

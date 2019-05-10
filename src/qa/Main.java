@@ -365,7 +365,7 @@ public class Main {
 			dir = "ExplanationsPlans";
 			plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
 		}
-		// RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(space, plans);
+		RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(space, plans);
 		// RelaxedPlanCleaner.removeDuplicateSteps(plans);
 		// RelaxedPlanCleaner.removeDuplicatePlans(plans);
 		FileIO.Write(txtfile, plans.toString());
