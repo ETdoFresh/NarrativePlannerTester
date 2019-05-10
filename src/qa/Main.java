@@ -43,7 +43,7 @@ public class Main {
 	// private static String filename = "rrh.txt";
 	private static String filename = "domains/camelot.domain";
 
-	private static final int hardCodedK = 0; // 0 for auto
+	private static final int hardCodedK = 4; // 0 for auto
 	private static final int maxK = 6;
 	private static final int numClustererRuns = 50;
 	private static final boolean onlyExploreAuthorGoals = true;
@@ -68,6 +68,7 @@ public class Main {
 	static Search search = null;
 	static ArrayList<Plan> plans = new ArrayList<Plan>();
 	static File file;
+	static Random random = new Random();
 
 	public static void main(String[] args) throws Exception {
 		if (args.length > 0)
@@ -166,6 +167,25 @@ public class Main {
 					tester.testDistances(a, b);
 			}
 
+			// Writing a bunch of random plans
+//			for (int i = 1; i < 100; i++) { // Multi Run situation :)
+//				FileIO.Write("randomSelectionFromAllRun" + i + ".txt", "");
+//				FileIO.Append("randomSelectionFromAllRun" + i + ".txt", "Selected K: " + hardCodedK + " Run " + i + "\n");
+//				FileIO.Append("randomSelectionFromAllRun" + i + ".txt", "\n");
+//
+//				for (int j = 0; j < hardCodedK; j++) {
+//					int randomNumber = random.nextInt(relaxedPlans.size());
+//					RelaxedPlan plan = relaxedPlans.get(randomNumber);
+//					FileIO.Append("randomSelectionFromAllRun" + i + ".txt",
+//							"Random Plan " + j + " selected plan #" + randomNumber + "\n");
+//					FileIO.Append("randomSelectionFromAllRun" + i + ".txt", plan.shortString() + "\n");
+//				}
+//
+//				FileIO.Append("randomSelectionFromAllRun" + i + ".txt", DASHLINE + "\n");
+//			}
+
+			// while (true) { // Start Allow me to run clusterer many times
+
 			Clusterer clusterer = null;
 			Clusterer bestClusterer = clusterer;
 			Clusterer[] bestClusterers = new Clusterer[maxK + 1];
@@ -179,13 +199,12 @@ public class Main {
 			for (int k = 1; k <= Math.min(maxK, relaxedPlans.size()); k++) {
 				if (hardCodedK > 0 && hardCodedK != k)
 					continue;
-				Random random = new Random();
 
 				// Run clusterer X times
 				float minAverageClusterDistance = Float.POSITIVE_INFINITY;
 				float maxAverageClusterDistance = Float.NEGATIVE_INFINITY;
 				for (int run = 0; run < numClustererRuns; run++) {
-					//System.out.println("Beginning kmedoids run " + run);
+					// System.out.println("Beginning kmedoids run " + run);
 					clusterer = new Clusterer(relaxedPlans, k, space.actions.size(), space, distance);
 
 					// Randomize Cluster assignments
@@ -221,22 +240,22 @@ public class Main {
 						}
 
 					} else {
-						float averageDistanceFromCentroids = 0;
+						float averageClusterDistance = 0;
 						for (RelaxedPlanCluster cluster : clusterer.clusters)
-							averageDistanceFromCentroids = cluster.averageDistance;
-						averageDistanceFromCentroids /= k;
+							for (RelaxedPlan plan : cluster.plans)
+								averageClusterDistance += Vector.getWeightedDistance(cluster.centroid,
+										Vector.get(plan, distance));
+						averageClusterDistance /= k;
 
 						System.out.println("Done with run " + run + " with average distance from centroid: "
-								+ averageDistanceFromCentroids);
+								+ averageClusterDistance);
 
-						System.out.println("Kmedoids/mean run " + run + " avgDist: " + averageDistanceFromCentroids);
-						
-						if (Float.isNaN(averageDistanceFromCentroids))
+						if (Float.isNaN(averageClusterDistance))
 							continue;
 
 						// Find the tightest clusters and store assignments
-						if (minAverageClusterDistance > averageDistanceFromCentroids && !clusterer.HasEmptyCluster()) {
-							minAverageClusterDistance = averageDistanceFromCentroids;
+						if (minAverageClusterDistance > averageClusterDistance && !clusterer.HasEmptyCluster()) {
+							minAverageClusterDistance = averageClusterDistance;
 							bestClusterers[k] = clusterer.clone();
 
 							if (k > 1) {
@@ -259,8 +278,13 @@ public class Main {
 					System.out.println(
 							"Min Distance K = " + k + ": " + minAverageClusterDistance + " slope: " + prevSlope);
 
-				FileIO.Append("output.txt",
-						"Min Distance K = " + k + ": " + minAverageClusterDistance + " slope: " + prevSlope + "\n");
+				if (findMostUniqueMedoids)
+					FileIO.Append("output.txt",
+							"Max Distance K = " + k + ": " + maxAverageClusterDistance + " slope: " + prevSlope + "\n");
+				else
+					FileIO.Append("output.txt",
+							"Min Distance K = " + k + ": " + minAverageClusterDistance + " slope: " + prevSlope + "\n");
+
 				prevMinTotalClusterDistance = minAverageClusterDistance;
 				prevMaxClusterDist = maxAverageClusterDistance;
 			}
@@ -279,6 +303,8 @@ public class Main {
 			FileIO.Append("output.txt", "Selected K: " + bestK + "\n");
 			FileIO.Append("output.txt", "Best clusters:\n" + clusterer.toString());
 			FileIO.Append("output.txt", DASHLINE + "\n");
+
+			// } // End Allow me to run clusterer many time
 
 			// Get valid example plans based on cluster medoids
 //			RelaxedPlan[] exemplars = clusterer.getExemplars();
