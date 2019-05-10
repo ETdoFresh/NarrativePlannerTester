@@ -200,6 +200,7 @@ action apprehend(character attacker*, character target, weapon weapon, place pla
 
 action takeFromContainer(character character*, item item, container container, place place){
 	precondition: (
+		!isGuard(character) &
 		location(character) = place & 
 		location(container) = place &
 		location(item) = container &
@@ -212,6 +213,7 @@ action takeFromContainer(character character*, item item, container container, p
 
 action putInContainer(character character*, item item, container container, place place){
 	precondition: (
+		!isGuard(character) &
 		location(character) = place &
 		location(container) = place &
 		location(item) = character &
