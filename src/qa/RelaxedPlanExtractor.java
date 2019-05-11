@@ -93,7 +93,7 @@ public class RelaxedPlanExtractor {
 			literals.addAll(GetAllPreconditions(node));
 		return literals;
 	}
-	
+
 	static HashSet<PlanGraphLiteralNode> GetAllPreconditions(RelaxedNode node) {
 		HashSet<PlanGraphLiteralNode> literals = new HashSet<>();
 		for (PlanGraphClauseNode clauseNode : node.eventNode.parents)
@@ -313,16 +313,19 @@ public class RelaxedPlanExtractor {
 
 		if (level == 0 || allLevelZero || goalsAtThisLevel.size() == 0) {
 			if (Main.avoidAddingDuplicatesInExtractor) {
-				// RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(plan.get(0).eventNode.graph.space, plan);
+				// RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(plan.get(0).eventNode.graph.space,
+				// plan);
 				RelaxedPlan equivalentPlan = plansGetEquivalentByDistance(plans, plan);
 				if (equivalentPlan == null) {
 					plans.add(plan);
-				} else if(equivalentPlan.isValid(Main.space) && !plan.isValid(Main.space)) {
-					// do nothing
-				} else if((plan.isValid(Main.space) && !equivalentPlan.isValid(Main.space)) || plan.size() < equivalentPlan.size()) {
-					plans.remove(equivalentPlan);
-					plans.add(plan);
 				}
+//				} else if(equivalentPlan.isValid(Main.space) && !plan.isValid(Main.space)) {
+//					// do nothing
+//				} else if((plan.isValid(Main.space) && !equivalentPlan.isValid(Main.space)) || plan.size() < equivalentPlan.size()) {
+//				else if  {
+//					plans.remove(equivalentPlan);
+//					plans.add(plan);
+//				}
 			} else
 				plans.add(plan);
 		} else {
@@ -345,9 +348,18 @@ public class RelaxedPlanExtractor {
 		}
 	}
 
+	private static RelaxedPlan plansGetEquivalentByVectorDistance(ArrayList<RelaxedPlan> plans, RelaxedPlan plan) {
+		for (RelaxedPlan other : plans) {
+			if (Vector.getWeightedDistance(Vector.get(plan, Main.distance), Vector.get(other, Main.distance)) == 0)
+				return other;
+		}
+
+		return null;
+	}
+
 	private static RelaxedPlan plansGetEquivalentByDistance(ArrayList<RelaxedPlan> plans, RelaxedPlan plan) {
-		for (RelaxedPlan other : plans) { 
-			if(Main.distance.isEqualTo(plan, other))
+		for (RelaxedPlan other : plans) {
+			if (Main.distance.isEqualTo(plan, other))
 				return other;
 		}
 
@@ -361,10 +373,10 @@ public class RelaxedPlanExtractor {
 		ArrayList<ArrayList<Object>> empty = new ArrayList<>();
 		ArrayList<ArrayList<Object>> goalSets = new ArrayList<>();
 		for (PlanGraphLiteralNode goal : goalsAtThisLevel) {
-			
+
 			if (!Main.considerStepsForLiteralsAlreadyTrueInInitialState && goal.getLevel() == 0)
 				continue;
-			
+
 			ArrayList<Object> set = new ArrayList<>();
 			for (PlanGraphNode stepAchievingGoal : goal.parents) {
 				if (stepAchievingGoal instanceof PlanGraphEventNode) {

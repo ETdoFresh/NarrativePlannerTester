@@ -55,8 +55,8 @@ public class Main {
 	private static final boolean dedupePlansWithMainDistance = false;
 	private static final boolean findMostUniqueMedoids = false;
 
-	public static final boolean isValidCheck = true;
-	public static final boolean avoidAddingDuplicatesInExtractor = true;
+	public static final boolean isValidCheck = false;
+	public static final boolean avoidAddingDuplicatesInExtractor = false;
 	public static final boolean testDistances = false; // compares plan #1 to all plans including self
 	public static Distance distance;
 	public static final boolean considerStepsForLiteralsAlreadyTrueInInitialState = false;
