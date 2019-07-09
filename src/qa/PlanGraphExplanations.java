@@ -16,12 +16,12 @@ import sabre.logic.Literal;
 import sabre.space.SearchSpace;
 
 public class PlanGraphExplanations {
-	public static ArrayList<RelaxedPlan> getExplainedPlans(SearchSpace space) {
+	public static ArrayList<RelaxedPlan> getExplainedPlans(SearchSpace space, boolean onlyExploreAuthorGoals) {
 		HashMap<Agent, HashSet<RelaxedNode>> agentsPlans = new HashMap<>();
 		for (Agent agent : space.domain.agents)
 			agentsPlans.put(agent, getAgentSteps(agent, space));
 
-		return RelaxedPlanExtractor.GetAllPossiblePGEPlans(space, space.goal, agentsPlans);
+		return RelaxedPlanExtractor.GetAllPossiblePGEPlans(space, space.goal, agentsPlans, onlyExploreAuthorGoals);
 	}
 
 	public static HashSet<RelaxedNode> getAgentSteps(Agent agent, SearchSpace space) {

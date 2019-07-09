@@ -78,7 +78,7 @@ public class Vector {
 					goals.add(literal);
 
 		// Agent Goals
-		for (Expression agentGoal : AgentGoal.getAll(space.domain))
+		for (Expression agentGoal : AgentGoal.getAllAgentGoals(space.domain))
 			for (ConjunctiveClause goal : agentGoal.toDNF().arguments)
 				for (Literal literal : goal.arguments)
 					if (!goals.contains(literal))

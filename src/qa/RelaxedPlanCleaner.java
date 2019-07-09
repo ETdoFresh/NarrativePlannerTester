@@ -57,6 +57,12 @@ public class RelaxedPlanCleaner {
 			}
 		}
 	}
+	
+	public static void stopStoryAfterOneAuthorGoalComplete(SearchSpace space, RelaxedPlan plan) {
+		ArrayList<RelaxedPlan> plans = new ArrayList<>();
+		plans.add(plan);
+		stopStoryAfterOneAuthorGoalComplete(space, plans);
+	}
 
 	private static boolean achievesAuthorGoal(HashSet<PlanGraphLiteralNode> achievedEffects,
 			HashSet<HashSet<PlanGraphLiteralNode>> authorGoals) {
@@ -65,5 +71,44 @@ public class RelaxedPlanCleaner {
 				return true;
 
 		return false;
+	}
+
+	/** Remove duplicate RelaxedPlans according to current distance metric */
+	public static ArrayList<RelaxedPlan> deDupePlans(ArrayList<RelaxedPlan> relaxedPlans, Distance distance) {
+		int previous = relaxedPlans.size();
+		ArrayList<RelaxedPlan> uniquePlans = new ArrayList<>(relaxedPlans);
+		for (int i = uniquePlans.size() - 1; i >= 0; i--) {
+			RelaxedPlan plan = uniquePlans.get(i);
+			if (!isPlanSmallest(plan, uniquePlans, distance) || !isPlanSizeUnique(plan, uniquePlans, distance))
+				uniquePlans.remove(i);
+		}
+		
+//		if (relaxedPlans.size() < 10) {
+//			System.out.println("PROBLEM: Only " + relaxedPlans.size() + " unique plans using " + distance.distanceMetric
+//					+ " distance");
+//			System.exit(1);
+//		}
+		System.out.println("Deduped with " + distance.distanceMetric + " distance: " + relaxedPlans.size()
+				+ " unique plans out of " + previous + ".");
+		
+		return uniquePlans;
+	}
+
+	private static boolean isPlanSmallest(RelaxedPlan plan, ArrayList<RelaxedPlan> plans, Distance distance) {
+		for (RelaxedPlan other : plans)
+			if (plan != other)
+				if (distance.getDistance(plan, other) == 0)
+					if (other.size() < plan.size())
+						return false;
+		return true;
+	}
+
+	private static boolean isPlanSizeUnique(RelaxedPlan plan, ArrayList<RelaxedPlan> plans, Distance distance) {
+		for (RelaxedPlan other : plans)
+			if (plan != other)
+				if (distance.getDistance(plan, other) == 0)
+					if (other.size() == plan.size())
+						return false;
+		return true;
 	}
 }

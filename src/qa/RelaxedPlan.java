@@ -69,6 +69,20 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 	public Iterator<RelaxedNode> iterator() {
 		return nodes.iterator();
 	}
+
+	public HashSet<Literal> getGoalsServed(){
+		HashSet<Literal> set = new HashSet<>();
+		for(RelaxedNode node : nodes)
+			set.addAll(node.inServiceOfGoalLiteral);
+		return set;
+	}
+	
+	public HashSet<Event> getActions(){
+		HashSet<Event> set = new HashSet<>();
+		for(RelaxedNode node : nodes)
+			set.add(node.eventNode.event);
+		return set;
+	}
 	
 	public boolean isValid(SearchSpace space) {
 		boolean invalid = false;
@@ -81,8 +95,8 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 				invalid = true;
 				break;
 			}
-		}
-		return !invalid && space.goal.test(state);
+		}		
+		return !invalid; //&& space.goal.test(state);
 	}
 
 	public float intersection(RelaxedPlan other) {
@@ -110,18 +124,19 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 	public static RelaxedPlan medoid(ArrayList<RelaxedPlan> plans, Distance distance) {
 		RelaxedPlan medoid = null;
 		float[] averageDistances = new float[plans.size()];
-		SearchSpace space = null; 
+		SearchSpace space = null;
 		for (int i = 0; i < plans.size(); i++) {
 			float sum = 0;
-			if(space == null)
+			if (space == null)
 				space = plans.get(i).nodes.get(0).eventNode.graph.space;
 			for (RelaxedPlan other : plans)
-                sum += distance.getDistance(plans.get(i), other, plans);
+				sum += distance.getDistance(plans.get(i), other);
 			averageDistances[i] = sum / plans.size();
 		}
 		float minDistance = Float.MAX_VALUE;
 		for (int i = 0; i < plans.size(); i++) {
-			if (averageDistances[i] < minDistance) {
+			if (averageDistances[i] < minDistance 
+			|| (averageDistances[i] == minDistance && plans.get(i).size() < medoid.size())) {
 				minDistance = averageDistances[i];
 				medoid = plans.get(i).clone();
 			}
@@ -130,7 +145,7 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 			return new RelaxedPlan();
 		return medoid;
 	}
-	
+
 	public Event[] getEvents() {
 		Event[] events = new Event[nodes.size()];
 		int i=0;
@@ -142,9 +157,10 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 	}
 	
 	public void updateExplanations() {
-		for(RelaxedNode node : nodes) {
-			this.explanations.addAll(node.explanations);
-		}
+		if (this.explanations != null)
+			for (RelaxedNode node : nodes)
+				if (node.explanations != null)
+					this.explanations.addAll(node.explanations);
 	}
 
 	public void updateImportantSteps(SearchSpace space) {
@@ -160,11 +176,13 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 				importantSteps.add(nodes.get(i));
 	}
 
-	/** Get the causal degree of a step in this RelaxedPlan, where:
-	 * 	 causal degree = +1 for each effect of a previous action that this step "uses" in its preconditions
-	 * 					 +1 for each precondition of a later action that this step achieves
-	 * 					 +1 for each literal of the problem goal that this step achieves
-	 * @param node - the step 
+	/**
+	 * Get the causal degree of a step in this RelaxedPlan, where: causal degree =
+	 * +1 for each effect of a previous action that this step "uses" in its
+	 * preconditions +1 for each precondition of a later action that this step
+	 * achieves +1 for each literal of the problem goal that this step achieves
+	 * 
+	 * @param node - the step
 	 * @param goal - the problem goal
 	 * @return degree
 	 */
@@ -173,14 +191,14 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		if (node.eventNode instanceof PlanGraphAxiomNode)
 			return degree;
 		int index = nodes.indexOf(node);
-		for (int i=0; i<index; i++)
+		for (int i = 0; i < index; i++)
 			for (ConjunctiveClause effect : nodes.get(i).eventNode.event.effect.toDNF().arguments)
 				for (Literal e_literal : effect.arguments)
 					for (ConjunctiveClause precondition : node.eventNode.event.precondition.toDNF().arguments)
 						for (Literal p_literal : precondition.arguments)
 							if (CheckEquals.Literal(e_literal, p_literal))
 								degree++;
-		for (int i=index; i<nodes.size(); i++)
+		for (int i = index; i < nodes.size(); i++)
 			for (ConjunctiveClause precondition : nodes.get(i).eventNode.event.precondition.toDNF().arguments)
 				for (Literal p_literal : precondition.arguments)
 					for (ConjunctiveClause effect : node.eventNode.event.effect.toDNF().arguments)
@@ -196,8 +214,6 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		return degree;
 	}
 
-
-
 	@Override
 	public boolean equals(Object other) {
 		if (!(other instanceof RelaxedPlan))
@@ -212,12 +228,34 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		}
 		return true;
 	}
+	
+	public String shortString() {
+		String s = "";
+		for(RelaxedNode node : nodes)
+			s += Text.BLANK + node + "\n";
+		return s;
+	}
 
 	@Override
 	public String toString() {
 		String str = "";
 		for (RelaxedNode node : nodes)
 			str += Text.BLANK + node + "\n";
+		
+		str += Text.BLANK + "-- SSGPair ---------------------------\n";
+		for (SSGPair pair : getSSGPairs())
+			str += Text.BLANK + pair + "\n";
+		
+		str += Text.BLANK + "-- SSSGPair ---------------------------\n";
+		for (SSSGPair pair : SSSGPair.GetByPlan(this))
+			str += Text.BLANK + pair + "\n";
+		
+		str += Text.BLANK + "-- Schema ---------------------------\n";
+		str += Text.BLANK + getSchemas() + "\n";
+		
+		str += Text.BLANK + "-- AgentSchema Pair ---------------------------\n";
+		str += Text.BLANK + getAgentSchemaPairs() + "\n";
+		
 		return str;
 	}
 
@@ -228,5 +266,29 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 
 	public void remove(int i) {
 		nodes.remove(i);
+	}
+	
+	public HashSet<AgentSchemaPair> getAgentSchemaPairs(){
+		HashSet<AgentSchemaPair> allPairs = new HashSet<>();
+		for(RelaxedNode node : this) {
+			for(sabre.Agent agent : node.consenting) {
+				allPairs.add(new AgentSchemaPair(agent.toString(), node.schema));
+			}
+		}
+		return allPairs;
+	}
+	
+	public HashSet<SSGPair> getSSGPairs() {
+		HashSet<SSGPair> allPairs = new HashSet<>();
+		for (RelaxedNode node : this)
+			allPairs.addAll(node.satisfyingStepGoalLiteralPairs);
+		return allPairs;
+	}
+	
+	public HashSet<String> getSchemas() {
+		HashSet<String> allPairs = new HashSet<>();
+		for (RelaxedNode node : this)
+			allPairs.add(node.schema);
+		return allPairs;
 	}
 }

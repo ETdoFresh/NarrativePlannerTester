@@ -1,5 +1,5 @@
 domain: "Camelot";
-goal: location(Medicine) = Peter & location(Peter) = Home;
+goal: !alive(Peter) | (location(Medicine) = Peter & location(Peter) = Home);
 
 // Types
 type location;
@@ -34,10 +34,13 @@ place :		location(character);
 place :		location(container);
 location :	location(item);
 boolean :	alive(character) = True;
-boolean :	criminal(character);
 boolean :   knowsCriminal(character, character);
 boolean :	attacked(character);
 weapon :	wielding(character);
+boolean :   isGuard(character);
+boolean :	isMerchant(character);
+boolean :   isBandit(character);
+boolean : 	criminalAtLarge();
 
 // Intentions
 intends(Peter, alive(Peter));
@@ -46,7 +49,11 @@ intends(Peter, location(Peter) = Home);
 intends(Merchant, location(Merchant) = Market);
 intends(Merchant, alive(Merchant));
 intends(Guard, alive(Guard));
+intends(Guard, criminalAtLarge() = False);
 intends(Bandit, alive(Bandit));
+intends(Bandit, location(PeterCoin) = Bandit);
+intends(Bandit, location(BanditCoin) = Chest);
+//intends(Bandit, location(Medicine) = Bandit);
 
 // State
 location(Peter) = Home;
@@ -60,13 +67,16 @@ location(Medicine) = Merchant;
 location(MerchantSword) = Merchant;
 location(GuardSword) = Guard;
 location(BanditSword) = Bandit;
-criminal(Bandit);
 path(Home, Town);
 path(Town, Market);
 path(Town, Camp);
 path(Camp, Town);
 path(Market, Town);
 path(Town, Home);
+isGuard(Guard) = True;
+isMerchant(Merchant) = True;
+isBandit(Bandit) = True;
+criminalAtLarge() = True;
 
 // Actions
 action walk(character character*, place from, place to){
@@ -80,14 +90,14 @@ action walk(character character*, place from, place to){
 	);
 }
 
-
 action buy(character character*, merchandise item, coin coin){
 	precondition: (
+		isMerchant(character) = False &
 		location(item) = Merchant &
 		location(coin) = character &
 		location(character) = Market &
 		location(Merchant) = Market &
-		criminal(character) = False
+		isBandit(character) = False
 	);
 	effect: (
 		location(item) = character &
@@ -97,6 +107,8 @@ action buy(character character*, merchandise item, coin coin){
 
 action reportCriminal(character character*, character criminal, place place){
 	precondition: (
+		isGuard(character) = False &
+		isGuard(criminal) = False &
 		criminal != character &
 		knowsCriminal(character, criminal) &
 		location(character) = place &
@@ -104,12 +116,13 @@ action reportCriminal(character character*, character criminal, place place){
 	);
 	effect: (
 		knowsCriminal(Guard, criminal) &
-		intends(Guard, !alive(criminal))
+		criminalAtLarge() = True
 	);
 }
 
 action steal(character character*, character victim, item item, weapon weapon, place place){
 	precondition: (
+		isGuard(character) = False &
 		victim != character &
 		item != weapon &
 		alive(character) &
@@ -149,6 +162,7 @@ action sheathe(character character*, weapon weapon){
 
 action attack(character attacker*, character target, weapon weapon, place place){
 	precondition: (
+		isGuard(attacker) = False &		
 		target != attacker &
 		location(attacker) = place &
 		location(target) = place &
@@ -159,7 +173,27 @@ action attack(character attacker*, character target, weapon weapon, place place)
 		alive(target)
 	);
 	effect: (
-		!alive(target)
+		!alive(target) &
+		knowsCriminal(Guard, attacker) &
+		criminalAtLarge() = True
+	);
+}
+
+action apprehend(character attacker*, character target, weapon weapon, place place){
+	precondition: (
+		isGuard(attacker) = True &
+		knowsCriminal(attacker, target) &
+		target != attacker &
+		location(attacker) = place &
+		location(target) = place &
+		location(weapon) = attacker &
+		wielding(attacker) = weapon &
+		alive(attacker) &
+		alive(target)
+	);
+	effect: (
+		!alive(target) &
+		criminalAtLarge() = False
 	);
 }
 

@@ -10,8 +10,11 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,6 +32,7 @@ import sabre.search.Search;
 import sabre.space.RootNode;
 import sabre.space.SearchSpace;
 import sabre.state.ArrayState;
+import sabre.state.MutableArrayState;
 
 public class Main {
 
@@ -37,11 +41,20 @@ public class Main {
 	private static final String TITLE = "Planning Domain Automated Tester (PDAT), " + VERSION + "\n " + CREDITS + "\n";
 	private static final String USAGE = "USAGE: java -jar pdat.jar <filename>\n";
 	private static final String DASHLINE = "---------------------------------";
-	//private static String filename = "rrh.txt";
-	private static String filename = "domains/camelot.domain";
-
-	private static final DistanceMetric metric = DistanceMetric.ACTION;
+	// private static String filename = "rrh.txt";
+	private static String filename = "domains/it.domain";
 	
+	private static final int hardCodedK = 3; // 0 for auto
+	private static final int maxK = 6;
+	private static final boolean tryClustering = false;
+	private static final boolean trySearch = true;
+	private static final boolean onlyExploreAuthorGoals = true;
+	private static final boolean usePlanGraphExplanation = true;
+	public static final boolean deduplicatePlans = true;
+	private static final DistanceMetric metric = DistanceMetric.ISIF;
+	public static final boolean testDistances = false; // compares plan #1 to all plans including self
+	public static Distance distance;
+
 	static long lastModified = 0;
 	static boolean firstRun = true;
 	static Result result = null;
@@ -68,11 +81,17 @@ public class Main {
 			printLastModified();
 			Domain domain = getDomain();
 			SearchSpace space = getSearchSpace(domain);
+			MutableArrayState myState = new MutableArrayState(space);
+			System.out.println("First action: " + space.actions.get(0));
+			space.actions.get(0).effect.impose(myState, myState);
+			System.out.println("State after imposing: " + myState);
+			distance = new Distance(metric, space);
 			printSpaceStatistics(space);
 			checkDomainGoalEmpty(domain);
 			ArrayState initial = new ArrayState(space);
 			checkGoalTrueInitialState(domain, initial);
 			extendPlanGraph(space, initial);
+			DomainSet.Initialize(space);
 
 			// Number of actions available from the initial state
 			int firstSteps = 0;
@@ -104,143 +123,194 @@ public class Main {
 					System.out.println(Text.BLANK + "Unusable: " + action.toString());
 				// continue;
 			}
-
-			System.out.println("\nLet's try clustering...");
-
-			// Get RelaxedPlans (true = PGE, false = Explanations)
-			ArrayList<RelaxedPlan> relaxedPlans = getRelaxedPlans(space, false);
-
-//			// Uncomment this to generate new comparisons.
-//			Comparisons comparisons = Comparisons.compute(space, relaxedPlans);
-//			comparisons.keepRandomSet(100);
-//			FileIO.Write("Comparisons.json", comparisons.toString());
-
-			// Get RelaxedPlans from files
-			// ArrayList<RelaxedPlan> relaxedPlans =
-			// deserializeRelaxedPlans("PlanGraphExplanationsPlans");
-
-			System.out.println("  Total RelaxedPlans: " + relaxedPlans.size());
-			System.out.println("  Valid RelaxedPlans: " + countValid(relaxedPlans, space));
-
-			// Remove duplicate RelaxedPlans
-			ArrayList<RelaxedPlan> uniquePlans = new ArrayList<>();
-			for (RelaxedPlan plan : relaxedPlans) {
-				if (!uniquePlans.contains(plan))
-					uniquePlans.add(plan);
-			}
-
-			System.out.println("  Unique RelaxedPlans: " + uniquePlans.size());
-			System.out.println("  Unique Valid RelaxedPlans: " + countValid(uniquePlans, space));
-			System.out.println(DASHLINE);
-
-			// Set up k-medoids with unique RelaxedPlans
-			int k = 4;
-			Clusterer clusterer = new Clusterer(uniquePlans, k, space.actions.size(), space, metric);
-			System.out.println(DASHLINE);
-			Random random = new Random();
-
-			// Run clusterer X times
-			int mostEvelySpread = Integer.MIN_VALUE;
-			float minTotalClusterDistance = Float.POSITIVE_INFINITY;
-			int[] assignments = new int[uniquePlans.size()];
-			Clusterer bestClusterer = clusterer;
-			for (int run = 0; run < 100; run++) {
-				// Randomize Cluster assignments
-				for (int i = 0; i < uniquePlans.size(); i++)
-					uniquePlans.get(i).clusterAssignment = random.nextInt(k);
-
-				// Print cluster assignment counts
-				for (int i = 0; i < k; i++)
-					System.out.println("Cluster " + i + " has "
-						+ clusterer.getAssignments(clusterer.clusters[i].id).size() + " initial assignments.");
-
-				// Run k-medoids
-				clusterer.kmedoids();
-
-//				// Evaluate clusters [Most even spread]
-//				int min = Integer.MAX_VALUE;
-//				for (int i = 0; i < k; i++)
-//					if (min > clusterer.getAssignments(i).size())
-//						min = clusterer.getAssignments(i).size();
-//				
-//				// Find the most even spread and store assignments
-//				if (mostEvelySpread < min) {
-//					mostEvelySpread = min;
-//					bestClusterer = clusterer.clone();
-//					for (int i = 0; i < uniquePlans.size(); i++)
-//						assignments[i] = uniquePlans.get(i).clusterAssignment;
-//				}
-				
-				// Other Evaluation [Tightest Clusters]
-//				int totalDistanceFromEachOther = 0;
-//				for (int i = 0; i < k; i++)
-//					for (int j = 0; j < uniquePlans.size(); j++)
-//						if (uniquePlans.get(j).clusterAssignment == i)
-//							for (int l = j + 1; l < uniquePlans.size(); l++)
-//								if (uniquePlans.get(l).clusterAssignment == i)
-//									totalDistanceFromEachOther += clusterer.distance.getDistance(uniquePlans.get(j),
-//											uniquePlans.get(l), uniquePlans);
-
-				float totalDistanceFromMedoid = 0;
-				for (int i = 0; i < k; i++)
-					for (int j = 0; j < uniquePlans.size(); j++)
-						if (uniquePlans.get(j).clusterAssignment == i)
-							totalDistanceFromMedoid += clusterer.distance.getDistance(uniquePlans.get(j),
-									clusterer.clusters[i].medoid, uniquePlans);
-
-				// Find the tightest clusters and store assignments
-				if (minTotalClusterDistance > totalDistanceFromMedoid) {
-					minTotalClusterDistance = totalDistanceFromMedoid;
-					bestClusterer = clusterer.clone();
-					for (int i = 0; i < uniquePlans.size(); i++)
-						assignments[i] = uniquePlans.get(i).clusterAssignment;
-
-					System.out.println("New Minimum Distance Found: " + minTotalClusterDistance);
+			
+			// ------------------------------ SEARCH --------------------------------
+			
+			if(trySearch) {
+				// Check if a solution exists
+				Planner planner = new Planner();
+				planner.setSearchSpace(space);
+				search = planner.getSearchFactory().makeSearch(domain.goal);
+				RootNode root = new RootNode(initial);
+				search.push(root);
+				System.out.println(Text.BLANK + "Searching for next solution...");
+				try {
+					boolean first = true;
+					while((result = runInteruptably(() -> search.getNextSolution())) != null) {
+						if (result.plan != null) {
+							if(first) System.out.println(Text.PASS + Text.SOLUTION);
+							first = false;
+							String planString = result.plan.toString();
+							System.out.println(planString.substring(0,planString.indexOf(("State:"))));
+						}
+					}
+				} catch(Exception ex) {
+					System.out.println(ex);
 				}
+				
+				/*try {
+					result = runInteruptably(() -> search.getNextSolution());
+				} catch (Exception ex) {
+					System.out.println(Text.FAIL + "Exception while searching for solution: " + ex);
+					continue;
+				}
+				if (result != null && result.plan != null) {
+					System.out.println(Text.PASS + Text.SOLUTION);
+					System.out.println(result.plan);	
+				} else {
+					System.out.println(Text.FAIL + Text.SOLUTION);
+					result = null;
+					search = null;
+					continue;
+				}*/
+				// } catch (Exception ex) {
+				// System.out.println(ex);
+				// continue;
+				// }
+			}
+
+			// ------------------------------ CLUSTERING --------------------------------
+
+			if(tryClustering) {
+				System.out.println("\nLet's try clustering...");
+
+				// Get RelaxedPlans (true = PGE, false = Explanations)
+				ArrayList<RelaxedPlan> relaxedPlans = getRelaxedPlans(space, usePlanGraphExplanation);
+
+//				// Uncomment this to generate new comparisons.
+//				Comparisons comparisons = Comparisons.compute(space, relaxedPlans);
+//				comparisons.keepRandomSet(100);
+				// FileIO.Write("Comparisons.json", comparisons.toString());
+
+				// Get RelaxedPlans from files
+				// ArrayList<RelaxedPlan> relaxedPlans =
+				// deserializeRelaxedPlans("PlanGraphExplanationsPlans");
+
+				System.out.println("  Total RelaxedPlans: " + relaxedPlans.size());
+				System.out.println("  Valid RelaxedPlans: " + countValid(relaxedPlans, space));
+
+				// Remove duplicate RelaxedPlans
+				ArrayList<RelaxedPlan> uniquePlans = new ArrayList<>();
+				for (RelaxedPlan plan : relaxedPlans) {
+					if (!uniquePlans.contains(plan))
+						uniquePlans.add(plan);
+				}
+
+				System.out.println("  Unique RelaxedPlans: " + uniquePlans.size());
+				System.out.println("  Unique Valid RelaxedPlans: " + countValid(uniquePlans, space));
 				System.out.println(DASHLINE);
-			}
-			// Assign best assignments to plans
-			clusterer = bestClusterer;
-			for (int i = 0; i < uniquePlans.size(); i++)
-				uniquePlans.get(i).clusterAssignment = assignments[i];
 
-			System.out.println(DASHLINE);
-			//System.out.println("Final medoids: " + clusterer.toString());
-			System.out.println("Minimum Distance Found: " + minTotalClusterDistance);
-			System.out.println("Best clusters:\n" + bestClusterer.toString());
-			System.out.println(DASHLINE);
+				/** ----------------------- At this point we have all the plans ------------------------------ */
+				
+				if(testDistances) {
+					DistanceTester tester = new DistanceTester(space);
+					RelaxedPlan a = uniquePlans.get(0);
+					for(RelaxedPlan b : uniquePlans)
+						tester.testDistances(a, b);
+				}
+				
+				Distance distance = new Distance(metric, space);
+				//if (deduplicatePlans)
+					//uniquePlans = RelaxedPlanCleaner.deDupePlans(uniquePlans, distance);
 
-			// Get valid example plans based on cluster medoids
-			RelaxedPlan[] exemplars = clusterer.getExemplars();
-			System.out.println("Exemplars:");
-			for (int i = 0; i < k; i++)
-				System.out.println("Cluster " + i + ":\n" + exemplars[i]);
+				Clusterer clusterer = null;
+				Clusterer bestClusterer = clusterer;
+				int[] assignments = new int[uniquePlans.size()];
+				float prevMinTotalClusterDistance = 0;
+				float prevSlope = -100;
+				int bestK = 0;
+				FileIO.Write("output.txt", "");
+				
+				// Set up k-medoids with unique RelaxedPlans
+				for (int k = 1; k <= Math.min(maxK, uniquePlans.size()); k++) {
+					if (hardCodedK > 0 && hardCodedK != k)
+						continue;
+					
+					clusterer = new Clusterer(uniquePlans, k, space.actions.size(), space, distance);
+					// System.out.println(DASHLINE);
+					Random random = new Random();
 
-			// Check if a solution exists
-			Planner planner = new Planner();
-			planner.setSearchSpace(space);
-			search = planner.getSearchFactory().makeSearch(domain.goal);
-			RootNode root = new RootNode(initial);
-			search.push(root);
-			System.out.println(Text.BLANK + "Searching for next solution...");
-			try {
-				result = runInteruptably(() -> search.getNextSolution()); // <----------------------- search
-			} catch (Exception ex) {
-				System.out.println(Text.FAIL + "Exception while searching for solution: " + ex);
-				continue;
+					// Run clusterer X times
+					float minTotalClusterDistance = Float.POSITIVE_INFINITY;
+					for (int run = 0; run < 100; run++) {
+						// Randomize Cluster assignments
+						for (int i = 0; i < uniquePlans.size(); i++)
+							uniquePlans.get(i).clusterAssignment = random.nextInt(k);
+
+						// Print cluster assignment counts
+//						for (int i = 0; i < k; i++)
+//							System.out.println("Cluster " + i + " has "
+//									+ clusterer.getAssignments(clusterer.clusters[i].id).size() + " initial assignments.");
+
+						// Run k-medoids
+						clusterer.kmedoids();
+
+						// Other Evaluation [Tightest Clusters]
+						float totalDistanceFromMedoid = 0;
+						for (int i = 0; i < k; i++)
+							for (int j = 0; j < uniquePlans.size(); j++)
+								if (uniquePlans.get(j).clusterAssignment == i)
+									totalDistanceFromMedoid += clusterer.distance.getDistance(uniquePlans.get(j), clusterer.clusters[i].medoid)
+											* clusterer.distance.getDistance(uniquePlans.get(j), clusterer.clusters[i].medoid);
+
+						// Find the tightest clusters and store assignments
+						if (minTotalClusterDistance > totalDistanceFromMedoid && !clusterer.HasEmptyCluster()) {
+							minTotalClusterDistance = totalDistanceFromMedoid;
+							// System.out.println("New Minimum Distance Found: " + minTotalClusterDistance);
+
+							if (k > 1) {
+								float slope = minTotalClusterDistance - prevMinTotalClusterDistance;
+								if ((slope <= -0.99 && prevSlope < -0.99) || hardCodedK > 0) {
+									bestK = k;
+									bestClusterer = clusterer.clone();
+									for (int i = 0; i < uniquePlans.size(); i++)
+										assignments[i] = uniquePlans.get(i).clusterAssignment;
+								}
+							}
+						}
+						// System.out.println(DASHLINE);
+					}
+
+					if (k > 1)
+						prevSlope = Math.max(minTotalClusterDistance - prevMinTotalClusterDistance, prevSlope);
+
+					System.out.println("Min Distance K = " + k + ": " + minTotalClusterDistance + " slope: " + prevSlope);
+					FileIO.Append("output.txt",
+							"Min Distance K = " + k + ": " + minTotalClusterDistance + " slope: " + prevSlope + "\n");
+					prevMinTotalClusterDistance = minTotalClusterDistance;
+				}
+
+				// Assign best assignments to plans
+				clusterer = bestClusterer;
+				for (int i = 0; i < uniquePlans.size(); i++)
+					uniquePlans.get(i).clusterAssignment = assignments[i];
+
+				RelaxedPlan[][] clusters = new RelaxedPlan[bestK][];
+				for (int i = 0; i < bestK; i++)
+					clusters[i] = bestClusterer.getAssignments(i)
+							.toArray(new RelaxedPlan[bestClusterer.getAssignments(i).size()]);
+
+				System.out.println(DASHLINE);
+				FileIO.Append("output.txt", DASHLINE + "\n");
+				// System.out.println("Final medoids: " + clusterer.toString());
+
+				System.out.println("Selected K: " + bestK);
+				if(bestClusterer != null)
+					System.out.println("Best clusters:\n" + bestClusterer.toString());
+				System.out.println(DASHLINE);
+				FileIO.Append("output.txt", "Selected K: " + bestK + "\n");
+				if(bestClusterer != null)
+					FileIO.Append("output.txt", "Best clusters:\n" + bestClusterer.toString());
+				FileIO.Append("output.txt", DASHLINE + "\n");
+
+				// Get valid example plans based on cluster medoids
+//				RelaxedPlan[] exemplars = clusterer.getExemplars();
+//				System.out.println("Exemplars:");
+//				for (int i = 0; i < bestK; i++)
+//					System.out.println("Cluster " + i + ":\n" + exemplars[i]);
+
 			}
-			if (result != null && result.plan != null)
-				System.out.println(Text.PASS + Text.SOLUTION);
-			else {
-				System.out.println(Text.FAIL + Text.SOLUTION);
-				result = null;
-				search = null;
-				continue;
-			}
-			// } catch (Exception ex) {
-			// System.out.println(ex);
-			// continue;
-			// }
+
 		}
 	}
 
@@ -262,19 +332,19 @@ public class Main {
 		if (planGraphExp) {
 			txtfile = "PlanGraphExplanationsPlan.txt";
 			dir = "PlanGraphExplanationsPlans";
-			plans = PlanGraphExplanations.getExplainedPlans(space); // Runs much faster!
+			plans = PlanGraphExplanations.getExplainedPlans(space, onlyExploreAuthorGoals); // Runs much faster!
 		} else {
 			txtfile = "ExplanationsPlan.txt";
 			dir = "ExplanationsPlans";
 			plans = RelaxedPlanExtractor.GetAllPossiblePlans(space, space.goal);
 		}
-		RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(space, plans);
+		// RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(space, plans);
 		RelaxedPlanCleaner.removeDuplicateSteps(plans);
 		RelaxedPlanCleaner.removeDuplicatePlans(plans);
 		FileIO.Write(txtfile, plans.toString());
-		File file = new File(dir);
-		if (!file.isDirectory())
-			file.mkdir();
+//		File file = new File(dir);
+//		if (!file.isDirectory())
+//			file.mkdir();
 		// Commenting for now to speed up computations... will put in back once we ready
 		// to serialize
 //		int i=0;
@@ -330,7 +400,7 @@ public class Main {
 			}
 		}
 	}
-	
+
 	private static void printTitle() {
 		// Clear/Reset Screen
 		System.out.flush();

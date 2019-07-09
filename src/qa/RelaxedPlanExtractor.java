@@ -29,12 +29,13 @@ public class RelaxedPlanExtractor {
 		ArrayList<Explanation> explanations = getExplanations(space.domain);
 		GetAllPossiblePlans(goalLiterals, initialState, space.graph.size() - 1, explanations, new RelaxedPlan(), plans);
 
-		//for (ConjunctiveClause goal : goals.toDNF().arguments) {
-		//	goalLiterals = new HashSet<>(getGoalLiterals(space.graph, goal.arguments));
-		//	GetAllPossiblePlans(goalLiterals, initialState, space.graph.size() - 1, explanations, new RelaxedPlan(),
-		//			plans);
-		//}
-		
+		// For author goals only (smaller plans)
+		for (ConjunctiveClause goal : goals.toDNF().arguments) {
+			goalLiterals = new HashSet<>(getGoalLiterals(space.graph, goal.arguments));
+			GetAllPossiblePlans(goalLiterals, initialState, space.graph.size() - 1, explanations, new RelaxedPlan(),
+					plans);
+		}
+
 		return plans;
 	}
 
@@ -103,6 +104,7 @@ public class RelaxedPlanExtractor {
 		return newExplanations;
 	}
 
+	// TODO Fix this when you get a chance... it's messed up....
 	private static void GetAllPossiblePlans(HashSet<PlanGraphLiteralNode> goalsAtThisLevel,
 			HashSet<PlanGraphLiteralNode> initialState, int level, ArrayList<Explanation> explanations,
 			RelaxedPlan plan, ArrayList<RelaxedPlan> plans) {
@@ -116,8 +118,7 @@ public class RelaxedPlanExtractor {
 		} else {
 			ArrayList<ArrayList<PlanGraphLiteralNode>> permutations = Permutations.getAll(goalsAtThisLevel);
 			for (ArrayList<PlanGraphLiteralNode> goalList : permutations) {
-				ArrayList<HashSet<RelaxedNode>> sets = new ArrayList<>();
-				GetAllPossibleSteps(goalList, level, 0, explanations, new HashSet<>(), sets);
+				CombinationsFromSets<RelaxedNode> sets = GetAllPossibleStepIterator(goalList, level, explanations);
 				for (HashSet<RelaxedNode> set : sets) {
 					HashSet<PlanGraphLiteralNode> newGoals = GetAllPreconditions(set);
 					int previousLevel = level - 1;
@@ -129,6 +130,53 @@ public class RelaxedPlanExtractor {
 				}
 			}
 		}
+	}
+
+	private static CombinationsFromSets<RelaxedNode> GetAllPossibleStepIterator(
+			ArrayList<PlanGraphLiteralNode> goalsAtThisLevel, int level, ArrayList<Explanation> explanations) {
+
+		ArrayList<ArrayList<RelaxedNode>> goalSets = new ArrayList<>();
+		for (PlanGraphLiteralNode goal : goalsAtThisLevel) {
+			ArrayList<RelaxedNode> set = new ArrayList<>();
+			for (PlanGraphNode stepAchievingGoal : goal.parents) {
+				if (stepAchievingGoal.getLevel() > level)
+					continue;
+
+				if (stepAchievingGoal instanceof PlanGraphEventNode) {
+					PlanGraphEventNode eventNode = (PlanGraphEventNode) stepAchievingGoal;
+					if (stepAchievingGoal instanceof PlanGraphActionNode) {
+						PlanGraphActionNode actionNode = (PlanGraphActionNode) stepAchievingGoal;
+						ArrayList<Explanation> newExplanations = new ArrayList<>(explanations);
+						for (Term agent : actionNode.event.agents) {
+							for (Explanation oldExplanation : explanations) {
+								if (oldExplanation.agent.equals(agent)) {
+									Explanation newExplanation = oldExplanation.add(actionNode);
+									if (newExplanation != null)
+										replace(oldExplanation, newExplanation, newExplanations);
+									else {
+										newExplanations = null;
+										break;
+									}
+								}
+							}
+							if (newExplanations == null)
+								break;
+						}
+						if (newExplanations != null) {
+							RelaxedNode relaxedNode = new RelaxedNode(eventNode, newExplanations, level);
+							if (!set.contains(relaxedNode))
+								set.add(relaxedNode);
+						}
+					} else {
+						RelaxedNode relaxedNode = new RelaxedNode(eventNode, explanations, level);
+						if (!set.contains(relaxedNode))
+							set.add(relaxedNode);
+					}
+				}
+			}
+			goalSets.add(set);
+		}
+		return new CombinationsFromSets<RelaxedNode>(goalSets);
 	}
 
 	private static void GetAllPossibleSteps(ArrayList<PlanGraphLiteralNode> goalsAtThisLevel, int level, int i,
@@ -217,69 +265,114 @@ public class RelaxedPlanExtractor {
 	}
 
 	static ArrayList<RelaxedPlan> GetAllPossiblePGEPlans(SearchSpace space, Expression goals,
-			HashMap<Agent, HashSet<RelaxedNode>> agentsSteps) {
+			HashMap<Agent, HashSet<RelaxedNode>> agentsSteps, boolean onlyExploreAuthorGoals) {
 		ArrayList<RelaxedPlan> plans = new ArrayList<>();
-		HashSet<PlanGraphLiteralNode> initialState = getInitialLiterals(space.graph);
-		HashSet<PlanGraphLiteralNode> goalLiterals = combineAllAuthorAndCharacterGoals(space, goals);
-		GetAllPossiblePGEPlans(goalLiterals, initialState, space.graph.size() - 1, agentsSteps, new RelaxedPlan(),
-				plans);
+
+		HashSet<PlanGraphLiteralNode> goalLiterals;
+		if (!onlyExploreAuthorGoals) {
+			goalLiterals = combineAllAuthorAndCharacterGoals(space, goals);
+			GetAllPossiblePGEPlans(goalLiterals, space.graph.size() - 1, agentsSteps, new RelaxedPlan(), plans);
+		}
 
 		for (ConjunctiveClause goal : goals.toDNF().arguments) {
 			goalLiterals = new HashSet<>(getGoalLiterals(space.graph, goal.arguments));
-			GetAllPossiblePGEPlans(goalLiterals, initialState, space.graph.size() - 1, agentsSteps, new RelaxedPlan(),
-					plans);
+			GetAllPossiblePGEPlans(goalLiterals, space.graph.size() - 1, agentsSteps, new RelaxedPlan(), plans);
 		}
+
+//		goalLiterals = new HashSet<>();
+//		for (ConjunctiveClause goal : goals.toDNF().arguments)
+//			goalLiterals.addAll(getGoalLiterals(space.graph, goal.arguments));
+//		
+//		GetAllPossiblePGEPlans(goalLiterals, space.graph.size() - 1, agentsSteps, new RelaxedPlan(), plans);
 
 		return plans;
 	}
 
-	private static void GetAllPossiblePGEPlans(HashSet<PlanGraphLiteralNode> goalsAtThisLevel,
-			HashSet<PlanGraphLiteralNode> initialState, int level, HashMap<Agent, HashSet<RelaxedNode>> agentsSteps,
-			RelaxedPlan plan, ArrayList<RelaxedPlan> plans) {
+	private static int numPlans = 0;
+	private static void GetAllPossiblePGEPlans(HashSet<PlanGraphLiteralNode> goalsAtThisLevel, int level,
+			HashMap<Agent, HashSet<RelaxedNode>> agentsSteps, RelaxedPlan plan, ArrayList<RelaxedPlan> plans) {
+		if(plans.size() > numPlans) {
+			numPlans = plans.size();
+			System.out.println(numPlans);
+		}
 
-		for (PlanGraphLiteralNode initialLiteral : initialState)
-			if (goalsAtThisLevel.contains(initialLiteral))
-				goalsAtThisLevel.remove(initialLiteral);
+		for (PlanGraphLiteralNode goalLiterals : new ArrayList<>(goalsAtThisLevel))
+			if (goalLiterals.getLevel() == 0)
+				goalsAtThisLevel.remove(goalLiterals);
 
 		if (level == 0 || goalsAtThisLevel.size() == 0) {
-			plans.add(plan);
+			if (Main.deduplicatePlans) {
+				// RelaxedPlanCleaner.stopStoryAfterOneAuthorGoalComplete(plan.get(0).eventNode.graph.space,
+				// plan);
+				RelaxedPlan equivalentPlan = plansGetEquivalentByDistance(plans, plan);
+				if (equivalentPlan == null) {
+					plans.add(plan);
+				} else if (equivalentPlan.size() > plan.size()) {
+					plans.remove(equivalentPlan);
+					plans.add(plan);
+				}
+			} else {
+				plans.add(plan);
+			}
 		} else {
-			ArrayList<HashSet<RelaxedNode>> sets = new ArrayList<>();
-			GetAllPossiblePGESteps(new ArrayList<>(goalsAtThisLevel), level, agentsSteps, 0, new HashSet<>(), sets);
+			CombinationsFromSets<RelaxedNode> sets = GetAllPossiblePGEStepIterator(goalsAtThisLevel, level,
+					agentsSteps);
+
 			for (HashSet<RelaxedNode> set : sets) {
 				HashSet<PlanGraphLiteralNode> newGoals = GetAllPreconditions(set);
 				int previousLevel = level - 1;
 				RelaxedPlan planWithSet = plan.clone();
 				planWithSet.pushAll(set);
-				GetAllPossiblePGEPlans(newGoals, initialState, previousLevel, agentsSteps, planWithSet, plans);
+				GetAllPossiblePGEPlans(newGoals, previousLevel, agentsSteps, planWithSet, plans);
 			}
 		}
 	}
 
-	private static void GetAllPossiblePGESteps(ArrayList<PlanGraphLiteralNode> goalsAtThisLevel, int level,
-			HashMap<Agent, HashSet<RelaxedNode>> agentsSteps, int i, HashSet<RelaxedNode> set,
-			ArrayList<HashSet<RelaxedNode>> sets) {
+	private static RelaxedPlan plansGetEquivalentByDistance(ArrayList<RelaxedPlan> plans, RelaxedPlan plan) {
+		for (RelaxedPlan other : plans)
+			if (Main.distance.isEqualTo(plan, other))
+				return other;
 
-		if (i == goalsAtThisLevel.size()) {
-			sets.add(set);
+		return null;
+	}
 
-		} else {
-			for (PlanGraphNode node : goalsAtThisLevel.get(i).parents) {
-				if (node.getLevel() > level)
-					continue;
+	private static CombinationsFromSets<RelaxedNode> GetAllPossiblePGEStepIterator(
+			HashSet<PlanGraphLiteralNode> goalsAtThisLevel, int level,
+			HashMap<Agent, HashSet<RelaxedNode>> agentsSteps) {
 
-				if (!explainedByAllConsentingCharacters(node, level, agentsSteps))
-					continue;
+		ArrayList<ArrayList<RelaxedNode>> empty = new ArrayList<>();
+		ArrayList<ArrayList<RelaxedNode>> goalSets = new ArrayList<>();
+		for (PlanGraphLiteralNode goal : goalsAtThisLevel) {
+			ArrayList<RelaxedNode> set = new ArrayList<>();
+			for (PlanGraphNode stepAchievingGoal : goal.parents) {
+				if (stepAchievingGoal instanceof PlanGraphEventNode) {
+					PlanGraphEventNode eventNode = (PlanGraphEventNode) stepAchievingGoal;
 
-				if (node instanceof PlanGraphEventNode) {
-					PlanGraphEventNode eventNode = (PlanGraphEventNode) node;
-					int nextI = i + 1;
-					HashSet<RelaxedNode> newSet = new HashSet<>(set);
-					newSet.add(new RelaxedNode(eventNode, null, level));
-					GetAllPossiblePGESteps(goalsAtThisLevel, level, agentsSteps, nextI, newSet, sets);
+					if (stepAchievingGoal.getLevel() > level)
+						continue;
+
+					if (!explainedByAllConsentingCharacters(stepAchievingGoal, level, agentsSteps))
+						continue;
+
+					RelaxedNode relaxedNode = new RelaxedNode(eventNode, null, level);
+					if (!set.contains(relaxedNode))
+						set.add(relaxedNode);
 				}
 			}
+
+			if (goal.getLevel() > 0 && set.size() == 0)
+				return new CombinationsFromSets<RelaxedNode>(empty);
+
+			goalSets.add(set);
 		}
+		return new CombinationsFromSets<RelaxedNode>(goalSets);
+	}
+
+	private static boolean planContainsEventNode(RelaxedPlan plan, PlanGraphEventNode eventNode) {
+		for (RelaxedNode node : plan)
+			if (node.eventNode.equals(eventNode))
+				return true;
+		return false;
 	}
 
 	private static boolean explainedByAllConsentingCharacters(PlanGraphNode node, int level,
@@ -303,16 +396,17 @@ public class RelaxedPlanExtractor {
 		}
 		return true;
 	}
-	
-	private static HashSet<PlanGraphLiteralNode> combineAllAuthorAndCharacterGoals(SearchSpace space, Expression goals) {
+
+	private static HashSet<PlanGraphLiteralNode> combineAllAuthorAndCharacterGoals(SearchSpace space,
+			Expression goals) {
 		HashSet<PlanGraphLiteralNode> combination = new HashSet<>();
 		for (ConjunctiveClause goal : goals.toDNF().arguments)
 			combination.addAll(getGoalLiterals(space.graph, goal.arguments));
-		
+
 		for (Agent agent : space.domain.agents)
 			for (ConjunctiveClause goal : AgentGoal.get(space.domain, agent).toDNF().arguments)
 				combination.addAll(getGoalLiterals(space.graph, goal.arguments));
-		
+
 		return combination;
 	}
 }
