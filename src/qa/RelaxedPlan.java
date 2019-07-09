@@ -21,7 +21,6 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 	private ArrayList<RelaxedNode> nodes = new ArrayList<>();
 	public ArrayList<Explanation> explanations = new ArrayList<>();
 	public ArrayList<RelaxedNode> importantSteps = new ArrayList<>();
-	public int clusterAssignment = -1;
 
 	public RelaxedPlan clone() {
 		RelaxedPlan clone = new RelaxedPlan();
@@ -85,17 +84,22 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 	}
 	
 	public boolean isValid(SearchSpace space) {
+		if (!Main.isValidCheck)
+			return true;
+		
 		boolean invalid = false;
 		MutableArrayState state = new MutableArrayState(space);
 		for (int i = 0; i < nodes.size(); i++) {
 			Event event = nodes.get(i).eventNode.event;
 			if (event.precondition.test(state))
-				event.effect.impose(state, state); // really?
+				event.effect.impose(state, state);
 			else {
 				invalid = true;
 				break;
 			}
-		}		
+		}
+		if(!invalid)
+			System.out.println("This is valid: " + this.shortString());
 		return !invalid; //&& space.goal.test(state);
 	}
 
@@ -124,21 +128,20 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 	public static RelaxedPlan medoid(ArrayList<RelaxedPlan> plans, Distance distance) {
 		RelaxedPlan medoid = null;
 		float[] averageDistances = new float[plans.size()];
-		SearchSpace space = null;
+		
 		for (int i = 0; i < plans.size(); i++) {
 			float sum = 0;
-			if (space == null)
-				space = plans.get(i).nodes.get(0).eventNode.graph.space;
 			for (RelaxedPlan other : plans)
 				sum += distance.getDistance(plans.get(i), other);
 			averageDistances[i] = sum / plans.size();
 		}
+		
 		float minDistance = Float.MAX_VALUE;
 		for (int i = 0; i < plans.size(); i++) {
 			if (averageDistances[i] < minDistance 
 			|| (averageDistances[i] == minDistance && plans.get(i).size() < medoid.size())) {
 				minDistance = averageDistances[i];
-				medoid = plans.get(i).clone();
+				medoid = plans.get(i);
 			}
 		}
 		if (medoid == null)
@@ -248,6 +251,10 @@ public class RelaxedPlan implements Iterable<RelaxedNode>, Serializable {
 		
 		str += Text.BLANK + "-- SSSGPair ---------------------------\n";
 		for (SSSGPair pair : SSSGPair.GetByPlan(this))
+			str += Text.BLANK + pair + "\n";
+		
+		str += Text.BLANK + "-- ASSSGPair ---------------------------\n";
+		for (ASSSGPair pair : ASSSGPair.GetByPlan(this))
 			str += Text.BLANK + pair + "\n";
 		
 		str += Text.BLANK + "-- Schema ---------------------------\n";

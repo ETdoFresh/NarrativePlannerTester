@@ -16,6 +16,7 @@ public class DomainSet {
 	private static HashSet<Event> allActions;
 	private static HashSet<SSGPair> allSSGPairs;
 	private static HashSet<SSSGPair> allSSSGPairs;
+	private static HashSet<ASSSGPair> allASSSGPairs;
 	private static HashSet<AgentSchemaPair> allAgentSchemaPairs;
 	private static HashSet<String> allSchemas;
 
@@ -84,6 +85,20 @@ public class DomainSet {
 			}
 		}
 		return allSSSGPairs;
+	}
+	
+	public static HashSet<ASSSGPair> getAllASSSGPairs() {
+		if (allASSSGPairs != null)
+			return allASSSGPairs;
+
+		allASSSGPairs = new HashSet<>();
+		for (ConjunctiveClause goals : space.domain.goal.toDNF().arguments)
+			for (Literal goal : goals.arguments)
+				for (SSGPair ssgPair : getAllSSGPairs())
+					if (CheckEquals.Literal(ssgPair.goal, goal))
+						allASSSGPairs.add(new ASSSGPair(goal, ssgPair.satisfyingStep.name));
+		
+		return allASSSGPairs;
 	}
 
 	public static HashSet<AgentSchemaPair> getAllAgentSchemaPairs() {
